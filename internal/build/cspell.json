@@ -1,0 +1,17 @@
+{
+  "version": "0.2",
+  "language": "en-GB",
+  "ignorePaths": [
+    "**/pnpm-lock.yaml"
+  ],
+  "words": [
+    "apptly",
+    "kagal",
+    "poupe",
+    "prepack",
+    "tai64n",
+    "taistamp",
+    "tsdoc",
+    "unbuild"
+  ]
+}

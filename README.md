@@ -1,0 +1,21 @@
+# taistamp
+
+Monorepo for Taistamp — signed TAI64N timestamps over
+HTTP.
+
+## Packages
+
+### [`@kagal/taistamp`](packages/@kagal-taistamp/)
+
+Platform-neutral handler for `/.well-known/taistamp`.
+
+## Development
+
+```sh
+pnpm install
+pnpm precommit   # dev:prepare → lint → type-check → build → test
+```
+
+## Licence
+
+[MIT](LICENCE.txt)
