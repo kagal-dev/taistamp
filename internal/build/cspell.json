@@ -4,14 +4,22 @@
   "ignorePaths": [
     "**/pnpm-lock.yaml"
   ],
+  "ignoreRegExpList": [
+    "/['\"`]:[A-Za-z0-9+/=]*:['\"`]/g",
+    "/['\"`]@[0-9a-f]{24}['\"`]/g"
+  ],
   "words": [
     "apptly",
+    "dkim",
+    "dmarc",
+    "hono",
     "kagal",
     "poupe",
     "prepack",
     "tai64n",
     "taistamp",
     "tsdoc",
-    "unbuild"
+    "unbuild",
+    "webcrypto"
   ]
 }
