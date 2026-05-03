@@ -20,9 +20,13 @@
     "taistamp",
     "typescript"
   ],
-  "main": "./dist/index.mjs",
-  "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
   "files": [
     "dist"
   ],
@@ -48,7 +52,7 @@
     "type-check:tools": "tsc --noEmit -p tsconfig.tools.json"
   },
   "devDependencies": {
-    "@kagal/build-tsdoc": "~0.0.1",
+    "@kagal/build-tsdoc": "~0.1.0",
     "@kagal/cross-test": "~0.1.3",
     "@poupe/eslint-config": "~0.9.1",
     "@types/node": "^20.19.39",

@@ -30,8 +30,8 @@ importers:
   packages/@kagal-taistamp:
     devDependencies:
       '@kagal/build-tsdoc':
-        specifier: ~0.0.1
-        version: 0.0.1(typescript@5.9.3)(unbuild@3.6.1(typescript@5.9.3)(vue@3.5.33(typescript@5.9.3)))
+        specifier: ~0.1.0
+        version: 0.1.0(typescript@5.9.3)(unbuild@3.6.1(typescript@5.9.3)(vue@3.5.33(typescript@5.9.3)))
       '@kagal/cross-test':
         specifier: ~0.1.3
         version: 0.1.3
@@ -654,8 +654,8 @@ packages:
     resolution: {integrity: sha512-f5DRIOZf7wxogefH03RjMPMdBF7ADTWUMoOs9kaJo06EfwF+aFhMZMDZxHg/Xe12hptN9xoZjGso2fdjapBRIA==}
     engines: {node: '>=10'}
 
-  '@kagal/build-tsdoc@0.0.1':
-    resolution: {integrity: sha512-ed2DvCVPk3j121MIomnqcLu2Z6Bc3OA3w4TSUIHI7TeieKOeqDnETHKu7sh1v7oNIPMlqK1a9KnEdV0vMMJ8nQ==}
+  '@kagal/build-tsdoc@0.1.0':
+    resolution: {integrity: sha512-ikvs9y5Zrhsrj3WjxuOBIclvYVL96gtpHUfxRAxYHu982nTISXaU0OsZtcDYxPgYofJmkkalJvSvCGn6feNCUw==}
     engines: {node: '>= 20.20.1', pnpm: '>= 10.32.1'}
     peerDependencies:
       unbuild: '>=3.5.0'
@@ -3625,7 +3625,7 @@ snapshots:
       string-argv: 0.3.2
       type-detect: 4.1.0
 
-  '@kagal/build-tsdoc@0.0.1(typescript@5.9.3)(unbuild@3.6.1(typescript@5.9.3)(vue@3.5.33(typescript@5.9.3)))':
+  '@kagal/build-tsdoc@0.1.0(typescript@5.9.3)(unbuild@3.6.1(typescript@5.9.3)(vue@3.5.33(typescript@5.9.3)))':
     dependencies:
       tsdoc-markdown: 1.5.0(typescript@5.9.3)
       unbuild: 3.6.1(typescript@5.9.3)(vue@3.5.33(typescript@5.9.3))
