@@ -1,0 +1,16 @@
+// Minimal wrangler config for vitest-pool-workers.
+// Not used for deployment — taistamp is a handler
+// library, consumers wire it into their own worker.
+{
+  "name": "kagal-taistamp-test",
+  "compatibility_date": "2026-03-12",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "enable_nodejs_process_v2",
+    "enable_nodejs_tty_module",
+    "enable_nodejs_fs_module",
+    "enable_nodejs_http_modules",
+    "enable_nodejs_perf_hooks_module",
+    "enable_nodejs_v8_module"
+  ]
+}

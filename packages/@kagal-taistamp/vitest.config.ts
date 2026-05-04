@@ -1,3 +1,6 @@
+import {
+  cloudflareTest,
+} from '@cloudflare/vitest-pool-workers';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
@@ -16,5 +19,27 @@ export default defineConfig({
         branches: 85,
       },
     },
+    projects: [
+      {
+        plugins: [
+          cloudflareTest({
+            wrangler: {
+              configPath: './wrangler.jsonc',
+            },
+          }),
+        ],
+        test: {
+          name: 'workerd',
+          include: ['src/**/*.workerd.test.ts'],
+        },
+      },
+      {
+        test: {
+          name: 'node',
+          include: ['src/**/*.test.ts'],
+          exclude: ['src/**/*.workerd.test.ts'],
+        },
+      },
+    ],
   },
 });

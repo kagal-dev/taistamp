@@ -20,6 +20,7 @@
     "taistamp",
     "tsdoc",
     "unbuild",
-    "webcrypto"
+    "webcrypto",
+    "workerd"
   ]
 }
