@@ -8,12 +8,10 @@ import {
   TAI64N_HEADER_SIGNATURE,
   TAI_OFFSET,
 } from './const';
+import { extractNonce, type Nonce } from './nonce';
 import { tai64nLabel } from './utils';
 
 const SELECTOR_PATTERN = /^[A-Za-z][\dA-Za-z_-]{0,62}$/;
-
-const NONCE_MIN_OCTETS = 14;
-const NONCE_MAX_OCTETS = 174;
 
 const textEncoder = new TextEncoder();
 
@@ -42,10 +40,10 @@ const asBytes = (source: BufferSource): Uint8Array => {
 
 /**
  * Encode `source` as a Structured Field Value sf-binary
- * item per [RFC 8941 §3.3.5]: standard base64 with `=`
+ * item per [RFC 9651 §3.3.5]: standard base64 with `=`
  * padding, wrapped in a leading and trailing colon.
  *
- * @see {@link https://www.rfc-editor.org/rfc/rfc8941#name-byte-sequences}
+ * @see {@link https://www.rfc-editor.org/rfc/rfc9651#name-byte-sequences}
  */
 const encodeStructuredBinary = (source: BufferSource): string => {
   // Spread is safe for the 64-byte signatures handled
@@ -67,7 +65,8 @@ const encodeStructuredBinary = (source: BufferSource): string => {
  *   this to look up the public key in DNS at
  *   `<selector>._taistamp.<host>`
  * @param nonce - the client-supplied nonce, echoed
- *   verbatim in `TAI-Nonce`
+ *   verbatim in `TAI-Nonce`; brand a verifier-side
+ *   string with {@link asNonce} before passing it in
  * @returns the byte sequence verifiers reconstruct
  *   from the response and pass to their public-key
  *   verify routine. The framing is the
@@ -91,7 +90,7 @@ export const taistampSignedPayload = (
   label: string,
   leapSeconds: number,
   selector: string,
-  nonce: string,
+  nonce: Nonce,
 ): ArrayBuffer => {
   const labelBytes = textEncoder.encode(label);
   const selectorBytes = textEncoder.encode(selector);
@@ -180,16 +179,14 @@ export interface TaistampHandlerConfig {
  *   `TAI-Leap-Seconds` carrying the current count.
  * - Any other method — `405 Method Not Allowed` with
  *   `Allow: GET, HEAD`.
- * - Request with more than one `TAI-Nonce` header —
- *   `400 Bad Request`. Stricter than the spec's
- *   "treat as absent" rule: a duplicated singleton
- *   field is malformed input, so we refuse rather
- *   than silently down-ranking it to unsigned.
  * - Request `TAI-Nonce` — the value is echoed verbatim
- *   in the response.
+ *   in the response. A missing, empty, duplicated,
+ *   structurally malformed, or out-of-range
+ *   (14..174 octets) field is treated as absent (no
+ *   echo, no signature) per spec §5.2 — see
+ *   {@link extractNonce}.
  * - Request `TAI-Nonce` *and* `signer` configured *and*
- *   the request method is `GET` *and* the nonce field
- *   value is between 14 and 174 octets — adds
+ *   the request method is `GET` — adds
  *   `TAI-Key-Selector` and `TAI-Signature` (sf-binary)
  *   over the bytes produced by
  *   {@link taistampSignedPayload}. The
@@ -232,16 +229,7 @@ export const newTaistampHandler = (
       });
     }
 
-    const nonce = request.headers.get(TAI64N_HEADER_NONCE);
-
-    // `TAI-Nonce` is a singleton sf-binary; a valid value
-    // contains no `,` of its own, so a comma in the joined
-    // header value means the client sent the field more
-    // than once.
-    if (nonce !== null && nonce.includes(',')) {
-      return new Response(undefined, { status: 400 });
-    }
-
+    const nonce = extractNonce(request.headers);
     const label = tai64nLabel();
 
     const headers = new Headers({
@@ -251,18 +239,13 @@ export const newTaistampHandler = (
       [TAI64N_HEADER_LEAP_SECONDS]: String(TAI_OFFSET),
     });
 
-    if (nonce !== null) {
+    if (nonce) {
       headers.set(TAI64N_HEADER_NONCE, nonce);
-
-      const nonceLength = textEncoder.encode(nonce).length;
-      const inRange =
-        nonceLength >= NONCE_MIN_OCTETS && nonceLength <= NONCE_MAX_OCTETS;
 
       if (
         request.method === 'GET' &&
         signer !== undefined &&
-        selector !== undefined &&
-        inRange
+        selector !== undefined
       ) {
         const message = taistampSignedPayload(
           label,

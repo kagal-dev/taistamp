@@ -5,6 +5,30 @@ documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `Nonce` branded type plus `asNonce(value)` —
+  brands a string when it satisfies sf-binary syntax
+  (RFC 9651 §3.3.5) and the 14..174 octet range, or
+  returns `undefined` for every spec §5.2 "treat as
+  absent" case. Verifiers wrap their recorded client
+  nonce with `asNonce` before passing it to
+  `taistampSignedPayload`.
+- `taistampSignedPayload` now requires a `Nonce` for
+  its `nonce` argument, so the framing helper cannot
+  be called with an unvalidated string.
+
+### Changed
+
+- `TAI-Nonce` handling now follows spec §5.2's
+  "treat as absent" rule uniformly. A field that is
+  missing, empty, duplicated, structurally malformed
+  (sf-binary per RFC 9651 §3.3.5), or outside the
+  14..174 octet range is dropped — no echo, no
+  signature. The previous 400-on-duplicate branch is
+  gone; out-of-range nonces are no longer echoed.
+- `sf-binary` citation refreshed RFC 8941 → RFC 9651.
+
 ## [0.0.1] - 2026-05-03
 
 Initial release of `@kagal/taistamp` — platform-neutral

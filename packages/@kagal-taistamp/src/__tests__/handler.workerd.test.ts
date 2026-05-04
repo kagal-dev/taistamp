@@ -2,6 +2,7 @@ import { env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 
 import {
+  asNonce,
   newEd25519Signer,
   newTaistampHandler,
   TAI64N_HEADER_KEY_SELECTOR,
@@ -50,7 +51,7 @@ describe('newTaistampHandler (workerd pool)', () => {
     expect(sigHeader).not.toBeNull();
     const signature = decodeStructuredBinary(sigHeader!);
 
-    const payload = taistampSignedPayload(label, leap, selector, nonce);
+    const payload = taistampSignedPayload(label, leap, selector, asNonce(nonce)!);
     const ok = await crypto.subtle.verify(
       'Ed25519',
       keypair.publicKey,

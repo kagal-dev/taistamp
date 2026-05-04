@@ -37,10 +37,10 @@ app.get(TAI64N_PATH, (c) => taistamp(c.req.raw));
 `async (request) => Response`. `GET` and `HEAD` succeed
 with a fresh 25-byte TAI64N label
 (`@<sec-hi><sec-lo><nano>`); other methods return `405`
-with `Allow: GET, HEAD`. A request that carries more
-than one `TAI-Nonce` header is rejected with `400` —
-stricter than the spec's "treat as absent" rule, since
-a duplicated singleton field is malformed input.
+with `Allow: GET, HEAD`. A `TAI-Nonce` that is missing,
+empty, duplicated, not a valid sf-binary value, or
+outside the 14–174 octet range is treated as absent
+(no echo, no signature) per spec §5.2.
 
 Response headers on success:
 
@@ -79,16 +79,17 @@ not match `[A-Za-z][A-Za-z0-9_-]{0,62}` (a single
 DNS-safe label that starts with a letter and is also a
 valid Structured Field token).
 
-When the request is a `GET` carrying a `TAI-Nonce` of
-14–174 octets *and* a signer is configured, the
-response gains:
+When the request is a `GET` carrying a valid
+`TAI-Nonce` (see Handler section for the
+"treat as absent" rules) *and* a signer is configured,
+the response gains:
 
 - `TAI-Key-Selector: <selector>`
-- `TAI-Signature: :<base64>:` (sf-binary, RFC 8941)
+- `TAI-Signature: :<base64>:` (sf-binary, RFC 9651)
   over the framed payload.
 
-`HEAD`, `405`, nonce-less, and out-of-range-nonce
-responses are never signed.
+`HEAD`, `405`, and nonce-less responses are never
+signed.
 
 The framed payload is:
 
@@ -154,7 +155,7 @@ signatures stay verifiable until their TXT is removed.
 ## Verifying
 
 ```typescript
-import { taistampSignedPayload } from '@kagal/taistamp';
+import { asNonce, taistampSignedPayload } from '@kagal/taistamp';
 
 const response = await fetch(taistampURL, {
   headers: { 'TAI-Nonce': clientNonce },
@@ -163,6 +164,16 @@ const label = await response.text();
 const leap = Number(response.headers.get('TAI-Leap-Seconds'));
 const selector = response.headers.get('TAI-Key-Selector')!;
 const sigSf = response.headers.get('TAI-Signature')!;
+
+// Brand the recorded nonce so it can flow into the
+// signing path. `asNonce` returns `undefined` for any
+// value that fails sf-binary syntax or the 14..174
+// octet range — the same "treat as absent" verdict
+// the server applied.
+const nonce = asNonce(clientNonce);
+if (nonce === undefined) {
+  throw new Error('client nonce is not a valid sf-binary item');
+}
 
 // Look up the public key in DNS at
 // `${selector}._taistamp.${host}` and parse the
@@ -173,7 +184,7 @@ const payload = taistampSignedPayload(
   label,
   leap,
   selector,
-  clientNonce,
+  nonce,
 );
 const valid = await crypto.subtle.verify(
   'Ed25519',
@@ -186,7 +197,12 @@ const valid = await crypto.subtle.verify(
 `taistampSignedPayload(label, leapSeconds, selector,
 nonce)` reconstructs the exact byte sequence the
 server signed; the verifier supplies only the public
-key and an sf-binary decoder. Comparing the verifier's
+key and an sf-binary decoder. `nonce` must be a
+branded `Nonce` — wrap the recorded client nonce with
+`asNonce(value)`, which returns `undefined` for any
+value that would have been treated as absent on the
+server (missing, empty, malformed sf-binary, or
+outside 14..174 octets). Comparing the verifier's
 recorded nonce against the response's `TAI-Nonce`
 defends against replay.
 

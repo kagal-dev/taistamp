@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  asNonce,
   newEd25519Signer,
   newTaistampHandler,
   TAI64N_CONTENT_LENGTH,
@@ -88,7 +89,7 @@ describe('newTaistampHandler', () => {
       }
     });
 
-    it('returns 400 when TAI-Nonce appears more than once', async () => {
+    it('treats a duplicated TAI-Nonce as absent', async () => {
       const response = await handler(new Request(baseURL, {
         headers: [
           [TAI64N_HEADER_NONCE, ':b3BhcXVlLW5vbmNlLXZhbHVlLXg=:'],
@@ -96,9 +97,38 @@ describe('newTaistampHandler', () => {
         ],
       }));
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(200);
       expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
       expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
+    });
+
+    it('treats an empty TAI-Nonce as absent', async () => {
+      const response = await handler(new Request(baseURL, {
+        headers: { [TAI64N_HEADER_NONCE]: '' },
+      }));
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
+      expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
+    });
+
+    it('treats a malformed sf-binary TAI-Nonce as absent', async () => {
+      for (const malformed of [
+        'not-sf-binary',
+        ':missing-trailing-colon',
+        'missing-leading-colon:',
+        '::',
+        ':bad!chars:',
+        ':AB=:',
+      ]) {
+        const response = await handler(new Request(baseURL, {
+          headers: { [TAI64N_HEADER_NONCE]: malformed },
+        }));
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
+        expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
+      }
     });
   });
 
@@ -131,7 +161,7 @@ describe('newTaistampHandler', () => {
         label,
         leapSeconds,
         selector,
-        nonce,
+        asNonce(nonce)!,
       );
       const valid = await crypto.subtle.verify(
         'Ed25519',
@@ -175,7 +205,7 @@ describe('newTaistampHandler', () => {
       expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBeNull();
     });
 
-    it('does not sign when nonce is shorter than 14 octets', async () => {
+    it('treats a nonce shorter than 14 octets as absent', async () => {
       const { privateKey } = await newKeypair();
       const handler = newTaistampHandler({
         selector,
@@ -187,24 +217,24 @@ describe('newTaistampHandler', () => {
         headers: { [TAI64N_HEADER_NONCE]: shortNonce },
       }));
 
-      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBe(shortNonce);
+      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
       expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
       expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBeNull();
     });
 
-    it('does not sign when nonce exceeds 174 octets', async () => {
+    it('treats a nonce longer than 174 octets as absent', async () => {
       const { privateKey } = await newKeypair();
       const handler = newTaistampHandler({
         selector,
         signer: newEd25519Signer(privateKey),
       });
-      const longNonce = `:${'A'.repeat(175)}:`; // 177 octets
+      const longNonce = `:${'A'.repeat(176)}:`; // 178 octets
 
       const response = await handler(new Request(baseURL, {
         headers: { [TAI64N_HEADER_NONCE]: longNonce },
       }));
 
-      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBe(longNonce);
+      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
       expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
       expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBeNull();
     });
@@ -227,7 +257,7 @@ describe('newTaistampHandler', () => {
         label,
         TAI_OFFSET,
         selector,
-        ':Zm9yZ2VkLW5vbmNlLXh4eA==:',
+        asNonce(':Zm9yZ2VkLW5vbmNlLXh4eA==:')!,
       );
 
       const valid = await crypto.subtle.verify(
@@ -257,7 +287,7 @@ describe('newTaistampHandler', () => {
         label,
         TAI_OFFSET + 1,
         selector,
-        nonce,
+        asNonce(nonce)!,
       );
 
       const valid = await crypto.subtle.verify(
@@ -287,7 +317,7 @@ describe('newTaistampHandler', () => {
         label,
         TAI_OFFSET,
         'rogueKey',
-        nonce,
+        asNonce(nonce)!,
       );
 
       const valid = await crypto.subtle.verify(
@@ -352,7 +382,7 @@ describe('taistampSignedPayload', () => {
   it('frames as DOMAIN_SEPARATOR || label || leapU32BE || selectorLen || selector || nonce', () => {
     const label = '@4000000069f2594108a48640';
     const selector = 'sel2026q2';
-    const nonce = ':YWJj:';
+    const nonce = asNonce(':YWJjZGVmZ2hp:')!;
     const leap = 37;
 
     const view = new Uint8Array(

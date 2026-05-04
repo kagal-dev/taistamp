@@ -10,6 +10,10 @@ export {
   taistampSignedPayload,
 } from './handler';
 export {
+  asNonce,
+  type Nonce,
+} from './nonce';
+export {
   newEd25519Signer,
   type Signer,
 } from './signer';

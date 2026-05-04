@@ -2,6 +2,7 @@ import * as ed from '@noble/ed25519';
 import { describe, expect, it } from 'vitest';
 
 import {
+  asNonce,
   newEd25519Signer,
   newTaistampHandler,
   TAI64N_HEADER_KEY_SELECTOR,
@@ -52,7 +53,7 @@ describe('newTaistampHandler (cross-impl: WebCrypto sign, noble verify)', () => 
     const signature = decodeStructuredBinary(sigHeader!);
 
     const payload = new Uint8Array(
-      taistampSignedPayload(label, leap, selector, nonce),
+      taistampSignedPayload(label, leap, selector, asNonce(nonce)!),
     );
 
     const ok = await ed.verifyAsync(signature, payload, publicKeyBytes);
