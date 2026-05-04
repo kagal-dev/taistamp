@@ -158,6 +158,36 @@ export interface TaistampHandlerConfig {
 }
 
 /**
+ * Validate a {@link TaistampHandlerConfig} and return
+ * it unchanged when every field is well-formed.
+ * Throws `TypeError` otherwise so misconfiguration
+ * surfaces at handler construction rather than on the
+ * first request.
+ *
+ * @throws TypeError if `signer` and `selector` are not
+ *   both set or both unset, or if `selector` does not
+ *   match `[A-Za-z][A-Za-z0-9_-]{0,62}`.
+ */
+const validateHandlerConfig = (
+  config: TaistampHandlerConfig,
+): TaistampHandlerConfig => {
+  const { selector, signer } = config;
+
+  if ((signer === undefined) !== (selector === undefined)) {
+    throw new TypeError(
+      'newTaistampHandler: signer and selector must be set together',
+    );
+  }
+  if (selector !== undefined && !SELECTOR_PATTERN.test(selector)) {
+    throw new TypeError(
+      `newTaistampHandler: selector must match ${SELECTOR_PATTERN.source}`,
+    );
+  }
+
+  return config;
+};
+
+/**
  * Build a handler for `/.well-known/taistamp`.
  *
  * @param config - optional {@link TaistampHandlerConfig}
@@ -208,18 +238,7 @@ export interface TaistampHandlerConfig {
 export const newTaistampHandler = (
   config: TaistampHandlerConfig = {},
 ): ((request: Request) => Promise<Response>) => {
-  const { selector, signer } = config;
-
-  if ((signer === undefined) !== (selector === undefined)) {
-    throw new TypeError(
-      'newTaistampHandler: signer and selector must be set together',
-    );
-  }
-  if (selector !== undefined && !SELECTOR_PATTERN.test(selector)) {
-    throw new TypeError(
-      `newTaistampHandler: selector must match ${SELECTOR_PATTERN.source}`,
-    );
-  }
+  const { selector, signer } = validateHandlerConfig(config);
 
   return async (request) => {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
