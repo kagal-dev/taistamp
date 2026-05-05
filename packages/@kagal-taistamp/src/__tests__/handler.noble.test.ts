@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   asNonce,
+  composeSignaturePayload,
   extractLeapSeconds,
   newEd25519Signer,
   newTaistampHandler,
@@ -10,7 +11,6 @@ import {
   TAI64N_HEADER_NONCE,
   TAI64N_HEADER_SIGNATURE,
   TAI64N_PATH,
-  taistampSignedPayload,
 } from '..';
 
 const baseURL = `https://example.com${TAI64N_PATH}`;
@@ -54,7 +54,7 @@ describe('newTaistampHandler (cross-impl: WebCrypto sign, noble verify)', () => 
     const signature = decodeStructuredBinary(sigHeader!);
 
     const payload = new Uint8Array(
-      taistampSignedPayload(label, leap!, selector, asNonce(nonce)!),
+      composeSignaturePayload(label, leap!, selector, asNonce(nonce)!),
     );
 
     const ok = await ed.verifyAsync(signature, payload, publicKeyBytes);

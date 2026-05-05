@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   asLeapSeconds,
   asNonce,
+  composeSignaturePayload,
   extractLeapSeconds,
   newEd25519Signer,
   newTaistampHandler,
@@ -14,7 +15,6 @@ import {
   TAI64N_HEADER_SIGNATURE,
   TAI64N_PATH,
   TAI_LEAP_SECONDS,
-  taistampSignedPayload,
 } from '..';
 
 const baseURL = `https://example.com${TAI64N_PATH}`;
@@ -158,7 +158,7 @@ describe('newTaistampHandler', () => {
 
       const leapSeconds = extractLeapSeconds(response.headers);
       expect(leapSeconds).toBeDefined();
-      const message = taistampSignedPayload(
+      const payload = composeSignaturePayload(
         label,
         leapSeconds!,
         selector,
@@ -168,7 +168,7 @@ describe('newTaistampHandler', () => {
         'Ed25519',
         publicKey,
         decodeStructuredBinary(signature!),
-        message,
+        payload,
       );
       expect(valid).toBe(true);
     });
@@ -254,7 +254,7 @@ describe('newTaistampHandler', () => {
 
       const label = await response.text();
       const signature = response.headers.get(TAI64N_HEADER_SIGNATURE)!;
-      const tampered = taistampSignedPayload(
+      const tampered = composeSignaturePayload(
         label,
         TAI_LEAP_SECONDS,
         selector,
@@ -284,7 +284,7 @@ describe('newTaistampHandler', () => {
 
       const label = await response.text();
       const signature = response.headers.get(TAI64N_HEADER_SIGNATURE)!;
-      const tampered = taistampSignedPayload(
+      const tampered = composeSignaturePayload(
         label,
         asLeapSeconds(TAI_LEAP_SECONDS + 1)!,
         selector,
@@ -314,7 +314,7 @@ describe('newTaistampHandler', () => {
 
       const label = await response.text();
       const signature = response.headers.get(TAI64N_HEADER_SIGNATURE)!;
-      const tampered = taistampSignedPayload(
+      const tampered = composeSignaturePayload(
         label,
         TAI_LEAP_SECONDS,
         'rogueKey',
@@ -379,7 +379,7 @@ describe('newTaistampHandler', () => {
   });
 });
 
-describe('taistampSignedPayload', () => {
+describe('composeSignaturePayload', () => {
   it('frames as DOMAIN_SEPARATOR || label || leapU32BE || selectorLen || selector || nonce', () => {
     const label = '@4000000069f2594108a48640';
     const selector = 'sel2026q2';
@@ -387,7 +387,7 @@ describe('taistampSignedPayload', () => {
     const leap = asLeapSeconds(37)!;
 
     const view = new Uint8Array(
-      taistampSignedPayload(label, leap, selector, nonce),
+      composeSignaturePayload(label, leap, selector, nonce),
     );
 
     const separator = new TextEncoder().encode('taistamp-v1\0');

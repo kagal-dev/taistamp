@@ -5,9 +5,9 @@ export const VERSION: string = pkg.version;
 
 export * from './const';
 export {
+  composeSignaturePayload,
   newTaistampHandler,
   type TaistampHandlerConfig,
-  taistampSignedPayload,
 } from './handler';
 export {
   asLeapSeconds,

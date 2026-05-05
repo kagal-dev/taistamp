@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   asNonce,
+  composeSignaturePayload,
   extractLeapSeconds,
   newEd25519Signer,
   newTaistampHandler,
@@ -10,7 +11,6 @@ import {
   TAI64N_HEADER_NONCE,
   TAI64N_HEADER_SIGNATURE,
   TAI64N_PATH,
-  taistampSignedPayload,
 } from '..';
 
 const baseURL = `https://example.com${TAI64N_PATH}`;
@@ -52,7 +52,7 @@ describe('newTaistampHandler (workerd pool)', () => {
     expect(sigHeader).not.toBeNull();
     const signature = decodeStructuredBinary(sigHeader!);
 
-    const payload = taistampSignedPayload(label, leap!, selector, asNonce(nonce)!);
+    const payload = composeSignaturePayload(label, leap!, selector, asNonce(nonce)!);
     const ok = await crypto.subtle.verify(
       'Ed25519',
       keypair.publicKey,

@@ -86,7 +86,7 @@ const encodeStructuredBinary = (source: BufferSource): string => {
  * a single byte (selectors are ≤ 63 chars per
  * {@link newTaistampHandler}'s validation).
  */
-export const taistampSignedPayload = (
+export const composeSignaturePayload = (
   label: string,
   leapSeconds: LeapSeconds,
   selector: string,
@@ -150,7 +150,7 @@ export interface TaistampHandlerConfig {
 
   /**
    * {@link Signer} that produces `TAI-Signature` over
-   * the framed payload from {@link taistampSignedPayload}.
+   * the framed payload from {@link composeSignaturePayload}.
    * Without a signer the nonce is still echoed but the
    * response is unsigned.
    */
@@ -219,7 +219,7 @@ const validateHandlerConfig = (
  *   the request method is `GET` — adds
  *   `TAI-Key-Selector` and `TAI-Signature` (sf-binary)
  *   over the bytes produced by
- *   {@link taistampSignedPayload}. The
+ *   {@link composeSignaturePayload}. The
  *   domain-separation tag means the same key cannot
  *   be tricked into producing valid signatures for
  *   other protocols. `HEAD` and `405` responses are
@@ -266,13 +266,13 @@ export const newTaistampHandler = (
         signer !== undefined &&
         selector !== undefined
       ) {
-        const message = taistampSignedPayload(
+        const payload = composeSignaturePayload(
           label,
           TAI_LEAP_SECONDS,
           selector,
           nonce,
         );
-        const signature = await signer.sign(message);
+        const signature = await signer.sign(payload);
         headers.set(TAI64N_HEADER_KEY_SELECTOR, selector);
         headers.set(
           TAI64N_HEADER_SIGNATURE,

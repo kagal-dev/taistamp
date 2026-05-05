@@ -158,7 +158,7 @@ signatures stay verifiable until their TXT is removed.
 import {
   asNonce,
   extractLeapSeconds,
-  taistampSignedPayload,
+  composeSignaturePayload,
 } from '@kagal/taistamp';
 
 const response = await fetch(taistampURL, {
@@ -173,7 +173,7 @@ const sigSf = response.headers.get('TAI-Signature')!;
 // `extractLeapSeconds` returns `undefined` whenever
 // the field is missing, empty, non-numeric, non-integer,
 // negative, or out-of-range; the branded `LeapSeconds`
-// it yields is the only type `taistampSignedPayload`
+// it yields is the only type `composeSignaturePayload`
 // accepts.
 const leap = extractLeapSeconds(response.headers);
 if (leap === undefined) {
@@ -195,7 +195,7 @@ if (nonce === undefined) {
 // `p=` tag from the TXT record.
 const publicKey = await loadPublicKey(host, selector);
 
-const payload = taistampSignedPayload(
+const payload = composeSignaturePayload(
   label,
   leap,
   selector,
@@ -209,7 +209,7 @@ const valid = await crypto.subtle.verify(
 );
 ```
 
-`taistampSignedPayload(label, leapSeconds, selector,
+`composeSignaturePayload(label, leapSeconds, selector,
 nonce)` reconstructs the exact byte sequence the
 server signed; the verifier supplies only the public
 key and an sf-binary decoder. `leapSeconds` must be a

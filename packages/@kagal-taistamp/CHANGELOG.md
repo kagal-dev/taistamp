@@ -13,7 +13,7 @@ documented in this file.
   returns `undefined` for every spec §5.2 "treat as
   absent" case. Verifiers wrap their recorded client
   nonce with `asNonce` before passing it to
-  `taistampSignedPayload`.
+  `composeSignaturePayload`.
 - `TAI_LEAP_SECONDS_MAX` constant (= `0xFFFFFFFF`) —
   the upper bound for `leapSeconds` in the signed
   payload (u32be encoding).
@@ -27,7 +27,7 @@ documented in this file.
   collapsed into one verdict. Mirrors the shape of
   `asNonce` / `Nonce`; the brand prevents arbitrary
   numbers from reaching the signing path.
-- `taistampSignedPayload` now requires branded values
+- `composeSignaturePayload` now requires branded values
   for both its `leapSeconds` (`LeapSeconds`) and
   `nonce` (`Nonce`) arguments, so the framing helper
   cannot be called with unvalidated input.
@@ -46,9 +46,17 @@ documented in this file.
   count, not a generic offset), and pairs with the new
   `TAI_LEAP_SECONDS_MAX`. Now exported as
   `LeapSeconds` rather than `number` so it can be
-  passed to `taistampSignedPayload` without coercion.
+  passed to `composeSignaturePayload` without coercion.
   Breaking for any caller that imported the old name;
   expected to be rare at 0.0.x.
+- `taistampSignedPayload` renamed to
+  `composeSignaturePayload` — "compose" matches the
+  helper's existing JSDoc verb, "Signature" (modifier)
+  is more accurate than "Signed" (past participle) for
+  bytes that *will be* signed, and dropping the
+  `taistamp` prefix avoids redundancy with the package
+  namespace. Breaking for any caller that imported the
+  old name; expected to be rare at 0.0.x.
 - `sf-binary` citation refreshed RFC 8941 → RFC 9651.
 
 ## [0.0.1] - 2026-05-03
