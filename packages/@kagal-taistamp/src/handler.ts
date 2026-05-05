@@ -6,8 +6,8 @@ import {
   TAI64N_HEADER_LEAP_SECONDS,
   TAI64N_HEADER_NONCE,
   TAI64N_HEADER_SIGNATURE,
-  TAI_OFFSET,
 } from './const';
+import { type LeapSeconds, TAI_LEAP_SECONDS } from './leap-seconds';
 import { extractNonce, type Nonce } from './nonce';
 import { tai64nLabel } from './utils';
 
@@ -88,7 +88,7 @@ const encodeStructuredBinary = (source: BufferSource): string => {
  */
 export const taistampSignedPayload = (
   label: string,
-  leapSeconds: number,
+  leapSeconds: LeapSeconds,
   selector: string,
   nonce: Nonce,
 ): ArrayBuffer => {
@@ -255,7 +255,7 @@ export const newTaistampHandler = (
       'cache-control': 'no-store',
       'content-length': String(TAI64N_CONTENT_LENGTH),
       'content-type': TAI64N_CONTENT_TYPE,
-      [TAI64N_HEADER_LEAP_SECONDS]: String(TAI_OFFSET),
+      [TAI64N_HEADER_LEAP_SECONDS]: String(TAI_LEAP_SECONDS),
     });
 
     if (nonce) {
@@ -268,7 +268,7 @@ export const newTaistampHandler = (
       ) {
         const message = taistampSignedPayload(
           label,
-          TAI_OFFSET,
+          TAI_LEAP_SECONDS,
           selector,
           nonce,
         );

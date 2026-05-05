@@ -1,5 +1,3 @@
-export const TAI_OFFSET: number = 37;
-
 export const TAI64N_PATH = '/.well-known/taistamp';
 
 export const TAI64N_CONTENT_TYPE = 'application/tai64n';

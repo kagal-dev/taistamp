@@ -14,9 +14,23 @@ documented in this file.
   absent" case. Verifiers wrap their recorded client
   nonce with `asNonce` before passing it to
   `taistampSignedPayload`.
-- `taistampSignedPayload` now requires a `Nonce` for
-  its `nonce` argument, so the framing helper cannot
-  be called with an unvalidated string.
+- `TAI_LEAP_SECONDS_MAX` constant (= `0xFFFFFFFF`) —
+  the upper bound for `leapSeconds` in the signed
+  payload (u32be encoding).
+- `LeapSeconds` branded type, plus
+  `extractLeapSeconds(headers)` (reads `TAI-Leap-Seconds`
+  from response headers) and `asLeapSeconds(number)`
+  (coerces a raw number). Both return the value branded
+  when in range, or `undefined` for missing / empty /
+  non-numeric / non-integer / negative / out-of-range
+  input — every spec §5.1 "treat as unsigned" case
+  collapsed into one verdict. Mirrors the shape of
+  `asNonce` / `Nonce`; the brand prevents arbitrary
+  numbers from reaching the signing path.
+- `taistampSignedPayload` now requires branded values
+  for both its `leapSeconds` (`LeapSeconds`) and
+  `nonce` (`Nonce`) arguments, so the framing helper
+  cannot be called with unvalidated input.
 
 ### Changed
 
@@ -27,6 +41,14 @@ documented in this file.
   14..174 octet range is dropped — no echo, no
   signature. The previous 400-on-duplicate branch is
   gone; out-of-range nonces are no longer echoed.
+- `TAI_OFFSET` renamed to `TAI_LEAP_SECONDS` — same
+  value (37), more accurate name (it's the leap-second
+  count, not a generic offset), and pairs with the new
+  `TAI_LEAP_SECONDS_MAX`. Now exported as
+  `LeapSeconds` rather than `number` so it can be
+  passed to `taistampSignedPayload` without coercion.
+  Breaking for any caller that imported the old name;
+  expected to be rare at 0.0.x.
 - `sf-binary` citation refreshed RFC 8941 → RFC 9651.
 
 ## [0.0.1] - 2026-05-03

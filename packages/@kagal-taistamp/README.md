@@ -155,15 +155,30 @@ signatures stay verifiable until their TXT is removed.
 ## Verifying
 
 ```typescript
-import { asNonce, taistampSignedPayload } from '@kagal/taistamp';
+import {
+  asNonce,
+  extractLeapSeconds,
+  taistampSignedPayload,
+} from '@kagal/taistamp';
 
 const response = await fetch(taistampURL, {
   headers: { 'TAI-Nonce': clientNonce },
 });
 const label = await response.text();
-const leap = Number(response.headers.get('TAI-Leap-Seconds'));
 const selector = response.headers.get('TAI-Key-Selector')!;
 const sigSf = response.headers.get('TAI-Signature')!;
+
+// Spec §5.1: a `TAI-Leap-Seconds` value outside the
+// signed-payload u32 range MUST be treated as unsigned.
+// `extractLeapSeconds` returns `undefined` whenever
+// the field is missing, empty, non-numeric, non-integer,
+// negative, or out-of-range; the branded `LeapSeconds`
+// it yields is the only type `taistampSignedPayload`
+// accepts.
+const leap = extractLeapSeconds(response.headers);
+if (leap === undefined) {
+  throw new Error('TAI-Leap-Seconds out of range; treat as unsigned');
+}
 
 // Brand the recorded nonce so it can flow into the
 // signing path. `asNonce` returns `undefined` for any
@@ -197,8 +212,14 @@ const valid = await crypto.subtle.verify(
 `taistampSignedPayload(label, leapSeconds, selector,
 nonce)` reconstructs the exact byte sequence the
 server signed; the verifier supplies only the public
-key and an sf-binary decoder. `nonce` must be a
-branded `Nonce` — wrap the recorded client nonce with
+key and an sf-binary decoder. `leapSeconds` must be a
+branded `LeapSeconds` — obtain one from
+`extractLeapSeconds(headers)` (the verifier path) or
+`asLeapSeconds(number)` (when you already have the
+value). Both return `undefined` for out-of-range
+input, collapsing every "treat as unsigned" case in
+spec §5.1 into one verdict. `nonce` must be a branded
+`Nonce` — wrap the recorded client nonce with
 `asNonce(value)`, which returns `undefined` for any
 value that would have been treated as absent on the
 server (missing, empty, malformed sf-binary, or
@@ -219,10 +240,11 @@ construction:
 | `tai64nLabel(t?)` | 25-byte label string for a timestamp (or `now()`) |
 | `tai64nLabelFromUTC(utc)` | Shortcut for `tai64nLabel(fromUTC(utc))` |
 
-`fromUTC` applies the constant `TAI_OFFSET` (currently
-37 seconds). Historic UTC timestamps spanning a
-leap-second boundary need caller-side adjustment —
-the constant tracks the present, not history.
+`fromUTC` applies the constant `TAI_LEAP_SECONDS`
+(currently 37 seconds). Historic UTC timestamps
+spanning a leap-second boundary need caller-side
+adjustment — the constant tracks the present, not
+history.
 
 ## Constants
 
@@ -235,7 +257,8 @@ the constant tracks the present, not history.
 | `TAI64N_HEADER_LEAP_SECONDS` | `TAI-Leap-Seconds` |
 | `TAI64N_HEADER_NONCE` | `TAI-Nonce` |
 | `TAI64N_HEADER_SIGNATURE` | `TAI-Signature` |
-| `TAI_OFFSET` | `37` |
+| `TAI_LEAP_SECONDS` | `37` (current TAI − UTC offset) |
+| `TAI_LEAP_SECONDS_MAX` | `0xFFFFFFFF` (signed-payload u32 cap) |
 | `TAI64_EPOCH_HI` | `0x40000000` |
 
 ## Licence

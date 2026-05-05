@@ -1,4 +1,5 @@
-import { TAI64_EPOCH_HI, TAI_OFFSET } from './const';
+import { TAI64_EPOCH_HI } from './const';
+import { TAI_LEAP_SECONDS } from './leap-seconds';
 
 type timestamp = {
   nano: number
@@ -9,9 +10,9 @@ type timestamp = {
 
 export const fromUTC = (utc: number): timestamp => {
   // TODO: leap seconds table
-  const sec = Math.floor(utc / 1000) + TAI_OFFSET;
+  const sec = Math.floor(utc / 1000) + TAI_LEAP_SECONDS;
   const nano = (utc % 1000) * 1e6;
-  return { sec, nano, offset: TAI_OFFSET };
+  return { sec, nano, offset: TAI_LEAP_SECONDS };
 };
 
 export const now = (): timestamp => {

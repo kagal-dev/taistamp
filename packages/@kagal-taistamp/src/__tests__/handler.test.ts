@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  asLeapSeconds,
   asNonce,
+  extractLeapSeconds,
   newEd25519Signer,
   newTaistampHandler,
   TAI64N_CONTENT_LENGTH,
@@ -11,7 +13,7 @@ import {
   TAI64N_HEADER_NONCE,
   TAI64N_HEADER_SIGNATURE,
   TAI64N_PATH,
-  TAI_OFFSET,
+  TAI_LEAP_SECONDS,
   taistampSignedPayload,
 } from '..';
 
@@ -45,7 +47,7 @@ describe('newTaistampHandler', () => {
         .toBe(String(TAI64N_CONTENT_LENGTH));
       expect(response.headers.get('cache-control')).toBe('no-store');
       expect(response.headers.get(TAI64N_HEADER_LEAP_SECONDS))
-        .toBe(String(TAI_OFFSET));
+        .toBe(String(TAI_LEAP_SECONDS));
 
       const body = await response.text();
       expect(body).toMatch(/^@[0-9a-f]{24}$/);
@@ -154,12 +156,11 @@ describe('newTaistampHandler', () => {
       expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBe(selector);
       expect(response.headers.get(TAI64N_HEADER_NONCE)).toBe(nonce);
 
-      const leapSeconds = Number(
-        response.headers.get(TAI64N_HEADER_LEAP_SECONDS),
-      );
+      const leapSeconds = extractLeapSeconds(response.headers);
+      expect(leapSeconds).toBeDefined();
       const message = taistampSignedPayload(
         label,
-        leapSeconds,
+        leapSeconds!,
         selector,
         asNonce(nonce)!,
       );
@@ -255,7 +256,7 @@ describe('newTaistampHandler', () => {
       const signature = response.headers.get(TAI64N_HEADER_SIGNATURE)!;
       const tampered = taistampSignedPayload(
         label,
-        TAI_OFFSET,
+        TAI_LEAP_SECONDS,
         selector,
         asNonce(':Zm9yZ2VkLW5vbmNlLXh4eA==:')!,
       );
@@ -285,7 +286,7 @@ describe('newTaistampHandler', () => {
       const signature = response.headers.get(TAI64N_HEADER_SIGNATURE)!;
       const tampered = taistampSignedPayload(
         label,
-        TAI_OFFSET + 1,
+        asLeapSeconds(TAI_LEAP_SECONDS + 1)!,
         selector,
         asNonce(nonce)!,
       );
@@ -315,7 +316,7 @@ describe('newTaistampHandler', () => {
       const signature = response.headers.get(TAI64N_HEADER_SIGNATURE)!;
       const tampered = taistampSignedPayload(
         label,
-        TAI_OFFSET,
+        TAI_LEAP_SECONDS,
         'rogueKey',
         asNonce(nonce)!,
       );
@@ -383,7 +384,7 @@ describe('taistampSignedPayload', () => {
     const label = '@4000000069f2594108a48640';
     const selector = 'sel2026q2';
     const nonce = asNonce(':YWJjZGVmZ2hp:')!;
-    const leap = 37;
+    const leap = asLeapSeconds(37)!;
 
     const view = new Uint8Array(
       taistampSignedPayload(label, leap, selector, nonce),
@@ -414,5 +415,87 @@ describe('taistampSignedPayload', () => {
     const nonceBytes = new TextEncoder().encode(nonce);
     expect(view.slice(selectorStart + selectorBytes.length))
       .toEqual(nonceBytes);
+  });
+});
+
+describe('asLeapSeconds', () => {
+  it('returns 0 branded for the minimum', () => {
+    expect(asLeapSeconds(0)).toBe(0);
+  });
+
+  it('returns 2^32 - 1 branded for the maximum', () => {
+    expect(asLeapSeconds(0xFF_FF_FF_FF)).toBe(0xFF_FF_FF_FF);
+  });
+
+  it('returns undefined for negative', () => {
+    expect(asLeapSeconds(-1)).toBeUndefined();
+  });
+
+  it('returns undefined when value equals 2^32', () => {
+    expect(asLeapSeconds(0x1_00_00_00_00)).toBeUndefined();
+  });
+
+  it('returns undefined for a non-integer', () => {
+    expect(asLeapSeconds(37.5)).toBeUndefined();
+  });
+
+  it('returns undefined for NaN', () => {
+    expect(asLeapSeconds(Number.NaN)).toBeUndefined();
+  });
+});
+
+const leapSecondsHeaders = (value: string): Headers =>
+  new Headers({ [TAI64N_HEADER_LEAP_SECONDS]: value });
+
+describe('extractLeapSeconds', () => {
+  it('returns 0 branded for the minimum', () => {
+    expect(extractLeapSeconds(leapSecondsHeaders('0'))).toBe(0);
+  });
+
+  it('returns 2^32 - 1 branded for the maximum', () => {
+    expect(extractLeapSeconds(leapSecondsHeaders(String(0xFF_FF_FF_FF))))
+      .toBe(0xFF_FF_FF_FF);
+  });
+
+  it('returns the current TAI_LEAP_SECONDS value', () => {
+    expect(extractLeapSeconds(leapSecondsHeaders(String(TAI_LEAP_SECONDS))))
+      .toBe(TAI_LEAP_SECONDS);
+  });
+
+  it('returns undefined when the header is missing', () => {
+    expect(extractLeapSeconds(new Headers())).toBeUndefined();
+  });
+
+  it('returns undefined for an empty header', () => {
+    expect(extractLeapSeconds(leapSecondsHeaders(''))).toBeUndefined();
+  });
+
+  it('returns undefined for negative', () => {
+    expect(extractLeapSeconds(leapSecondsHeaders('-1'))).toBeUndefined();
+  });
+
+  it('returns undefined when value equals 2^32', () => {
+    expect(extractLeapSeconds(leapSecondsHeaders(String(0x1_00_00_00_00))))
+      .toBeUndefined();
+  });
+
+  it('returns undefined for a non-integer', () => {
+    expect(extractLeapSeconds(leapSecondsHeaders('37.5'))).toBeUndefined();
+  });
+
+  it('returns undefined for non-numeric input', () => {
+    expect(extractLeapSeconds(leapSecondsHeaders('abc'))).toBeUndefined();
+  });
+
+  it('returns undefined for hex notation', () => {
+    expect(extractLeapSeconds(leapSecondsHeaders('0x25'))).toBeUndefined();
+  });
+
+  it('returns undefined for decimal with fractional part', () => {
+    expect(extractLeapSeconds(leapSecondsHeaders('37.0'))).toBeUndefined();
+  });
+
+  it('returns undefined for whitespace-only input', () => {
+    expect(extractLeapSeconds(leapSecondsHeaders('   '))).toBeUndefined();
   });
 });

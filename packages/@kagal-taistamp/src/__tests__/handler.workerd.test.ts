@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 
 import {
   asNonce,
+  extractLeapSeconds,
   newEd25519Signer,
   newTaistampHandler,
   TAI64N_HEADER_KEY_SELECTOR,
-  TAI64N_HEADER_LEAP_SECONDS,
   TAI64N_HEADER_NONCE,
   TAI64N_HEADER_SIGNATURE,
   TAI64N_PATH,
@@ -44,14 +44,15 @@ describe('newTaistampHandler (workerd pool)', () => {
 
     expect(response.status).toBe(200);
     const label = await response.text();
-    const leap = Number(response.headers.get(TAI64N_HEADER_LEAP_SECONDS));
+    const leap = extractLeapSeconds(response.headers);
+    expect(leap).toBeDefined();
     expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBe(selector);
 
     const sigHeader = response.headers.get(TAI64N_HEADER_SIGNATURE);
     expect(sigHeader).not.toBeNull();
     const signature = decodeStructuredBinary(sigHeader!);
 
-    const payload = taistampSignedPayload(label, leap, selector, asNonce(nonce)!);
+    const payload = taistampSignedPayload(label, leap!, selector, asNonce(nonce)!);
     const ok = await crypto.subtle.verify(
       'Ed25519',
       keypair.publicKey,

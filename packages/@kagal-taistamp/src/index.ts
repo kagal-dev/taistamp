@@ -10,6 +10,13 @@ export {
   taistampSignedPayload,
 } from './handler';
 export {
+  asLeapSeconds,
+  extractLeapSeconds,
+  type LeapSeconds,
+  TAI_LEAP_SECONDS,
+  TAI_LEAP_SECONDS_MAX,
+} from './leap-seconds';
+export {
   asNonce,
   type Nonce,
 } from './nonce';
