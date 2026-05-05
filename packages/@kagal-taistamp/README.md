@@ -59,6 +59,44 @@ the corresponding `GET` but never include
 payload covers the response body, so a `HEAD` cannot
 be verified.
 
+## CORS
+
+The handler is cross-origin permissive by default.
+Pass a specific origin to scope the policy, or
+`false` to disable the CORS-specific headers
+entirely.
+
+```typescript
+newTaistampHandler();                                // cors: '*' (default)
+newTaistampHandler({ cors: 'https://example.com' }); // scoped origin
+newTaistampHandler({ cors: false });                 // CORS-specific headers off
+```
+
+When CORS is enabled, responses carry:
+
+| Response | CORS headers added | `Vary: Origin` (scoped origin only) |
+|----------|--------------------|------|
+| `OPTIONS` 200 | `Access-Control-Allow-Origin`, `Access-Control-Allow-Methods: GET, HEAD`, `Access-Control-Allow-Headers: TAI-Nonce`, `Access-Control-Expose-Headers: TAI-Leap-Seconds, TAI-Nonce, TAI-Key-Selector, TAI-Signature` | yes |
+| `GET` / `HEAD` 200 | `Access-Control-Allow-Origin`, `Access-Control-Expose-Headers` (so browser JS can read the `TAI-*` headers) | yes |
+| `405` | `Access-Control-Allow-Origin` | yes |
+
+`Vary: Origin` lands on every response when the
+configured origin is anything other than `'*'`, so
+caches can keep per-origin variants distinct. The
+`Allow: GET, HEAD, OPTIONS` and `Access-Control-Allow-Methods:
+GET, HEAD` lists are intentionally different — the
+former is RFC 9110 §9.3.7 method discovery (includes
+`OPTIONS` itself), the latter is the Fetch CORS list
+of methods JS would ever preflight (so `OPTIONS` is
+omitted).
+
+With `cors: false` none of the `Access-Control-*` or
+`Vary` headers are emitted, but `OPTIONS` is still
+answered with `200` and
+`Allow: GET, HEAD, OPTIONS` — method discovery
+(RFC 9110 §9.3.7) is independent of cross-origin
+policy.
+
 ## Signing
 
 ```typescript

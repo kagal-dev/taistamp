@@ -7,6 +7,7 @@ import {
   TAI64N_HEADER_NONCE,
   TAI64N_HEADER_SIGNATURE,
 } from './const';
+import { buildCORSHeaders } from './cors';
 import { type LeapSeconds, TAI_LEAP_SECONDS } from './leap-seconds';
 import { extractNonce, type Nonce } from './nonce';
 import { tai64nLabel } from './utils';
@@ -157,6 +158,26 @@ export interface TaistampHandlerConfig {
    * response is unsigned.
    */
   signer?: Signer
+
+  /**
+   * CORS origin policy. Defaults to `'*'`; pass `false`
+   * to disable CORS entirely, or a specific origin
+   * (e.g. `'https://example.com'`) to scope the policy.
+   *
+   * Every response (`GET` / `HEAD` / `OPTIONS` / `405`)
+   * gains `Access-Control-Allow-Origin`; pre-flight
+   * `OPTIONS` also carries `-Allow-Methods`,
+   * `-Allow-Headers`, and `-Expose-Headers`; success
+   * `GET` / `HEAD` carry `-Expose-Headers` so browser
+   * JS can read the `TAI-*` response headers. A
+   * non-`'*'` value adds `Vary: Origin` so caches can
+   * keep per-origin variants distinct.
+   *
+   * Disabling CORS does not affect method discovery:
+   * `OPTIONS` is still answered with `200` and
+   * `Allow: GET, HEAD, OPTIONS` per RFC 9110 §9.3.7.
+   */
+  cors?: false | string
 }
 
 /**
@@ -173,11 +194,16 @@ export interface TaistampHandlerConfig {
 const validateHandlerConfig = (
   config: TaistampHandlerConfig,
 ): TaistampHandlerConfig => {
-  const { selector, signer } = config;
+  const { cors, selector, signer } = config;
 
   if ((signer === undefined) !== (selector === undefined)) {
     throw new TypeError(
       'newTaistampHandler: signer and selector must be set together',
+    );
+  }
+  if (cors !== undefined && cors !== false && typeof cors !== 'string') {
+    throw new TypeError(
+      'newTaistampHandler: cors must be false or a string origin',
     );
   }
   if (selector !== undefined && !SELECTOR_PATTERN.test(selector)) {
@@ -192,8 +218,9 @@ const validateHandlerConfig = (
 /**
  * Validate a {@link TaistampHandlerConfig} and derive
  * the construction-time state the handler closure
- * captures: an `addSignature` helper that mutates a
- * response `Headers` to carry `TAI-Key-Selector` and
+ * captures: the pre-baked CORS header maps and an
+ * `addSignature` helper that mutates a response
+ * `Headers` to carry `TAI-Key-Selector` and
  * `TAI-Signature` over the framed payload, present
  * only when both `signer` and `selector` are
  * configured. Validation is delegated to
@@ -202,7 +229,9 @@ const validateHandlerConfig = (
  * @throws TypeError per {@link validateHandlerConfig}.
  */
 const fromHandlerConfig = (config: TaistampHandlerConfig) => {
-  const { selector, signer } = validateHandlerConfig(config);
+  const { cors, selector, signer } = validateHandlerConfig(config);
+
+  const corsHeaders = buildCORSHeaders(cors);
 
   const addSignature = selector !== undefined && signer !== undefined ?
     async (
@@ -222,7 +251,7 @@ const fromHandlerConfig = (config: TaistampHandlerConfig) => {
     } :
     undefined;
 
-  return { addSignature };
+  return { addSignature, corsHeaders };
 };
 
 /**
@@ -245,8 +274,12 @@ const fromHandlerConfig = (config: TaistampHandlerConfig) => {
  *   Content-Type `application/tai64n`, Content-Length
  *   `25`, Cache-Control `no-store`, plus
  *   `TAI-Leap-Seconds` carrying the current count.
- * - `OPTIONS` — `200` with
- *   `Allow: GET, HEAD, OPTIONS`. Never signed.
+ * - `OPTIONS` — `200` with `Allow: GET, HEAD, OPTIONS`.
+ *   When CORS is enabled (the default) the response
+ *   also carries `Access-Control-Allow-*` and
+ *   `-Expose-Headers` per
+ *   {@link TaistampHandlerConfig.cors}. `OPTIONS` is
+ *   never signed.
  * - Any other method — `405 Method Not Allowed` with
  *   `Allow: GET, HEAD, OPTIONS`.
  * - Request `TAI-Nonce` — the value is echoed verbatim
@@ -262,8 +295,8 @@ const fromHandlerConfig = (config: TaistampHandlerConfig) => {
  *   {@link composeSignaturePayload}. The
  *   domain-separation tag means the same key cannot
  *   be tricked into producing valid signatures for
- *   other protocols. `HEAD` and `405` responses are
- *   never signed.
+ *   other protocols. `HEAD`, `OPTIONS`, and `405`
+ *   responses are never signed.
  *
  * The corresponding public key is expected to be
  * published out-of-band as a DNS TXT record at
@@ -278,20 +311,20 @@ const fromHandlerConfig = (config: TaistampHandlerConfig) => {
 export const newTaistampHandler = (
   config: TaistampHandlerConfig = {},
 ): ((request: Request) => Promise<Response>) => {
-  const { addSignature } = fromHandlerConfig(config);
+  const { addSignature, corsHeaders } = fromHandlerConfig(config);
 
   return async (request) => {
     if (request.method === 'OPTIONS') {
       return new Response(undefined, {
         status: 200,
-        headers: { allow: ALLOW_HEADER },
+        headers: { allow: ALLOW_HEADER, ...corsHeaders.preflight },
       });
     }
 
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response(undefined, {
         status: 405,
-        headers: { allow: ALLOW_HEADER },
+        headers: { allow: ALLOW_HEADER, ...corsHeaders.error },
       });
     }
 
@@ -303,6 +336,7 @@ export const newTaistampHandler = (
       'content-length': String(TAI64N_CONTENT_LENGTH),
       'content-type': TAI64N_CONTENT_TYPE,
       [TAI64N_HEADER_LEAP_SECONDS]: String(TAI_LEAP_SECONDS),
+      ...corsHeaders.response,
     });
 
     if (nonce) {

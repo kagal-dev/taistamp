@@ -217,6 +217,23 @@ describe('newTaistampHandler', () => {
       expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBeNull();
     });
 
+    it('does not sign OPTIONS responses even with a nonce', async () => {
+      const { privateKey } = await newKeypair();
+      const handler = newTaistampHandler({
+        selector,
+        signer: newEd25519Signer(privateKey),
+      });
+      const nonce = ':b3B0aW9ucy1ub25jZS12YWw=:';
+
+      const response = await handler(new Request(baseURL, {
+        method: 'OPTIONS',
+        headers: { [TAI64N_HEADER_NONCE]: nonce },
+      }));
+
+      expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBeNull();
+      expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
+    });
+
     it('treats a nonce shorter than 14 octets as absent', async () => {
       const { privateKey } = await newKeypair();
       const handler = newTaistampHandler({
@@ -386,6 +403,18 @@ describe('newTaistampHandler', () => {
         selector: `a${'b'.repeat(63)}`,
         signer: newEd25519Signer(privateKey),
       })).toThrow(/selector must match/);
+    });
+
+    it('throws on a non-string truthy cors value', () => {
+      expect(() => newTaistampHandler({
+        cors: {} as unknown as string,
+      })).toThrow(/cors must be false or a string origin/);
+    });
+
+    it('throws on a numeric cors value', () => {
+      expect(() => newTaistampHandler({
+        cors: 1 as unknown as string,
+      })).toThrow(/cors must be false or a string origin/);
     });
   });
 });

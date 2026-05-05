@@ -35,6 +35,16 @@ documented in this file.
   and `Allow: GET, HEAD, OPTIONS`, advertising the
   supported method set per RFC 9110 §9.3.7. `OPTIONS`
   responses are never signed.
+- `cors` config field on `newTaistampHandler()` —
+  defaults to `'*'`; pass a specific origin to scope,
+  or `false` to disable. When enabled: pre-flight
+  `OPTIONS` carries `Access-Control-Allow-Origin`,
+  `-Allow-Methods`, `-Allow-Headers`, and
+  `-Expose-Headers`; `GET` / `HEAD` carry
+  `Access-Control-Allow-Origin` and
+  `-Expose-Headers`; `405` carries
+  `Access-Control-Allow-Origin`; a non-`'*'` value
+  adds `Vary: Origin` to every response.
 
 ### Changed
 
