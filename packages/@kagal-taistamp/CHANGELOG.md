@@ -31,6 +31,10 @@ documented in this file.
   for both its `leapSeconds` (`LeapSeconds`) and
   `nonce` (`Nonce`) arguments, so the framing helper
   cannot be called with unvalidated input.
+- `OPTIONS` requests are now answered with `200 OK`
+  and `Allow: GET, HEAD, OPTIONS`, advertising the
+  supported method set per RFC 9110 §9.3.7. `OPTIONS`
+  responses are never signed.
 
 ### Changed
 
@@ -57,6 +61,8 @@ documented in this file.
   `taistamp` prefix avoids redundancy with the package
   namespace. Breaking for any caller that imported the
   old name; expected to be rare at 0.0.x.
+- `Allow` header on `405` responses is now
+  `GET, HEAD, OPTIONS` (was `GET, HEAD`).
 - `sf-binary` citation refreshed RFC 8941 → RFC 9651.
 
 ## [0.0.1] - 2026-05-03

@@ -36,11 +36,12 @@ app.get(TAI64N_PATH, (c) => taistamp(c.req.raw));
 `newTaistampHandler()` returns an
 `async (request) => Response`. `GET` and `HEAD` succeed
 with a fresh 25-byte TAI64N label
-(`@<sec-hi><sec-lo><nano>`); other methods return `405`
-with `Allow: GET, HEAD`. A `TAI-Nonce` that is missing,
-empty, duplicated, not a valid sf-binary value, or
-outside the 14–174 octet range is treated as absent
-(no echo, no signature) per spec §5.2.
+(`@<sec-hi><sec-lo><nano>`); `OPTIONS` returns `200`
+with `Allow: GET, HEAD, OPTIONS`; other methods return
+`405` with the same `Allow`. A `TAI-Nonce` that is
+missing, empty, duplicated, not a valid sf-binary
+value, or outside the 14–174 octet range is treated as
+absent (no echo, no signature) per spec §5.2.
 
 Response headers on success:
 

@@ -13,6 +13,8 @@ import { tai64nLabel } from './utils';
 
 const SELECTOR_PATTERN = /^[A-Za-z][\dA-Za-z_-]{0,62}$/;
 
+const ALLOW_HEADER = 'GET, HEAD, OPTIONS';
+
 const textEncoder = new TextEncoder();
 
 /**
@@ -207,8 +209,10 @@ const validateHandlerConfig = (
  *   Content-Type `application/tai64n`, Content-Length
  *   `25`, Cache-Control `no-store`, plus
  *   `TAI-Leap-Seconds` carrying the current count.
+ * - `OPTIONS` — `200` with
+ *   `Allow: GET, HEAD, OPTIONS`. Never signed.
  * - Any other method — `405 Method Not Allowed` with
- *   `Allow: GET, HEAD`.
+ *   `Allow: GET, HEAD, OPTIONS`.
  * - Request `TAI-Nonce` — the value is echoed verbatim
  *   in the response. A missing, empty, duplicated,
  *   structurally malformed, or out-of-range
@@ -241,10 +245,17 @@ export const newTaistampHandler = (
   const { selector, signer } = validateHandlerConfig(config);
 
   return async (request) => {
+    if (request.method === 'OPTIONS') {
+      return new Response(undefined, {
+        status: 200,
+        headers: { allow: ALLOW_HEADER },
+      });
+    }
+
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response(undefined, {
         status: 405,
-        headers: { allow: 'GET, HEAD' },
+        headers: { allow: ALLOW_HEADER },
       });
     }
 

@@ -87,8 +87,19 @@ describe('newTaistampHandler', () => {
       for (const method of ['POST', 'PUT', 'DELETE', 'PATCH']) {
         const response = await handler(new Request(baseURL, { method }));
         expect(response.status).toBe(405);
-        expect(response.headers.get('allow')).toBe('GET, HEAD');
+        expect(response.headers.get('allow')).toBe('GET, HEAD, OPTIONS');
       }
+    });
+
+    it('answers OPTIONS with 200 and Allow', async () => {
+      const response = await handler(
+        new Request(baseURL, { method: 'OPTIONS' }),
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('allow')).toBe('GET, HEAD, OPTIONS');
+      expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBeNull();
+      expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
     });
 
     it('treats a duplicated TAI-Nonce as absent', async () => {
