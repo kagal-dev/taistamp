@@ -190,6 +190,42 @@ const validateHandlerConfig = (
 };
 
 /**
+ * Validate a {@link TaistampHandlerConfig} and derive
+ * the construction-time state the handler closure
+ * captures: an `addSignature` helper that mutates a
+ * response `Headers` to carry `TAI-Key-Selector` and
+ * `TAI-Signature` over the framed payload, present
+ * only when both `signer` and `selector` are
+ * configured. Validation is delegated to
+ * {@link validateHandlerConfig}.
+ *
+ * @throws TypeError per {@link validateHandlerConfig}.
+ */
+const fromHandlerConfig = (config: TaistampHandlerConfig) => {
+  const { selector, signer } = validateHandlerConfig(config);
+
+  const addSignature = selector !== undefined && signer !== undefined ?
+    async (
+      headers: Headers,
+      label: string,
+      nonce: Nonce,
+    ): Promise<void> => {
+      const payload = composeSignaturePayload(
+        label, TAI_LEAP_SECONDS, selector, nonce,
+      );
+      const signature = await signer.sign(payload);
+      headers.set(TAI64N_HEADER_KEY_SELECTOR, selector);
+      headers.set(
+        TAI64N_HEADER_SIGNATURE,
+        encodeStructuredBinary(signature),
+      );
+    } :
+    undefined;
+
+  return { addSignature };
+};
+
+/**
  * Build a handler for `/.well-known/taistamp`.
  *
  * @param config - optional {@link TaistampHandlerConfig}
@@ -242,7 +278,7 @@ const validateHandlerConfig = (
 export const newTaistampHandler = (
   config: TaistampHandlerConfig = {},
 ): ((request: Request) => Promise<Response>) => {
-  const { selector, signer } = validateHandlerConfig(config);
+  const { addSignature } = fromHandlerConfig(config);
 
   return async (request) => {
     if (request.method === 'OPTIONS') {
@@ -271,24 +307,8 @@ export const newTaistampHandler = (
 
     if (nonce) {
       headers.set(TAI64N_HEADER_NONCE, nonce);
-
-      if (
-        request.method === 'GET' &&
-        signer !== undefined &&
-        selector !== undefined
-      ) {
-        const payload = composeSignaturePayload(
-          label,
-          TAI_LEAP_SECONDS,
-          selector,
-          nonce,
-        );
-        const signature = await signer.sign(payload);
-        headers.set(TAI64N_HEADER_KEY_SELECTOR, selector);
-        headers.set(
-          TAI64N_HEADER_SIGNATURE,
-          encodeStructuredBinary(signature),
-        );
+      if (request.method === 'GET' && addSignature) {
+        await addSignature(headers, label, nonce);
       }
     }
 
