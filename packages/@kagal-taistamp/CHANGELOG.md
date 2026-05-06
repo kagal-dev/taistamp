@@ -5,6 +5,8 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.0.2] - 2026-05-06
+
 ### Added
 
 - `Nonce` branded type plus `asNonce(value)` —
