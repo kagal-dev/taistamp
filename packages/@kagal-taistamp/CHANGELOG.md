@@ -5,6 +5,78 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.0.2] - 2026-05-06
+
+### Added
+
+- `Nonce` branded type plus `asNonce(value)` —
+  brands a string when it satisfies sf-binary syntax
+  (RFC 9651 §3.3.5) and the 14..174 octet range, or
+  returns `undefined` for every spec §5.2 "treat as
+  absent" case. Verifiers wrap their recorded client
+  nonce with `asNonce` before passing it to
+  `composeSignaturePayload`.
+- `TAI_LEAP_SECONDS_MAX` constant (= `0xFFFFFFFF`) —
+  the upper bound for `leapSeconds` in the signed
+  payload (u32be encoding).
+- `LeapSeconds` branded type, plus
+  `extractLeapSeconds(headers)` (reads `TAI-Leap-Seconds`
+  from response headers) and `asLeapSeconds(number)`
+  (coerces a raw number). Both return the value branded
+  when in range, or `undefined` for missing / empty /
+  non-numeric / non-integer / negative / out-of-range
+  input — every spec §5.1 "treat as unsigned" case
+  collapsed into one verdict. Mirrors the shape of
+  `asNonce` / `Nonce`; the brand prevents arbitrary
+  numbers from reaching the signing path.
+- `composeSignaturePayload` now requires branded values
+  for both its `leapSeconds` (`LeapSeconds`) and
+  `nonce` (`Nonce`) arguments, so the framing helper
+  cannot be called with unvalidated input.
+- `OPTIONS` requests are now answered with `200 OK`
+  and `Allow: GET, HEAD, OPTIONS`, advertising the
+  supported method set per RFC 9110 §9.3.7. `OPTIONS`
+  responses are never signed.
+- `cors` config field on `newTaistampHandler()` —
+  defaults to `'*'`; pass a specific origin to scope,
+  or `false` to disable. When enabled: pre-flight
+  `OPTIONS` carries `Access-Control-Allow-Origin`,
+  `-Allow-Methods`, `-Allow-Headers`, and
+  `-Expose-Headers`; `GET` / `HEAD` carry
+  `Access-Control-Allow-Origin` and
+  `-Expose-Headers`; `405` carries
+  `Access-Control-Allow-Origin`; a non-`'*'` value
+  adds `Vary: Origin` to every response.
+
+### Changed
+
+- `TAI-Nonce` handling now follows spec §5.2's
+  "treat as absent" rule uniformly. A field that is
+  missing, empty, duplicated, structurally malformed
+  (sf-binary per RFC 9651 §3.3.5), or outside the
+  14..174 octet range is dropped — no echo, no
+  signature. The previous 400-on-duplicate branch is
+  gone; out-of-range nonces are no longer echoed.
+- `TAI_OFFSET` renamed to `TAI_LEAP_SECONDS` — same
+  value (37), more accurate name (it's the leap-second
+  count, not a generic offset), and pairs with the new
+  `TAI_LEAP_SECONDS_MAX`. Now exported as
+  `LeapSeconds` rather than `number` so it can be
+  passed to `composeSignaturePayload` without coercion.
+  Breaking for any caller that imported the old name;
+  expected to be rare at 0.0.x.
+- `taistampSignedPayload` renamed to
+  `composeSignaturePayload` — "compose" matches the
+  helper's existing JSDoc verb, "Signature" (modifier)
+  is more accurate than "Signed" (past participle) for
+  bytes that *will be* signed, and dropping the
+  `taistamp` prefix avoids redundancy with the package
+  namespace. Breaking for any caller that imported the
+  old name; expected to be rare at 0.0.x.
+- `Allow` header on `405` responses is now
+  `GET, HEAD, OPTIONS` (was `GET, HEAD`).
+- `sf-binary` citation refreshed RFC 8941 → RFC 9651.
+
 ## [0.0.1] - 2026-05-03
 
 Initial release of `@kagal/taistamp` — platform-neutral

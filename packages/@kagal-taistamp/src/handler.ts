@@ -6,14 +6,15 @@ import {
   TAI64N_HEADER_LEAP_SECONDS,
   TAI64N_HEADER_NONCE,
   TAI64N_HEADER_SIGNATURE,
-  TAI_OFFSET,
 } from './const';
+import { buildCORSHeaders } from './cors';
+import { type LeapSeconds, TAI_LEAP_SECONDS } from './leap-seconds';
+import { extractNonce, type Nonce } from './nonce';
 import { tai64nLabel } from './utils';
 
 const SELECTOR_PATTERN = /^[A-Za-z][\dA-Za-z_-]{0,62}$/;
 
-const NONCE_MIN_OCTETS = 14;
-const NONCE_MAX_OCTETS = 174;
+const ALLOW_HEADER = 'GET, HEAD, OPTIONS';
 
 const textEncoder = new TextEncoder();
 
@@ -42,10 +43,10 @@ const asBytes = (source: BufferSource): Uint8Array => {
 
 /**
  * Encode `source` as a Structured Field Value sf-binary
- * item per [RFC 8941 §3.3.5]: standard base64 with `=`
+ * item per [RFC 9651 §3.3.5]: standard base64 with `=`
  * padding, wrapped in a leading and trailing colon.
  *
- * @see {@link https://www.rfc-editor.org/rfc/rfc8941#name-byte-sequences}
+ * @see {@link https://www.rfc-editor.org/rfc/rfc9651#name-byte-sequences}
  */
 const encodeStructuredBinary = (source: BufferSource): string => {
   // Spread is safe for the 64-byte signatures handled
@@ -67,7 +68,8 @@ const encodeStructuredBinary = (source: BufferSource): string => {
  *   this to look up the public key in DNS at
  *   `<selector>._taistamp.<host>`
  * @param nonce - the client-supplied nonce, echoed
- *   verbatim in `TAI-Nonce`
+ *   verbatim in `TAI-Nonce`; brand a verifier-side
+ *   string with {@link asNonce} before passing it in
  * @returns the byte sequence verifiers reconstruct
  *   from the response and pass to their public-key
  *   verify routine. The framing is the
@@ -87,11 +89,11 @@ const encodeStructuredBinary = (source: BufferSource): string => {
  * a single byte (selectors are ≤ 63 chars per
  * {@link newTaistampHandler}'s validation).
  */
-export const taistampSignedPayload = (
+export const composeSignaturePayload = (
   label: string,
-  leapSeconds: number,
+  leapSeconds: LeapSeconds,
   selector: string,
-  nonce: string,
+  nonce: Nonce,
 ): ArrayBuffer => {
   const labelBytes = textEncoder.encode(label);
   const selectorBytes = textEncoder.encode(selector);
@@ -151,12 +153,106 @@ export interface TaistampHandlerConfig {
 
   /**
    * {@link Signer} that produces `TAI-Signature` over
-   * the framed payload from {@link taistampSignedPayload}.
+   * the framed payload from {@link composeSignaturePayload}.
    * Without a signer the nonce is still echoed but the
    * response is unsigned.
    */
   signer?: Signer
+
+  /**
+   * CORS origin policy. Defaults to `'*'`; pass `false`
+   * to disable CORS entirely, or a specific origin
+   * (e.g. `'https://example.com'`) to scope the policy.
+   *
+   * Every response (`GET` / `HEAD` / `OPTIONS` / `405`)
+   * gains `Access-Control-Allow-Origin`; pre-flight
+   * `OPTIONS` also carries `-Allow-Methods`,
+   * `-Allow-Headers`, and `-Expose-Headers`; success
+   * `GET` / `HEAD` carry `-Expose-Headers` so browser
+   * JS can read the `TAI-*` response headers. A
+   * non-`'*'` value adds `Vary: Origin` so caches can
+   * keep per-origin variants distinct.
+   *
+   * Disabling CORS does not affect method discovery:
+   * `OPTIONS` is still answered with `200` and
+   * `Allow: GET, HEAD, OPTIONS` per RFC 9110 §9.3.7.
+   */
+  cors?: false | string
 }
+
+/**
+ * Validate a {@link TaistampHandlerConfig} and return
+ * it unchanged when every field is well-formed.
+ * Throws `TypeError` otherwise so misconfiguration
+ * surfaces at handler construction rather than on the
+ * first request.
+ *
+ * @throws TypeError if `signer` and `selector` are not
+ *   both set or both unset, or if `selector` does not
+ *   match `[A-Za-z][A-Za-z0-9_-]{0,62}`.
+ */
+const validateHandlerConfig = (
+  config: TaistampHandlerConfig,
+): TaistampHandlerConfig => {
+  const { cors, selector, signer } = config;
+
+  if ((signer === undefined) !== (selector === undefined)) {
+    throw new TypeError(
+      'newTaistampHandler: signer and selector must be set together',
+    );
+  }
+  if (cors !== undefined && cors !== false && typeof cors !== 'string') {
+    throw new TypeError(
+      'newTaistampHandler: cors must be false or a string origin',
+    );
+  }
+  if (selector !== undefined && !SELECTOR_PATTERN.test(selector)) {
+    throw new TypeError(
+      `newTaistampHandler: selector must match ${SELECTOR_PATTERN.source}`,
+    );
+  }
+
+  return config;
+};
+
+/**
+ * Validate a {@link TaistampHandlerConfig} and derive
+ * the construction-time state the handler closure
+ * captures: the pre-baked CORS header maps and an
+ * `addSignature` helper that mutates a response
+ * `Headers` to carry `TAI-Key-Selector` and
+ * `TAI-Signature` over the framed payload, present
+ * only when both `signer` and `selector` are
+ * configured. Validation is delegated to
+ * {@link validateHandlerConfig}.
+ *
+ * @throws TypeError per {@link validateHandlerConfig}.
+ */
+const fromHandlerConfig = (config: TaistampHandlerConfig) => {
+  const { cors, selector, signer } = validateHandlerConfig(config);
+
+  const corsHeaders = buildCORSHeaders(cors);
+
+  const addSignature = selector !== undefined && signer !== undefined ?
+    async (
+      headers: Headers,
+      label: string,
+      nonce: Nonce,
+    ): Promise<void> => {
+      const payload = composeSignaturePayload(
+        label, TAI_LEAP_SECONDS, selector, nonce,
+      );
+      const signature = await signer.sign(payload);
+      headers.set(TAI64N_HEADER_KEY_SELECTOR, selector);
+      headers.set(
+        TAI64N_HEADER_SIGNATURE,
+        encodeStructuredBinary(signature),
+      );
+    } :
+    undefined;
+
+  return { addSignature, corsHeaders };
+};
 
 /**
  * Build a handler for `/.well-known/taistamp`.
@@ -178,25 +274,29 @@ export interface TaistampHandlerConfig {
  *   Content-Type `application/tai64n`, Content-Length
  *   `25`, Cache-Control `no-store`, plus
  *   `TAI-Leap-Seconds` carrying the current count.
+ * - `OPTIONS` — `200` with `Allow: GET, HEAD, OPTIONS`.
+ *   When CORS is enabled (the default) the response
+ *   also carries `Access-Control-Allow-*` and
+ *   `-Expose-Headers` per
+ *   {@link TaistampHandlerConfig.cors}. `OPTIONS` is
+ *   never signed.
  * - Any other method — `405 Method Not Allowed` with
- *   `Allow: GET, HEAD`.
- * - Request with more than one `TAI-Nonce` header —
- *   `400 Bad Request`. Stricter than the spec's
- *   "treat as absent" rule: a duplicated singleton
- *   field is malformed input, so we refuse rather
- *   than silently down-ranking it to unsigned.
+ *   `Allow: GET, HEAD, OPTIONS`.
  * - Request `TAI-Nonce` — the value is echoed verbatim
- *   in the response.
+ *   in the response. A missing, empty, duplicated,
+ *   structurally malformed, or out-of-range
+ *   (14..174 octets) field is treated as absent (no
+ *   echo, no signature) per spec §5.2 — see
+ *   {@link extractNonce}.
  * - Request `TAI-Nonce` *and* `signer` configured *and*
- *   the request method is `GET` *and* the nonce field
- *   value is between 14 and 174 octets — adds
+ *   the request method is `GET` — adds
  *   `TAI-Key-Selector` and `TAI-Signature` (sf-binary)
  *   over the bytes produced by
- *   {@link taistampSignedPayload}. The
+ *   {@link composeSignaturePayload}. The
  *   domain-separation tag means the same key cannot
  *   be tricked into producing valid signatures for
- *   other protocols. `HEAD` and `405` responses are
- *   never signed.
+ *   other protocols. `HEAD`, `OPTIONS`, and `405`
+ *   responses are never signed.
  *
  * The corresponding public key is expected to be
  * published out-of-band as a DNS TXT record at
@@ -211,71 +311,38 @@ export interface TaistampHandlerConfig {
 export const newTaistampHandler = (
   config: TaistampHandlerConfig = {},
 ): ((request: Request) => Promise<Response>) => {
-  const { selector, signer } = config;
-
-  if ((signer === undefined) !== (selector === undefined)) {
-    throw new TypeError(
-      'newTaistampHandler: signer and selector must be set together',
-    );
-  }
-  if (selector !== undefined && !SELECTOR_PATTERN.test(selector)) {
-    throw new TypeError(
-      `newTaistampHandler: selector must match ${SELECTOR_PATTERN.source}`,
-    );
-  }
+  const { addSignature, corsHeaders } = fromHandlerConfig(config);
 
   return async (request) => {
-    if (request.method !== 'GET' && request.method !== 'HEAD') {
+    if (request.method === 'OPTIONS') {
       return new Response(undefined, {
-        status: 405,
-        headers: { allow: 'GET, HEAD' },
+        status: 200,
+        headers: { allow: ALLOW_HEADER, ...corsHeaders.preflight },
       });
     }
 
-    const nonce = request.headers.get(TAI64N_HEADER_NONCE);
-
-    // `TAI-Nonce` is a singleton sf-binary; a valid value
-    // contains no `,` of its own, so a comma in the joined
-    // header value means the client sent the field more
-    // than once.
-    if (nonce !== null && nonce.includes(',')) {
-      return new Response(undefined, { status: 400 });
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      return new Response(undefined, {
+        status: 405,
+        headers: { allow: ALLOW_HEADER, ...corsHeaders.error },
+      });
     }
 
+    const nonce = extractNonce(request.headers);
     const label = tai64nLabel();
 
     const headers = new Headers({
       'cache-control': 'no-store',
       'content-length': String(TAI64N_CONTENT_LENGTH),
       'content-type': TAI64N_CONTENT_TYPE,
-      [TAI64N_HEADER_LEAP_SECONDS]: String(TAI_OFFSET),
+      [TAI64N_HEADER_LEAP_SECONDS]: String(TAI_LEAP_SECONDS),
+      ...corsHeaders.response,
     });
 
-    if (nonce !== null) {
+    if (nonce) {
       headers.set(TAI64N_HEADER_NONCE, nonce);
-
-      const nonceLength = textEncoder.encode(nonce).length;
-      const inRange =
-        nonceLength >= NONCE_MIN_OCTETS && nonceLength <= NONCE_MAX_OCTETS;
-
-      if (
-        request.method === 'GET' &&
-        signer !== undefined &&
-        selector !== undefined &&
-        inRange
-      ) {
-        const message = taistampSignedPayload(
-          label,
-          TAI_OFFSET,
-          selector,
-          nonce,
-        );
-        const signature = await signer.sign(message);
-        headers.set(TAI64N_HEADER_KEY_SELECTOR, selector);
-        headers.set(
-          TAI64N_HEADER_SIGNATURE,
-          encodeStructuredBinary(signature),
-        );
+      if (request.method === 'GET' && addSignature) {
+        await addSignature(headers, label, nonce);
       }
     }
 

@@ -196,6 +196,16 @@ options (ESNext, bundler resolution, strict mode).
 
 - All packages use Vitest
 - Test files: `*.test.ts` under `src/__tests__/`
+- Cross-runtime split via `vitest.config.ts` projects:
+  - `*.workerd.test.ts` → workerd pool
+    (`@cloudflare/vitest-pool-workers`, configured
+    via `wrangler.jsonc` — a test-only stub, not a
+    deployment target)
+  - `*.noble.test.ts` → Node pool with `@noble/ed25519`
+    as an independent reference verifier — catches
+    framing mismatches between WebCrypto and pure-JS
+    Ed25519 implementations
+  - all other `*.test.ts` → Node pool
 - `@kagal/cross-test` (external dep) provides the
   conditional stub helper for `prepare` scripts
 

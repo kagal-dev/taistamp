@@ -2,14 +2,15 @@ import * as ed from '@noble/ed25519';
 import { describe, expect, it } from 'vitest';
 
 import {
+  asNonce,
+  composeSignaturePayload,
+  extractLeapSeconds,
   newEd25519Signer,
   newTaistampHandler,
   TAI64N_HEADER_KEY_SELECTOR,
-  TAI64N_HEADER_LEAP_SECONDS,
   TAI64N_HEADER_NONCE,
   TAI64N_HEADER_SIGNATURE,
   TAI64N_PATH,
-  taistampSignedPayload,
 } from '..';
 
 const baseURL = `https://example.com${TAI64N_PATH}`;
@@ -44,7 +45,8 @@ describe('newTaistampHandler (cross-impl: WebCrypto sign, noble verify)', () => 
 
     expect(response.status).toBe(200);
     const label = await response.text();
-    const leap = Number(response.headers.get(TAI64N_HEADER_LEAP_SECONDS));
+    const leap = extractLeapSeconds(response.headers);
+    expect(leap).toBeDefined();
     expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBe(selector);
 
     const sigHeader = response.headers.get(TAI64N_HEADER_SIGNATURE);
@@ -52,7 +54,7 @@ describe('newTaistampHandler (cross-impl: WebCrypto sign, noble verify)', () => 
     const signature = decodeStructuredBinary(sigHeader!);
 
     const payload = new Uint8Array(
-      taistampSignedPayload(label, leap, selector, nonce),
+      composeSignaturePayload(label, leap!, selector, asNonce(nonce)!),
     );
 
     const ok = await ed.verifyAsync(signature, payload, publicKeyBytes);
