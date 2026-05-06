@@ -1,7 +1,8 @@
 /**
- * Single-label selector pattern: a leading letter, then
- * up to 62 trailing letters / digits / `_` / `-`, for a
- * maximum length of 63 characters.
+ * Single-label selector pattern: a leading letter,
+ * optional inner letters / digits / `_` / `-`, ending in
+ * a letter or digit, for a maximum length of 63
+ * characters.
  *
  * Sourced from DKIM's selector grammar (RFC 6376 §3.1):
  * a `selector` is a dot-separated sequence of
@@ -13,7 +14,7 @@
  *
  * @see {@link https://www.rfc-editor.org/rfc/rfc6376#section-3.1}
  */
-export const SELECTOR_PATTERN = /^[A-Za-z][\dA-Za-z_-]{0,62}$/;
+export const SELECTOR_PATTERN = /^[A-Za-z](?:[\dA-Za-z_-]{0,61}[\dA-Za-z])?$/;
 
 /**
  * Test whether `value` matches {@link SELECTOR_PATTERN}.

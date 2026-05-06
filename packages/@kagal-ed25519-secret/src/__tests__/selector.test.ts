@@ -35,6 +35,14 @@ describe('isValidSelector', () => {
     expect(isValidSelector('_sel')).toBe(false);
   });
 
+  it('rejects a trailing hyphen', () => {
+    expect(isValidSelector('sel-')).toBe(false);
+  });
+
+  it('rejects a trailing underscore', () => {
+    expect(isValidSelector('sel_')).toBe(false);
+  });
+
   it('rejects whitespace', () => {
     expect(isValidSelector('has spaces')).toBe(false);
   });

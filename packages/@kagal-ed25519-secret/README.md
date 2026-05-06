@@ -16,10 +16,12 @@ pnpm add @kagal/ed25519-secret
 - `newSigner(key)` — WebCrypto Ed25519 signer factory.
   Pass an Ed25519 private `CryptoKey` with `'sign'`
   usage; returns 64-byte raw RFC 8032 signatures.
-- `SELECTOR_PATTERN` — `/^[A-Za-z][\dA-Za-z_-]{0,62}$/`,
-  the DKIM selector grammar (RFC 6376 §3.1, narrowed
-  to a single label so the value is also a valid
-  sf-token under RFC 9651).
+- `SELECTOR_PATTERN` —
+  `/^[A-Za-z](?:[\dA-Za-z_-]{0,61}[\dA-Za-z])?$/`, the
+  DKIM selector grammar (RFC 6376 §3.1, narrowed to a
+  single label so the value is also a valid sf-token
+  under RFC 9651). Selectors must start with a letter
+  and end with a letter or digit.
 - `isValidSelector(value)` — boolean predicate.
 - `assertValidSelector(value, context?)` — throws
   `TypeError` on a non-matching value; pass `context`
