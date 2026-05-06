@@ -111,6 +111,13 @@ const taistamp = newTaistampHandler({
 });
 ```
 
+The `Signer` interface and the `newEd25519Signer`
+factory are re-exported from
+[`@kagal/ed25519-secret`](../@kagal-ed25519-secret/README.md)
+— callers of `@kagal/taistamp` get them through this
+package and don't need to depend on the underlying
+package directly.
+
 `signer` and `selector` are co-required: pass both to
 sign, neither for an unsigned handler. Construction
 throws if only one is supplied, or if `selector` does

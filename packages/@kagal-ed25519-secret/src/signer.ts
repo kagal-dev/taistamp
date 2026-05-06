@@ -39,6 +39,6 @@ export interface Signer {
  *
  * @see {@link https://datatracker.ietf.org/doc/html/rfc8032}
  */
-export const newEd25519Signer = (key: CryptoKey): Signer => ({
+export const newSigner = (key: CryptoKey): Signer => ({
   sign: async (message) => crypto.subtle.sign('Ed25519', key, message),
 });

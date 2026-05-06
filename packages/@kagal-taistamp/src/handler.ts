@@ -1,4 +1,5 @@
-import type { Signer } from './signer';
+import { assertValidSelector, type Signer } from '@kagal/ed25519-secret';
+
 import {
   TAI64N_CONTENT_LENGTH,
   TAI64N_CONTENT_TYPE,
@@ -11,8 +12,6 @@ import { buildCORSHeaders } from './cors';
 import { type LeapSeconds, TAI_LEAP_SECONDS } from './leap-seconds';
 import { extractNonce, type Nonce } from './nonce';
 import { tai64nLabel } from './utils';
-
-const SELECTOR_PATTERN = /^[A-Za-z][\dA-Za-z_-]{0,62}$/;
 
 const ALLOW_HEADER = 'GET, HEAD, OPTIONS';
 
@@ -206,10 +205,8 @@ const validateHandlerConfig = (
       'newTaistampHandler: cors must be false or a string origin',
     );
   }
-  if (selector !== undefined && !SELECTOR_PATTERN.test(selector)) {
-    throw new TypeError(
-      `newTaistampHandler: selector must match ${SELECTOR_PATTERN.source}`,
-    );
+  if (selector !== undefined) {
+    assertValidSelector(selector, 'newTaistampHandler');
   }
 
   return config;

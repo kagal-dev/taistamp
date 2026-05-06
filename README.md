@@ -9,6 +9,11 @@ HTTP.
 
 Platform-neutral handler for `/.well-known/taistamp`.
 
+### [`@kagal/ed25519-secret`](packages/@kagal-ed25519-secret/)
+
+WebCrypto Ed25519 signer plus DKIM-style selector
+validation. Self-contained.
+
 ## Development
 
 ```sh

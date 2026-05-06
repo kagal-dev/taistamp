@@ -1,3 +1,4 @@
+import { newSigner } from '@kagal/ed25519-secret';
 import * as ed from '@noble/ed25519';
 import { describe, expect, it } from 'vitest';
 
@@ -5,7 +6,6 @@ import {
   asNonce,
   composeSignaturePayload,
   extractLeapSeconds,
-  newEd25519Signer,
   newTaistampHandler,
   TAI64N_HEADER_KEY_SELECTOR,
   TAI64N_HEADER_NONCE,
@@ -34,7 +34,7 @@ describe('newTaistampHandler (cross-impl: WebCrypto sign, noble verify)', () => 
     const nonce = ':AAAAAAAAAAAAAAAAAAAAAA==:';
     const handler = newTaistampHandler({
       selector,
-      signer: newEd25519Signer(keypair.privateKey),
+      signer: newSigner(keypair.privateKey),
     });
 
     const response = await handler(

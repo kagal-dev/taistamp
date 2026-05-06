@@ -3,6 +3,11 @@ import pkg from '../package.json' with { type: 'json' };
 /** Package version from package.json. */
 export const VERSION: string = pkg.version;
 
+export {
+  newSigner as newEd25519Signer,
+  type Signer,
+} from '@kagal/ed25519-secret';
+
 export * from './const';
 export {
   composeSignaturePayload,
@@ -20,10 +25,6 @@ export {
   asNonce,
   type Nonce,
 } from './nonce';
-export {
-  newEd25519Signer,
-  type Signer,
-} from './signer';
 export {
   fromUTC,
   now,
