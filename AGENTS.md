@@ -11,21 +11,41 @@ implementing Taistamp — signed TAI64N timestamps over
 HTTP at `/.well-known/taistamp`.
 
 - **`@kagal/taistamp`** — platform-neutral handler
+- **`@kagal/ed25519-secret`** — WebCrypto Ed25519 signer
+  plus DKIM-style selector validation
 
 ## Monorepo Structure
 
 ```text
 taistamp/
 ├── packages/
-│   └── @kagal-taistamp/      # @kagal/taistamp
+│   ├── @kagal-taistamp/              # @kagal/taistamp
+│   │   ├── src/
+│   │   │   ├── index.ts              # public API surface
+│   │   │   ├── handler.ts            # newTaistampHandler, composeSignaturePayload
+│   │   │   ├── cors.ts               # buildCORSHeaders
+│   │   │   ├── nonce.ts              # Nonce brand + extract
+│   │   │   ├── leap-seconds.ts       # LeapSeconds brand + extract
+│   │   │   ├── const.ts, utils.ts    # protocol constants, TAI64N helpers
+│   │   │   └── __tests__/            # default + .workerd + .noble pools
+│   │   └── wrangler.jsonc            # workerd test pool stub
+│   └── @kagal-ed25519-secret/        # @kagal/ed25519-secret
 │       └── src/
-│           └── index.ts      # Root entry (VERSION)
-├── docs/                     # Design documents (not published)
-├── .github/workflows/        # CI/CD
-├── internal/build/           # Shared build configuration (cspell)
-├── pnpm-workspace.yaml
-└── package.json              # Root (private)
+│           ├── index.ts              # public API surface
+│           ├── signer.ts             # Signer, newSigner
+│           ├── selector.ts           # SELECTOR_PATTERN, isValidSelector, assertValidSelector
+│           └── __tests__/
+├── docs/                             # design notes (untracked)
+├── internal/build/cspell.json        # shared cspell config
+└── .github/workflows/                # build, publish, renovate
 ```
+
+Each package also carries the usual TS workspace boilerplate
+(`package.json`, `tsconfig.{json,tests.json,tools.json}`,
+`build.config.ts`, `vitest.config.ts`, `eslint.config.mjs`,
+`README.md`, `CHANGELOG.md`, `LICENCE.txt`); the same set
+exists at the root for shared/ignore configuration plus
+`pnpm-workspace.yaml` and `renovate.json`.
 
 ## Common Commands
 

@@ -5,6 +5,21 @@ documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- `Signer` and `newEd25519Signer` move out into the
+  new `@kagal/ed25519-secret` workspace package
+  (`newEd25519Signer` is renamed to `newSigner` there
+  — the algorithm lives in the package name now).
+  `@kagal/taistamp` keeps both symbols available under
+  the old names by re-exporting `Signer` and
+  `newSigner as newEd25519Signer` from
+  `@kagal/ed25519-secret`, so existing imports keep
+  working. Selector validation, previously inlined in
+  `handler.ts`, is now delegated to
+  `assertValidSelector` from the same package.
+  `@kagal/taistamp` depends on it via `workspace:^`.
+
 ## [0.0.2] - 2026-05-06
 
 ### Added

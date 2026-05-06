@@ -1,3 +1,4 @@
+import { newSigner } from '@kagal/ed25519-secret';
 import { env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 
@@ -5,7 +6,6 @@ import {
   asNonce,
   composeSignaturePayload,
   extractLeapSeconds,
-  newEd25519Signer,
   newTaistampHandler,
   TAI64N_HEADER_KEY_SELECTOR,
   TAI64N_HEADER_NONCE,
@@ -33,7 +33,7 @@ describe('newTaistampHandler (workerd pool)', () => {
     const nonce = ':AAAAAAAAAAAAAAAAAAAAAA==:';
     const handler = newTaistampHandler({
       selector,
-      signer: newEd25519Signer(keypair.privateKey),
+      signer: newSigner(keypair.privateKey),
     });
 
     const response = await handler(

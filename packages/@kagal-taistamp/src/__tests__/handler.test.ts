@@ -1,3 +1,4 @@
+import { newSigner } from '@kagal/ed25519-secret';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -5,7 +6,6 @@ import {
   asNonce,
   composeSignaturePayload,
   extractLeapSeconds,
-  newEd25519Signer,
   newTaistampHandler,
   TAI64N_CONTENT_LENGTH,
   TAI64N_CONTENT_TYPE,
@@ -152,7 +152,7 @@ describe('newTaistampHandler', () => {
       const { privateKey, publicKey } = await newKeypair();
       const handler = newTaistampHandler({
         selector,
-        signer: newEd25519Signer(privateKey),
+        signer: newSigner(privateKey),
       });
       const nonce = ':ZnJlc2gtY2xpZW50LW5vbmNl:';
 
@@ -188,7 +188,7 @@ describe('newTaistampHandler', () => {
       const { privateKey } = await newKeypair();
       const handler = newTaistampHandler({
         selector,
-        signer: newEd25519Signer(privateKey),
+        signer: newSigner(privateKey),
       });
 
       const response = await handler(new Request(baseURL));
@@ -202,7 +202,7 @@ describe('newTaistampHandler', () => {
       const { privateKey } = await newKeypair();
       const handler = newTaistampHandler({
         selector,
-        signer: newEd25519Signer(privateKey),
+        signer: newSigner(privateKey),
       });
       const nonce = ':aGVhZC1ub25jZS12YWx1ZQ==:';
 
@@ -221,7 +221,7 @@ describe('newTaistampHandler', () => {
       const { privateKey } = await newKeypair();
       const handler = newTaistampHandler({
         selector,
-        signer: newEd25519Signer(privateKey),
+        signer: newSigner(privateKey),
       });
       const nonce = ':b3B0aW9ucy1ub25jZS12YWw=:';
 
@@ -238,7 +238,7 @@ describe('newTaistampHandler', () => {
       const { privateKey } = await newKeypair();
       const handler = newTaistampHandler({
         selector,
-        signer: newEd25519Signer(privateKey),
+        signer: newSigner(privateKey),
       });
       const shortNonce = ':YWJjZA==:'; // 10 octets
 
@@ -255,7 +255,7 @@ describe('newTaistampHandler', () => {
       const { privateKey } = await newKeypair();
       const handler = newTaistampHandler({
         selector,
-        signer: newEd25519Signer(privateKey),
+        signer: newSigner(privateKey),
       });
       const longNonce = `:${'A'.repeat(176)}:`; // 178 octets
 
@@ -272,7 +272,7 @@ describe('newTaistampHandler', () => {
       const { privateKey, publicKey } = await newKeypair();
       const handler = newTaistampHandler({
         selector,
-        signer: newEd25519Signer(privateKey),
+        signer: newSigner(privateKey),
       });
       const nonce = ':cmVhbC1ub25jZS12YWx1ZQ==:';
 
@@ -302,7 +302,7 @@ describe('newTaistampHandler', () => {
       const { privateKey, publicKey } = await newKeypair();
       const handler = newTaistampHandler({
         selector,
-        signer: newEd25519Signer(privateKey),
+        signer: newSigner(privateKey),
       });
       const nonce = ':bm9uY2UtcGFkZGluZy14:';
 
@@ -332,7 +332,7 @@ describe('newTaistampHandler', () => {
       const { privateKey, publicKey } = await newKeypair();
       const handler = newTaistampHandler({
         selector,
-        signer: newEd25519Signer(privateKey),
+        signer: newSigner(privateKey),
       });
       const nonce = ':bm9uY2UtcGFkZGluZy14:';
 
@@ -363,7 +363,7 @@ describe('newTaistampHandler', () => {
     it('throws when signer is set without selector', async () => {
       const { privateKey } = await newKeypair();
       expect(() => newTaistampHandler({
-        signer: newEd25519Signer(privateKey),
+        signer: newSigner(privateKey),
       })).toThrow(/signer and selector must be set together/);
     });
 
@@ -377,7 +377,7 @@ describe('newTaistampHandler', () => {
       const { privateKey } = await newKeypair();
       expect(() => newTaistampHandler({
         selector: 'has spaces',
-        signer: newEd25519Signer(privateKey),
+        signer: newSigner(privateKey),
       })).toThrow(/selector must match/);
     });
 
@@ -385,7 +385,7 @@ describe('newTaistampHandler', () => {
       const { privateKey } = await newKeypair();
       expect(() => newTaistampHandler({
         selector: '',
-        signer: newEd25519Signer(privateKey),
+        signer: newSigner(privateKey),
       })).toThrow(/selector must match/);
     });
 
@@ -393,7 +393,7 @@ describe('newTaistampHandler', () => {
       const { privateKey } = await newKeypair();
       expect(() => newTaistampHandler({
         selector: '2026q2',
-        signer: newEd25519Signer(privateKey),
+        signer: newSigner(privateKey),
       })).toThrow(/selector must match/);
     });
 
@@ -401,7 +401,7 @@ describe('newTaistampHandler', () => {
       const { privateKey } = await newKeypair();
       expect(() => newTaistampHandler({
         selector: `a${'b'.repeat(63)}`,
-        signer: newEd25519Signer(privateKey),
+        signer: newSigner(privateKey),
       })).toThrow(/selector must match/);
     });
 
