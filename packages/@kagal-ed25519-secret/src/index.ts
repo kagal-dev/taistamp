@@ -12,3 +12,7 @@ export {
   newSigner,
   type Signer,
 } from './signer';
+export {
+  decodeBase64,
+  encodeBase64,
+} from './utils';

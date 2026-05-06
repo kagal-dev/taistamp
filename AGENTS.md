@@ -34,6 +34,7 @@ taistamp/
 │           ├── index.ts              # public API surface
 │           ├── signer.ts             # Ed25519 signer interface and factory
 │           ├── selector.ts           # DKIM selector pattern and validators
+│           ├── utils.ts              # base64 helpers
 │           └── __tests__/
 ├── docs/                             # design notes (untracked)
 ├── internal/build/cspell.json        # shared cspell config

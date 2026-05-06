@@ -5,6 +5,14 @@ documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Base64 helpers:
+  - `encodeBase64(bytes)` — standard, padded.
+  - `decodeBase64(b64, context?)` — standard or
+    URL-safe, padding optional; throws `TypeError`
+    on `atob` rejection, optional `context` prefix.
+
 ### Changed
 
 - `newSigner(key, context?)`:

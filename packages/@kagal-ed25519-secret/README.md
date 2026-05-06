@@ -1,8 +1,8 @@
 # @kagal/ed25519-secret
 
-WebCrypto Ed25519 signer plus DKIM-style selector
-validation. Self-contained — no dependency on
-`@kagal/taistamp`.
+WebCrypto Ed25519 signer, DKIM-style selector
+validation, and base64 helpers. Self-contained — no
+dependency on `@kagal/taistamp`.
 
 ## Install
 
@@ -29,6 +29,15 @@ pnpm add @kagal/ed25519-secret
   `TypeError` on a non-matching value, naming the
   pattern and quoting the input; `context` prefixes
   the message.
+
+### Base64 helpers
+
+- `encodeBase64(bytes)` — encode bytes as standard
+  base64 with `=` padding.
+- `decodeBase64(b64, context?)` — decode standard or
+  URL-safe base64, padding optional. Throws `TypeError`
+  on `atob`-rejected input (original rejection as
+  `cause`); pass `context` to prefix the error message.
 
 ## Licence
 
