@@ -5,6 +5,8 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-05-11
+
 ### Added
 
 - Ed25519 key-pair construction — `newKeyPair(input?,
