@@ -10,8 +10,157 @@ Self-contained — no dependency on `@kagal/taistamp`.
 pnpm add @kagal/ed25519-secret
 ```
 
+## Usage
+
+### Generating a fresh secret
+
+`newKeyPair()` mints both the private seed (to store) and the
+public key (to publish) in one call:
+
+```ts
+import { encodeBase64, newKeyPair } from '@kagal/ed25519-secret';
+
+const selector = 's1';
+const { privateKey, publicKey } = await newKeyPair();
+
+// Private — store somewhere safe (env var, secret manager, etc.)
+const secret = `${selector}:${encodeBase64(privateKey)}`;
+
+// Public — publish under a selector-scoped channel (e.g. a DNS TXT record)
+const distributable = encodeBase64(
+  new Uint8Array(await crypto.subtle.exportKey('raw', publicKey)),
+);
+```
+
+### Building a key-pair from your own seed
+
+When you already hold a 32-byte seed (raw bytes or its
+base64 encoding — e.g. derived from a KDF):
+
+```ts
+import { newKeyPair } from '@kagal/ed25519-secret';
+
+const { privateKey, publicKey } = await newKeyPair(seed);
+```
+
+### Parsing and signing
+
+```ts
+import { encodeBase64, parseSecretToKey } from '@kagal/ed25519-secret';
+
+// `secret` may use standard or URL-safe base64 — both round-trip
+const config = await parseSecretToKey(secret);
+const signature = await config.signer.sign(
+  new TextEncoder().encode('payload'),
+);
+const wire = encodeBase64(new Uint8Array(signature)); // for transport
+```
+
+### Plugging in a custom Signer
+
+Drop in any `Signer` implementation — it's just
+`{ sign: (message: BufferSource) => Promise<ArrayBuffer> }`:
+
+```ts
+import type { Signer } from '@kagal/ed25519-secret';
+
+const remoteSigner: Signer = {
+  sign: async (message) => {
+    const response = await fetch('https://signer.example.com/sign', {
+      method: 'POST',
+      body: message,
+    });
+    return response.arrayBuffer();
+  },
+};
+
+const signature = await remoteSigner.sign(
+  new TextEncoder().encode('payload'),
+);
+```
+
+### Publishing the public key from a stored secret
+
+If you already have the `selector:base64` secret and need to
+(re-)publish the public key — e.g. rolling out to new DNS infra
+without rotating the seed:
+
+```ts
+import { encodeBase64, parseSecretToKey } from '@kagal/ed25519-secret';
+
+const { publicKey } = await parseSecretToKey(secret);
+const distributable = encodeBase64(
+  new Uint8Array(await crypto.subtle.exportKey('raw', publicKey)),
+);
+// publish under a selector-scoped channel (e.g. a DNS TXT record)
+```
+
+### Fetching a published public key
+
+DNS-over-HTTPS JSON via `fetch` works in any runtime with
+global `fetch`:
+
+```ts
+import { decodeBase64 } from '@kagal/ed25519-secret';
+
+const response = await fetch(
+  `https://1.1.1.1/dns-query?name=${selector}._keys.example.com&type=TXT`,
+  { headers: { accept: 'application/dns-json' } },
+);
+if (!response.ok) throw new Error(`DoH ${response.status}`);
+const { Answer } = await response.json();
+const data = Answer?.[0]?.data;
+if (!data) throw new Error('public key not found');
+
+// DNS-over-HTTPS wraps each TXT character-string in
+// quotes; this strips a single-string record only —
+// multi-string records (RFC 1035 §3.3) need further
+// handling.
+const publicKey = await crypto.subtle.importKey(
+  'raw',
+  decodeBase64(data.replaceAll(/^"|"$/g, '')),
+  { name: 'Ed25519' },
+  true,
+  ['verify'],
+);
+```
+
+### Verifying a signature
+
+WebCrypto's `Ed25519 verify` is specified to apply RFC 8032 §5.1.7
+strict verification (cofactor handling, signature-malleability
+resistance); confirm your runtime conforms, or fall back to a
+strict-verify library such as `@noble/ed25519`.
+
+```ts
+// `publicKey` from the previous snippet; `signature` is the bytes
+// you received over the wire (BufferSource)
+const ok = await crypto.subtle.verify(
+  'Ed25519',
+  publicKey,
+  signature,
+  new TextEncoder().encode('payload'),
+);
+```
+
+### Validating a selector
+
+```ts
+import { assertValidSelector, isValidSelector } from '@kagal/ed25519-secret';
+
+// Predicate: branch on the result
+if (isValidSelector(value)) {
+  // matches the pattern
+}
+
+// Assertion: fail fast on misconfigured input
+assertValidSelector(value, 'config');
+```
+
 ## API
 
+- `VERSION` — package version string, mirrors
+  `package.json#version`.
 - `KeyPair` — the returned triple: `privateKey` (the
   branded `Ed25519Seed`, for persistence), `publicKey`
   (extractable, for distribution), and `signKey`
@@ -41,7 +190,7 @@ pnpm add @kagal/ed25519-secret
   base64 portion is a 32-byte Ed25519 seed (standard
   or URL-safe). `context` prefixes any thrown error
   and defaults to `'parseSecretToKey'`.
-- `Signer` — `{ sign(message: BufferSource): Promise<ArrayBuffer> }`
+- `Signer` — `{ sign: (message: BufferSource) => Promise<ArrayBuffer> }`
 - `newSigner(key, context?)` — WebCrypto Ed25519
   signer factory. Pass an Ed25519 private `CryptoKey`
   with `'sign'` in `usages`; returns 64-byte raw
