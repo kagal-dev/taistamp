@@ -5,6 +5,19 @@ documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- `newSigner(key, context?)`:
+  - Validates `key.algorithm.name` and `key.usages`
+    at construction; both throws use the
+    `expected X, got Y` form.
+  - Optional `context?` prefixes the error with
+    `<context>:`, joining `assertValidSelector` and
+    `decodeBase64`.
+- `assertValidSelector` error quotes the offending
+  value alongside the pattern, matching the same
+  `expected X, got Y` shape.
+
 ## [0.0.1] - 2026-05-06
 
 ### Added

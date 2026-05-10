@@ -32,8 +32,8 @@ taistamp/
 │   └── @kagal-ed25519-secret/        # @kagal/ed25519-secret
 │       └── src/
 │           ├── index.ts              # public API surface
-│           ├── signer.ts             # Signer, newSigner
-│           ├── selector.ts           # SELECTOR_PATTERN, isValidSelector, assertValidSelector
+│           ├── signer.ts             # Ed25519 signer interface and factory
+│           ├── selector.ts           # DKIM selector pattern and validators
 │           └── __tests__/
 ├── docs/                             # design notes (untracked)
 ├── internal/build/cspell.json        # shared cspell config
@@ -90,6 +90,14 @@ Enforced by .editorconfig and @poupe/eslint-config:
 
 Prefer `new` or `make` prefix, not `create`
 (e.g. `newFoo()`, `makeFoo()`).
+
+### Throwing helpers
+
+In `@kagal-ed25519-secret`, validation helpers that
+throw take a trailing optional `context?: string`
+parameter — prepended as `${context}:` to the error
+message so callers can label errors with their own
+identity.
 
 ### Handling cspell findings
 
