@@ -32,6 +32,7 @@ taistamp/
 │   └── @kagal-ed25519-secret/        # @kagal/ed25519-secret
 │       └── src/
 │           ├── index.ts              # public API surface
+│           ├── key.ts                # Ed25519 key-pair construction
 │           ├── signer.ts             # Ed25519 signer interface and factory
 │           ├── selector.ts           # DKIM selector pattern and validators
 │           ├── utils.ts              # base64 helpers
@@ -94,11 +95,18 @@ Prefer `new` or `make` prefix, not `create`
 
 ### Throwing helpers
 
-In `@kagal-ed25519-secret`, validation helpers that
-throw take a trailing optional `context?: string`
-parameter — prepended as `${context}:` to the error
-message so callers can label errors with their own
-identity.
+In `@kagal-ed25519-secret`, helpers that throw accept a
+trailing context parameter — prepended as `${context}:`
+to the error message — in one of two shapes:
+
+- `context?: string` — absent means no prefix. Used by
+  `assertValidSelector`, `decodeBase64`, `asEd25519Seed`,
+  and `newSigner`.
+- `context: string = '<factory name>'` — used by
+  factories that delegate to a validation helper
+  (currently `newKeyPair`); absence falls back to the
+  factory's own identity so the helper's error always
+  carries a name.
 
 ### Handling cspell findings
 

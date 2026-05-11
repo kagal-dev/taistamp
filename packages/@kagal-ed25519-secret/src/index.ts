@@ -4,6 +4,12 @@ import pkg from '../package.json' with { type: 'json' };
 export const VERSION: string = pkg.version;
 
 export {
+  asEd25519Seed,
+  type Ed25519Seed,
+  type KeyPair,
+  newKeyPair,
+} from './key';
+export {
   assertValidSelector,
   isValidSelector,
   SELECTOR_PATTERN,

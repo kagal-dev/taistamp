@@ -1,8 +1,8 @@
 # @kagal/ed25519-secret
 
-WebCrypto Ed25519 signer, DKIM-style selector
-validation, and base64 helpers. Self-contained — no
-dependency on `@kagal/taistamp`.
+WebCrypto Ed25519 — key-pair construction, signing,
+DKIM-style selector validation, and base64 helpers.
+Self-contained — no dependency on `@kagal/taistamp`.
 
 ## Install
 
@@ -12,6 +12,20 @@ pnpm add @kagal/ed25519-secret
 
 ## API
 
+- `KeyPair` — the returned triple: `privateKey` (the
+  branded `Ed25519Seed`, for persistence), `publicKey`
+  (extractable, for distribution), and `signKey`
+  (non-extractable, for in-process signing).
+- `Ed25519Seed` — branded 32-byte seed (RFC 8032);
+  values are length-validated and defensive-copied at
+  construction.
+- `asEd25519Seed(input, context?)` — validate length
+  and brand a seed; accepts a 32-byte `Uint8Array` or
+  its base64 encoding.
+- `newKeyPair(input, context?)` — build a `KeyPair`
+  from a 32-byte raw seed (or its base64 encoding).
+  `context` prefixes any thrown error and defaults to
+  `'newKeyPair'`.
 - `Signer` — `{ sign(message: BufferSource): Promise<ArrayBuffer> }`
 - `newSigner(key, context?)` — WebCrypto Ed25519
   signer factory. Pass an Ed25519 private `CryptoKey`
