@@ -22,6 +22,17 @@ documented in this file.
   validates length and defensive-copies seed bytes,
   returning the branded `Ed25519Seed`. String input is
   decoded as base64 first.
+- Secret parsing:
+  - `parseSecretToKey(secretString, context?)` — parse
+    a `selector:base64` secret into a `KeyConfig`;
+    `context` (default `'parseSecretToKey'`) prefixes
+    any thrown error.
+  - `KeyConfig` — `{ selector, privateKey, publicKey,
+    signKey, signer }`. Selector is validated against
+    `SELECTOR_PATTERN`; `privateKey` is the raw seed
+    (branded `Ed25519Seed`); `signKey` is
+    non-extractable / sign-only; `signer` wraps
+    `signKey`.
 - Byte helpers:
   - `encodeBase64(bytes)` — standard, padded.
   - `decodeBase64(b64, context?)` — standard or

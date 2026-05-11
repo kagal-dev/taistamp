@@ -32,6 +32,7 @@ taistamp/
 │   └── @kagal-ed25519-secret/        # @kagal/ed25519-secret
 │       └── src/
 │           ├── index.ts              # public API surface
+│           ├── secret.ts             # selector:base64 secret parsing
 │           ├── key.ts                # Ed25519 key-pair construction
 │           ├── signer.ts             # Ed25519 signer interface and factory
 │           ├── selector.ts           # DKIM selector pattern and validators
@@ -103,10 +104,11 @@ to the error message — in one of two shapes:
   `asBytes`, `asEd25519Seed`, `assertValidSelector`,
   `decodeBase64`, `getRandom`, and `newSigner`.
 - `context: string = '<factory name>'` — used by
-  factories that delegate to a validation helper
-  (currently `newKeyPair`); absence falls back to the
-  factory's own identity so the helper's error always
-  carries a name.
+  composing factories that thread the context through
+  to their delegates (currently `newKeyPair` and
+  `parseSecretToKey`); absence falls back to the
+  factory name so the error always carries
+  attribution.
 
 ### Handling cspell findings
 

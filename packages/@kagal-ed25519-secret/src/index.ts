@@ -10,6 +10,10 @@ export {
   newKeyPair,
 } from './key';
 export {
+  type KeyConfig,
+  parseSecretToKey,
+} from './secret';
+export {
   assertValidSelector,
   isValidSelector,
   SELECTOR_PATTERN,

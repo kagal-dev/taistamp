@@ -27,6 +27,20 @@ pnpm add @kagal/ed25519-secret
   omit / pass `undefined` to generate a fresh seed via
   `crypto.getRandomValues`. `context` prefixes any
   thrown error and defaults to `'newKeyPair'`.
+- `KeyConfig` — the returned config: selector, the
+  Ed25519 key triple, and a `Signer`:
+  - `selector: string` — validated against
+    `SELECTOR_PATTERN`.
+  - `privateKey: Ed25519Seed` — raw seed for
+    persistence.
+  - `publicKey: CryptoKey` — extractable, verify-only.
+  - `signKey: CryptoKey` — non-extractable, sign-only.
+  - `signer: Signer` — pre-built, backed by `signKey`.
+- `parseSecretToKey(secretString, context?)` — parse
+  a `selector:base64` secret into a `KeyConfig`. The
+  base64 portion is a 32-byte Ed25519 seed (standard
+  or URL-safe). `context` prefixes any thrown error
+  and defaults to `'parseSecretToKey'`.
 - `Signer` — `{ sign(message: BufferSource): Promise<ArrayBuffer> }`
 - `newSigner(key, context?)` — WebCrypto Ed25519
   signer factory. Pass an Ed25519 private `CryptoKey`
