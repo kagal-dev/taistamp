@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { decodeBase64, encodeBase64 } from '../utils';
+import { asBytes, decodeBase64, encodeBase64, getRandom } from '../utils';
 
 describe('encodeBase64', () => {
   it('returns the empty string on empty input', () => {
@@ -73,6 +73,71 @@ describe('decodeBase64', () => {
     try {
       decodeBase64('!!!not-base64!!!');
       expect.fail('expected decodeBase64 to throw');
+    } catch (error) {
+      expect(error).toBeInstanceOf(TypeError);
+      expect((error as TypeError).cause).toBeDefined();
+    }
+  });
+});
+
+describe('getRandom', () => {
+  it('returns a Uint8Array of the requested length', () => {
+    expect(getRandom(0)).toHaveLength(0);
+    expect(getRandom(16)).toHaveLength(16);
+    expect(getRandom(32)).toHaveLength(32);
+  });
+
+  it('produces distinct outputs across two calls', () => {
+    expect(getRandom(32)).not.toEqual(getRandom(32));
+  });
+
+  it('rejects a negative length', () => {
+    expect(() => getRandom(-1))
+      .toThrow(/^expected non-negative integer length, got -1$/);
+  });
+
+  it('rejects a non-integer length', () => {
+    expect(() => getRandom(1.5))
+      .toThrow(/^expected non-negative integer length, got 1\.5$/);
+  });
+
+  it('rejects NaN', () => {
+    expect(() => getRandom(Number.NaN))
+      .toThrow(/^expected non-negative integer length, got NaN$/);
+  });
+
+  it('prepends the context prefix when given', () => {
+    expect(() => getRandom(-1, 'myConfig'))
+      .toThrow(/^myConfig: expected non-negative integer length, got -1$/);
+  });
+});
+
+describe('asBytes', () => {
+  it('defensive-copies a bytes input', () => {
+    const mutable = new Uint8Array([1, 2, 3]);
+    const copy = asBytes(mutable);
+    mutable[0] = 0xFF;
+    expect(copy[0]).toBe(1);
+  });
+
+  it('decodes a base64 string', () => {
+    expect(asBytes('AAEC')).toEqual(new Uint8Array([0, 1, 2]));
+  });
+
+  it('threads context through to the decode error', () => {
+    expect(() => asBytes('!!!not-base64!!!', 'myConfig'))
+      .toThrow(/^myConfig: invalid base64$/);
+  });
+
+  it('omits the prefix when no context is given', () => {
+    expect(() => asBytes('!!!not-base64!!!'))
+      .toThrow(/^invalid base64$/);
+  });
+
+  it('preserves the underlying rejection as `cause`', () => {
+    try {
+      asBytes('!!!not-base64!!!');
+      expect.fail('expected asBytes to throw');
     } catch (error) {
       expect(error).toBeInstanceOf(TypeError);
       expect((error as TypeError).cause).toBeDefined();

@@ -100,8 +100,8 @@ trailing context parameter — prepended as `${context}:`
 to the error message — in one of two shapes:
 
 - `context?: string` — absent means no prefix. Used by
-  `assertValidSelector`, `decodeBase64`, `asEd25519Seed`,
-  and `newSigner`.
+  `asBytes`, `asEd25519Seed`, `assertValidSelector`,
+  `decodeBase64`, `getRandom`, and `newSigner`.
 - `context: string = '<factory name>'` — used by
   factories that delegate to a validation helper
   (currently `newKeyPair`); absence falls back to the

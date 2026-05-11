@@ -178,4 +178,44 @@ describe('newKeyPair', () => {
         .rejects.toThrow(/^myConfig: invalid base64$/);
     });
   });
+
+  describe('without input', () => {
+    it('generates a fresh key-pair when called with no argument', async () => {
+      const { privateKey, publicKey, signKey } = await newKeyPair();
+      expect(privateKey).toBeInstanceOf(Uint8Array);
+      expect(privateKey).toHaveLength(32);
+      expect(publicKey.algorithm.name).toBe('Ed25519');
+      expect(publicKey.extractable).toBe(true);
+      expect(signKey.algorithm.name).toBe('Ed25519');
+      expect(signKey.extractable).toBe(false);
+    });
+
+    it('generates a fresh key-pair when called with explicit undefined', async () => {
+      const { privateKey } = await newKeyPair(undefined);
+      expect(privateKey).toBeInstanceOf(Uint8Array);
+      expect(privateKey).toHaveLength(32);
+    });
+
+    it('produces distinct key-pairs across two seedless calls', async () => {
+      const a = await newKeyPair();
+      const b = await newKeyPair();
+      expect(a.privateKey).not.toEqual(b.privateKey);
+      const pubA = new Uint8Array(
+        await crypto.subtle.exportKey('raw', a.publicKey),
+      );
+      const pubB = new Uint8Array(
+        await crypto.subtle.exportKey('raw', b.publicKey),
+      );
+      expect(pubA).not.toEqual(pubB);
+    });
+
+    it('signs and verifies with a fresh seedless key-pair', async () => {
+      const { publicKey, signKey } = await newKeyPair();
+      const message = new TextEncoder().encode('seedless-round-trip');
+      const signature = await crypto.subtle.sign('Ed25519', signKey, message);
+      expect(
+        await crypto.subtle.verify('Ed25519', publicKey, signature, message),
+      ).toBe(true);
+    });
+  });
 });

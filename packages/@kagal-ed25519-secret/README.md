@@ -22,10 +22,11 @@ pnpm add @kagal/ed25519-secret
 - `asEd25519Seed(input, context?)` — validate length
   and brand a seed; accepts a 32-byte `Uint8Array` or
   its base64 encoding.
-- `newKeyPair(input, context?)` — build a `KeyPair`
-  from a 32-byte raw seed (or its base64 encoding).
-  `context` prefixes any thrown error and defaults to
-  `'newKeyPair'`.
+- `newKeyPair(input?, context?)` — build a `KeyPair`
+  from a 32-byte raw seed (or its base64 encoding);
+  omit / pass `undefined` to generate a fresh seed via
+  `crypto.getRandomValues`. `context` prefixes any
+  thrown error and defaults to `'newKeyPair'`.
 - `Signer` — `{ sign(message: BufferSource): Promise<ArrayBuffer> }`
 - `newSigner(key, context?)` — WebCrypto Ed25519
   signer factory. Pass an Ed25519 private `CryptoKey`
@@ -44,7 +45,7 @@ pnpm add @kagal/ed25519-secret
   pattern and quoting the input; `context` prefixes
   the message.
 
-### Base64 helpers
+### Byte helpers
 
 - `encodeBase64(bytes)` — encode bytes as standard
   base64 with `=` padding.
@@ -52,6 +53,15 @@ pnpm add @kagal/ed25519-secret
   URL-safe base64, padding optional. Throws `TypeError`
   on `atob`-rejected input (original rejection as
   `cause`); pass `context` to prefix the error message.
+- `asBytes(input, context?)` — normalise a
+  bytes-or-base64 input to a fresh `Uint8Array`. Bytes
+  are defensive-copied; strings go through
+  `decodeBase64`.
+- `getRandom(length, context?)` — fresh `Uint8Array`
+  of the requested length filled via
+  `crypto.getRandomValues`. Throws `TypeError` on
+  non-integer or negative `length`; pass `context` to
+  prefix the error message.
 
 ## Licence
 

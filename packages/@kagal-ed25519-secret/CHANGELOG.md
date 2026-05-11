@@ -7,12 +7,14 @@ documented in this file.
 
 ### Added
 
-- Ed25519 key-pair construction — `newKeyPair(input,
+- Ed25519 key-pair construction — `newKeyPair(input?,
   context?)` produces a `KeyPair` from a 32-byte
-  Ed25519 seed (RFC 8032), accepting either raw bytes
-  or their base64 encoding. The returned `KeyPair`
-  carries the branded seed (`privateKey`), an
-  extractable `publicKey` (for distribution), and a
+  Ed25519 seed (RFC 8032), accepting raw bytes, their
+  base64 encoding, or no input at all (fresh seed
+  generated via `crypto.getRandomValues`). The
+  returned `KeyPair` carries the branded seed
+  (`privateKey`), an extractable `publicKey` (for
+  distribution), and a
   non-extractable `signKey` (for in-process signing).
   `context` (default `'newKeyPair'`) prefixes any
   thrown error.
@@ -20,11 +22,17 @@ documented in this file.
   validates length and defensive-copies seed bytes,
   returning the branded `Ed25519Seed`. String input is
   decoded as base64 first.
-- Base64 helpers:
+- Byte helpers:
   - `encodeBase64(bytes)` — standard, padded.
   - `decodeBase64(b64, context?)` — standard or
     URL-safe, padding optional; throws `TypeError`
     on `atob` rejection, optional `context` prefix.
+  - `asBytes(input, context?)` — normalise bytes or
+    base64 to a fresh `Uint8Array`.
+  - `getRandom(length, context?)` — fresh random
+    bytes via `crypto.getRandomValues`; throws
+    `TypeError` on non-integer or negative `length`,
+    optional `context` prefix.
 
 ### Changed
 

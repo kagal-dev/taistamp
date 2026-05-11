@@ -1,4 +1,4 @@
-import { decodeBase64 } from './utils';
+import { asBytes, getRandom } from './utils';
 
 const PKCS8_ED25519_HEADER = new Uint8Array([
   0x30, 0x2E, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06,
@@ -55,9 +55,7 @@ export const asEd25519Seed = (
   input: Readonly<Uint8Array> | string,
   context?: string,
 ): Ed25519Seed => {
-  const bytes = typeof input === 'string' ?
-    decodeBase64(input, context) :
-    new Uint8Array(input);
+  const bytes = asBytes(input, context);
   if (bytes.length !== 32) {
     const prefix = context === undefined ? '' : `${context}: `;
     throw new TypeError(
@@ -104,15 +102,16 @@ export interface KeyPair {
 
 /**
  * Build an Ed25519 key triple from a 32-byte private
- * seed (RFC 8032). String input is decoded as base64
- * first.
+ * seed (RFC 8032). Omit / pass `undefined` to generate
+ * a fresh seed via `crypto.getRandomValues`.
  *
  * The seed is routed through {@link asEd25519Seed} so
  * the returned {@link KeyPair.privateKey} is a
  * defensive copy, branded as {@link Ed25519Seed}.
  *
- * @param input - 32-byte raw Ed25519 seed, or its
- *   base64 encoding
+ * @param input - 32-byte raw Ed25519 seed, its base64
+ *   encoding, or `undefined` (or omitted) to generate
+ *   a fresh seed
  * @param context - prefix prepended to the thrown
  *   error message; defaults to `'newKeyPair'`
  * @returns a {@link KeyPair} ready for sign / verify
@@ -120,10 +119,10 @@ export interface KeyPair {
  *   string input fails to decode as base64
  */
 export const newKeyPair = async (
-  input: Readonly<Uint8Array> | string,
+  input?: Readonly<Uint8Array> | string,
   context: string = 'newKeyPair',
 ): Promise<KeyPair> => {
-  const privateKey = asEd25519Seed(input, context);
+  const privateKey = asEd25519Seed(input ?? getRandom(32), context);
 
   const pkcs8 = composePrivateKeyInfo(privateKey);
 

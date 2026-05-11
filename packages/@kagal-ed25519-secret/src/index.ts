@@ -19,6 +19,8 @@ export {
   type Signer,
 } from './signer';
 export {
+  asBytes,
   decodeBase64,
   encodeBase64,
+  getRandom,
 } from './utils';

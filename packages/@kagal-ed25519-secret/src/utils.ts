@@ -3,7 +3,7 @@
  * padding. The output round-trips through
  * {@link decodeBase64}.
  */
-export const encodeBase64 = (bytes: Uint8Array): string => {
+export const encodeBase64 = (bytes: Readonly<Uint8Array>): string => {
   let binary = '';
   for (const byte of bytes) binary += String.fromCodePoint(byte);
   return btoa(binary);
@@ -36,3 +36,53 @@ export const decodeBase64 = (
   // eslint-disable-next-line unicorn/prefer-code-point
   return Uint8Array.from(binary, (c) => c.charCodeAt(0));
 };
+
+/**
+ * Fill a fresh `Uint8Array` of the requested length
+ * with cryptographically secure random bytes via
+ * `crypto.getRandomValues`, subject to its length cap
+ * (typically 64 KiB).
+ *
+ * @param length - non-negative integer byte count
+ * @param context - optional prefix prepended to the
+ *   thrown error message
+ * @returns a fresh `Uint8Array` of `length` random
+ *   bytes
+ * @throws TypeError if `length` is not a non-negative
+ *   integer
+ * @throws QuotaExceededError forwarded from
+ *   `crypto.getRandomValues` when `length` exceeds
+ *   the underlying cap (typically 65536 bytes)
+ */
+export const getRandom = (
+  length: number,
+  context?: string,
+): Uint8Array => {
+  if (!Number.isInteger(length) || length < 0) {
+    const prefix = context === undefined ? '' : `${context}: `;
+    throw new TypeError(
+      `${prefix}expected non-negative integer length, got ${length}`,
+    );
+  }
+  return crypto.getRandomValues(new Uint8Array(length));
+};
+
+/**
+ * Normalise a bytes-or-base64 input to a fresh
+ * `Uint8Array`. Bytes are defensive-copied; strings
+ * are decoded via {@link decodeBase64}.
+ *
+ * @param input - bytes or base64 string
+ * @param context - optional prefix prepended to a
+ *   decode error
+ * @returns a fresh `Uint8Array`
+ * @throws TypeError if string input fails to decode
+ *   as base64
+ */
+export const asBytes = (
+  input: Readonly<Uint8Array> | string,
+  context?: string,
+): Uint8Array =>
+  typeof input === 'string' ?
+    decodeBase64(input, context) :
+    new Uint8Array(input);
