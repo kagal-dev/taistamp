@@ -77,7 +77,7 @@ When CORS is enabled, responses carry:
 
 | Response | CORS headers added | `Vary: Origin` (scoped origin only) |
 |----------|--------------------|------|
-| `OPTIONS` 200 | `Access-Control-Allow-Origin`, `Access-Control-Allow-Methods: GET, HEAD`, `Access-Control-Allow-Headers: TAI-Nonce`, `Access-Control-Expose-Headers: TAI-Leap-Seconds, TAI-Nonce, TAI-Key-Selector, TAI-Signature` | yes |
+| `OPTIONS` 200 | `Access-Control-Allow-Origin`, `Access-Control-Allow-Methods: GET, HEAD`, `Access-Control-Allow-Headers: TAI-Nonce`, `Access-Control-Expose-Headers: TAI-Leap-Seconds, TAI-Nonce, TAI-Key-Selector, TAI-Signature`, `Access-Control-Max-Age: 600` | yes |
 | `GET` / `HEAD` 200 | `Access-Control-Allow-Origin`, `Access-Control-Expose-Headers` (so browser JS can read the `TAI-*` headers) | yes |
 | `405` | `Access-Control-Allow-Origin` | yes |
 

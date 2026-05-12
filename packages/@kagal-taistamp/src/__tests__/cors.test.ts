@@ -26,6 +26,7 @@ describe('CORS', () => {
       .toBe(TAI64N_HEADER_NONCE);
     expect(response.headers.get('access-control-expose-headers'))
       .toBe(exposeHeaders);
+    expect(response.headers.get('access-control-max-age')).toBe('600');
     expect(response.headers.get('vary')).toBeNull();
   });
 
@@ -63,6 +64,7 @@ describe('CORS', () => {
     expect(response.headers.get('access-control-allow-methods')).toBeNull();
     expect(response.headers.get('access-control-allow-headers')).toBeNull();
     expect(response.headers.get('access-control-expose-headers')).toBeNull();
+    expect(response.headers.get('access-control-max-age')).toBeNull();
   });
 
   it('advertises Allow: GET, HEAD, OPTIONS on 405 when CORS on', async () => {

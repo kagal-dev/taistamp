@@ -166,7 +166,8 @@ export interface TaistampHandlerConfig {
    * Every response (`GET` / `HEAD` / `OPTIONS` / `405`)
    * gains `Access-Control-Allow-Origin`; pre-flight
    * `OPTIONS` also carries `-Allow-Methods`,
-   * `-Allow-Headers`, and `-Expose-Headers`; success
+   * `-Allow-Headers`, `-Expose-Headers`, and
+   * `-Max-Age: 600` per spec §4.2; success
    * `GET` / `HEAD` carry `-Expose-Headers` so browser
    * JS can read the `TAI-*` response headers. A
    * non-`'*'` value adds `Vary: Origin` so caches can

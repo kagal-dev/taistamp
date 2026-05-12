@@ -5,6 +5,14 @@ documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `Access-Control-Max-Age: 600` on the pre-flight
+  `OPTIONS` response, satisfying the spec §4.2
+  SHOULD. Cuts pre-flight churn on high-traffic
+  cross-origin clients (browsers' built-in defaults
+  range from Chromium ~5s to Firefox 24h).
+
 ### Fixed
 
 - `HEAD` responses no longer echo `TAI-Nonce` when
