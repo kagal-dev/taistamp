@@ -201,6 +201,14 @@ signatures stay verifiable until their TXT is removed.
 
 ## Verifying
 
+Spec §7 requires verifiers to use the RFC 8032
+§5.1.7 strict verification procedure (cofactor
+handling, signature-malleability resistance).
+WebCrypto's `Ed25519 verify` is specified to apply
+strict verification; confirm your runtime conforms,
+or fall back to a strict-verify library such as
+`@noble/ed25519`.
+
 ```typescript
 import {
   asNonce,

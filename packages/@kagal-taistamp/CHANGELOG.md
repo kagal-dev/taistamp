@@ -24,6 +24,12 @@ documented in this file.
 
 ### Changed
 
+- README's Verifying section now cites spec §7's
+  MUST that verifiers apply the RFC 8032 §5.1.7
+  strict verification procedure (cofactor handling,
+  signature-malleability resistance), with a
+  fallback note for runtimes whose WebCrypto
+  `Ed25519 verify` is not guaranteed strict.
 - `Signer` and `newEd25519Signer` move out into the
   new `@kagal/ed25519-secret` workspace package
   (`newEd25519Signer` is renamed to `newSigner` there
