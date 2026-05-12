@@ -3,11 +3,16 @@ name: Publish to NPM
 on:
   push:
     tags:
-      - '@*/*@*'
+      - '@*/*@[0-9]*'
+
+concurrency:
+  group: publish-${{ github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
       id-token: write
@@ -17,7 +22,10 @@ jobs:
       - uses: pnpm/action-setup@v5
       - uses: actions/setup-node@v6
         with:
-          node-version: '20.20.1'
-      - run: npm install -g npm@latest
+          node-version: '24'
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm -r publish:maybe --provenance --no-git-checks
+      - name: Publish ${{ github.ref_name }}
+        run: pnpm --filter "${TAG%@*}" publish:maybe --provenance --no-git-checks
+        env:
+          TAG: ${{ github.ref_name }}
