@@ -5,6 +5,15 @@ documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- `HEAD` responses no longer echo `TAI-Nonce` when
+  the client sent one. The handler's nonce-echo
+  branch was unconditional on method; spec §4.1
+  forbids `HEAD` responses from carrying
+  `TAI-Nonce` (alongside the already-omitted
+  `TAI-Key-Selector` and `TAI-Signature`).
+
 ### Changed
 
 - `Signer` and `newEd25519Signer` move out into the

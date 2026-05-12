@@ -52,12 +52,13 @@ Response headers on success:
 | `Cache-Control` | `no-store` |
 | `TAI-Leap-Seconds` | decimal count (e.g. `37`), always present |
 
-A request `TAI-Nonce` is echoed verbatim in the
-response. `HEAD` responses carry the same headers as
-the corresponding `GET` but never include
-`TAI-Key-Selector` or `TAI-Signature` — the signed
-payload covers the response body, so a `HEAD` cannot
-be verified.
+A request `TAI-Nonce` on `GET` is echoed verbatim in
+the response. `HEAD` responses carry the same headers
+as the corresponding `GET` but never include
+`TAI-Nonce`, `TAI-Key-Selector`, or `TAI-Signature` —
+the signed payload covers the response body, so a
+`HEAD` cannot be verified, and the spec forbids the
+nonce echo on `HEAD` for the same reason.
 
 ## CORS
 

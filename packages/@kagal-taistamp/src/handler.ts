@@ -279,12 +279,13 @@ const fromHandlerConfig = (config: TaistampHandlerConfig) => {
  *   never signed.
  * - Any other method — `405 Method Not Allowed` with
  *   `Allow: GET, HEAD, OPTIONS`.
- * - Request `TAI-Nonce` — the value is echoed verbatim
- *   in the response. A missing, empty, duplicated,
- *   structurally malformed, or out-of-range
+ * - Request `TAI-Nonce` — on `GET`, the value is echoed
+ *   verbatim in the response. A missing, empty,
+ *   duplicated, structurally malformed, or out-of-range
  *   (14..174 octets) field is treated as absent (no
  *   echo, no signature) per spec §5.2 — see
- *   {@link extractNonce}.
+ *   {@link extractNonce}. `HEAD`, `OPTIONS`, and `405`
+ *   responses never carry `TAI-Nonce` per spec §4.1.
  * - Request `TAI-Nonce` *and* `signer` configured *and*
  *   the request method is `GET` — adds
  *   `TAI-Key-Selector` and `TAI-Signature` (sf-binary)
@@ -336,9 +337,9 @@ export const newTaistampHandler = (
       ...corsHeaders.response,
     });
 
-    if (nonce) {
+    if (nonce && request.method === 'GET') {
       headers.set(TAI64N_HEADER_NONCE, nonce);
-      if (request.method === 'GET' && addSignature) {
+      if (addSignature) {
         await addSignature(headers, label, nonce);
       }
     }
