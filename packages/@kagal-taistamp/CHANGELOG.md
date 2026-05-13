@@ -5,6 +5,8 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-05-13
+
 ### Added
 
 - `Access-Control-Max-Age: 600` on the pre-flight
