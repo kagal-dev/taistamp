@@ -52,12 +52,13 @@ Response headers on success:
 | `Cache-Control` | `no-store` |
 | `TAI-Leap-Seconds` | decimal count (e.g. `37`), always present |
 
-A request `TAI-Nonce` is echoed verbatim in the
-response. `HEAD` responses carry the same headers as
-the corresponding `GET` but never include
-`TAI-Key-Selector` or `TAI-Signature` — the signed
-payload covers the response body, so a `HEAD` cannot
-be verified.
+A request `TAI-Nonce` on `GET` is echoed verbatim in
+the response. `HEAD` responses carry the same headers
+as the corresponding `GET` but never include
+`TAI-Nonce`, `TAI-Key-Selector`, or `TAI-Signature` —
+the signed payload covers the response body, so a
+`HEAD` cannot be verified, and the spec forbids the
+nonce echo on `HEAD` for the same reason.
 
 ## CORS
 
@@ -76,7 +77,7 @@ When CORS is enabled, responses carry:
 
 | Response | CORS headers added | `Vary: Origin` (scoped origin only) |
 |----------|--------------------|------|
-| `OPTIONS` 200 | `Access-Control-Allow-Origin`, `Access-Control-Allow-Methods: GET, HEAD`, `Access-Control-Allow-Headers: TAI-Nonce`, `Access-Control-Expose-Headers: TAI-Leap-Seconds, TAI-Nonce, TAI-Key-Selector, TAI-Signature` | yes |
+| `OPTIONS` 200 | `Access-Control-Allow-Origin`, `Access-Control-Allow-Methods: GET, HEAD`, `Access-Control-Allow-Headers: TAI-Nonce`, `Access-Control-Expose-Headers: TAI-Leap-Seconds, TAI-Nonce, TAI-Key-Selector, TAI-Signature`, `Access-Control-Max-Age: 600` | yes |
 | `GET` / `HEAD` 200 | `Access-Control-Allow-Origin`, `Access-Control-Expose-Headers` (so browser JS can read the `TAI-*` headers) | yes |
 | `405` | `Access-Control-Allow-Origin` | yes |
 
@@ -199,6 +200,14 @@ expired. Verifiers cache by selector, so old
 signatures stay verifiable until their TXT is removed.
 
 ## Verifying
+
+Spec §7 requires verifiers to use the RFC 8032
+§5.1.7 strict verification procedure (cofactor
+handling, signature-malleability resistance).
+WebCrypto's `Ed25519 verify` is specified to apply
+strict verification; confirm your runtime conforms,
+or fall back to a strict-verify library such as
+`@noble/ed25519`.
 
 ```typescript
 import {

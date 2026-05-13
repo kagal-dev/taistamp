@@ -5,8 +5,31 @@ documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `Access-Control-Max-Age: 600` on the pre-flight
+  `OPTIONS` response, satisfying the spec §4.2
+  SHOULD. Cuts pre-flight churn on high-traffic
+  cross-origin clients (browsers' built-in defaults
+  range from Chromium ~5s to Firefox 24h).
+
+### Fixed
+
+- `HEAD` responses no longer echo `TAI-Nonce` when
+  the client sent one. The handler's nonce-echo
+  branch was unconditional on method; spec §4.1
+  forbids `HEAD` responses from carrying
+  `TAI-Nonce` (alongside the already-omitted
+  `TAI-Key-Selector` and `TAI-Signature`).
+
 ### Changed
 
+- README's Verifying section now cites spec §7's
+  MUST that verifiers apply the RFC 8032 §5.1.7
+  strict verification procedure (cofactor handling,
+  signature-malleability resistance), with a
+  fallback note for runtimes whose WebCrypto
+  `Ed25519 verify` is not guaranteed strict.
 - `Signer` and `newEd25519Signer` move out into the
   new `@kagal/ed25519-secret` workspace package
   (`newEd25519Signer` is renamed to `newSigner` there

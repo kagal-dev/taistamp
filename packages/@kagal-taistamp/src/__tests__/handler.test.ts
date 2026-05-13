@@ -76,6 +76,17 @@ describe('newTaistampHandler', () => {
       expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
     });
 
+    it('omits TAI-Nonce on HEAD even when the client sent one', async () => {
+      const nonce = ':aGVhZC1ub25jZS12YWx1ZQ==:';
+      const response = await handler(new Request(baseURL, {
+        method: 'HEAD',
+        headers: { [TAI64N_HEADER_NONCE]: nonce },
+      }));
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
+    });
+
     it('omits TAI-Nonce when the request did not send one', async () => {
       const response = await handler(new Request(baseURL));
 
@@ -198,7 +209,7 @@ describe('newTaistampHandler', () => {
       expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
     });
 
-    it('does not sign HEAD responses even with a nonce', async () => {
+    it('omits TAI-Nonce, TAI-Signature, and TAI-Key-Selector on HEAD even with a nonce', async () => {
       const { privateKey } = await newKeypair();
       const handler = newTaistampHandler({
         selector,
@@ -212,7 +223,7 @@ describe('newTaistampHandler', () => {
       }));
 
       expect(response.status).toBe(200);
-      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBe(nonce);
+      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
       expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
       expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBeNull();
     });
