@@ -5,6 +5,61 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-05-11
+
+### Added
+
+- Ed25519 key-pair construction — `newKeyPair(input?,
+  context?)` produces a `KeyPair` from a 32-byte
+  Ed25519 seed (RFC 8032), accepting raw bytes, their
+  base64 encoding, or no input at all (fresh seed
+  generated via `crypto.getRandomValues`). The
+  returned `KeyPair` carries the branded seed
+  (`privateKey`), an extractable `publicKey` (for
+  distribution), and a
+  non-extractable `signKey` (for in-process signing).
+  `context` (default `'newKeyPair'`) prefixes any
+  thrown error.
+- Seed validator — `asEd25519Seed(input, context?)`
+  validates length and defensive-copies seed bytes,
+  returning the branded `Ed25519Seed`. String input is
+  decoded as base64 first.
+- Secret parsing:
+  - `parseSecretToKey(secretString, context?)` — parse
+    a `selector:base64` secret into a `KeyConfig`;
+    `context` (default `'parseSecretToKey'`) prefixes
+    any thrown error.
+  - `KeyConfig` — `{ selector, privateKey, publicKey,
+    signKey, signer }`. Selector is validated against
+    `SELECTOR_PATTERN`; `privateKey` is the raw seed
+    (branded `Ed25519Seed`); `signKey` is
+    non-extractable / sign-only; `signer` wraps
+    `signKey`.
+- Byte helpers:
+  - `encodeBase64(bytes)` — standard, padded.
+  - `decodeBase64(b64, context?)` — standard or
+    URL-safe, padding optional; throws `TypeError`
+    on `atob` rejection, optional `context` prefix.
+  - `asBytes(input, context?)` — normalise bytes or
+    base64 to a fresh `Uint8Array`.
+  - `getRandom(length, context?)` — fresh random
+    bytes via `crypto.getRandomValues`; throws
+    `TypeError` on non-integer or negative `length`,
+    optional `context` prefix.
+
+### Changed
+
+- `newSigner(key, context?)`:
+  - Validates `key.algorithm.name` and `key.usages`
+    at construction; both throws use the
+    `expected X, got Y` form.
+  - Optional `context?` prefixes the error with
+    `<context>:`, joining `assertValidSelector` and
+    `decodeBase64`.
+- `assertValidSelector` error quotes the offending
+  value alongside the pattern, matching the same
+  `expected X, got Y` shape.
+
 ## [0.0.1] - 2026-05-06
 
 ### Added

@@ -70,4 +70,36 @@ describe('newSigner', () => {
 
     expect(a).toEqual(b);
   });
+
+  it('rejects a non-Ed25519 key', async () => {
+    const { privateKey } = await crypto.subtle.generateKey(
+      { name: 'ECDSA', namedCurve: 'P-256' },
+      true,
+      ['sign', 'verify'],
+    ) as CryptoKeyPair;
+    expect(() => newSigner(privateKey))
+      .toThrow(/^expected Ed25519 key, got ECDSA$/);
+  });
+
+  it('rejects a key without sign usage', async () => {
+    const { publicKey } = await newKeypair();
+    expect(() => newSigner(publicKey))
+      .toThrow(/^expected sign usage, got \[verify\]$/);
+  });
+
+  it('prepends the context prefix on the algorithm error', async () => {
+    const { privateKey } = await crypto.subtle.generateKey(
+      { name: 'ECDSA', namedCurve: 'P-256' },
+      true,
+      ['sign', 'verify'],
+    ) as CryptoKeyPair;
+    expect(() => newSigner(privateKey, 'myFn'))
+      .toThrow(/^myFn: expected Ed25519 key, got ECDSA$/);
+  });
+
+  it('prepends the context prefix on the usage error', async () => {
+    const { publicKey } = await newKeypair();
+    expect(() => newSigner(publicKey, 'myFn'))
+      .toThrow(/^myFn: expected sign usage, got \[verify\]$/);
+  });
 });

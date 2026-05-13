@@ -61,15 +61,6 @@ describe('assertValidSelector', () => {
     expect(() => assertValidSelector('sel2026q2')).not.toThrow();
   });
 
-  it('throws TypeError on invalid input', () => {
-    expect(() => assertValidSelector('has spaces')).toThrow(TypeError);
-  });
-
-  it('mentions the pattern source in the message', () => {
-    expect(() => assertValidSelector(''))
-      .toThrow(SELECTOR_PATTERN.source);
-  });
-
   it('omits the prefix when no context is given', () => {
     expect(() => assertValidSelector('bad selector'))
       .toThrow(/^selector must match /);
@@ -78,5 +69,17 @@ describe('assertValidSelector', () => {
   it('prepends the context prefix when given', () => {
     expect(() => assertValidSelector('bad selector', 'myFn'))
       .toThrow(/^myFn: selector must match /);
+  });
+
+  it('names the pattern and quotes the input', () => {
+    try {
+      assertValidSelector('a b');
+      expect.fail('expected throw');
+    } catch (error) {
+      expect(error).toBeInstanceOf(TypeError);
+      const msg = (error as Error).message;
+      expect(msg).toContain(SELECTOR_PATTERN.source);
+      expect(msg).toContain('"a b"');
+    }
   });
 });

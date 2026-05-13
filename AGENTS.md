@@ -32,8 +32,11 @@ taistamp/
 │   └── @kagal-ed25519-secret/        # @kagal/ed25519-secret
 │       └── src/
 │           ├── index.ts              # public API surface
-│           ├── signer.ts             # Signer, newSigner
-│           ├── selector.ts           # SELECTOR_PATTERN, isValidSelector, assertValidSelector
+│           ├── secret.ts             # selector:base64 secret parsing
+│           ├── key.ts                # Ed25519 key-pair construction
+│           ├── signer.ts             # Ed25519 signer interface and factory
+│           ├── selector.ts           # DKIM selector pattern and validators
+│           ├── utils.ts              # base64 helpers
 │           └── __tests__/
 ├── docs/                             # design notes (untracked)
 ├── internal/build/cspell.json        # shared cspell config
@@ -90,6 +93,22 @@ Enforced by .editorconfig and @poupe/eslint-config:
 
 Prefer `new` or `make` prefix, not `create`
 (e.g. `newFoo()`, `makeFoo()`).
+
+### Throwing helpers
+
+In `@kagal-ed25519-secret`, helpers that throw accept a
+trailing context parameter — prepended as `${context}:`
+to the error message — in one of two shapes:
+
+- `context?: string` — absent means no prefix. Used by
+  `asBytes`, `asEd25519Seed`, `assertValidSelector`,
+  `decodeBase64`, `getRandom`, and `newSigner`.
+- `context: string = '<factory name>'` — used by
+  composing factories that thread the context through
+  to their delegates (currently `newKeyPair` and
+  `parseSecretToKey`); absence falls back to the
+  factory name so the error always carries
+  attribution.
 
 ### Handling cspell findings
 

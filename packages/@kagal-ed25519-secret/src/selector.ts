@@ -27,9 +27,8 @@ export const isValidSelector = (value: string): boolean =>
 
 /**
  * Throw `TypeError` when `value` does not match
- * {@link SELECTOR_PATTERN}. Callers fail fast on
- * misconfigured input rather than surface the violation
- * later as a DNS lookup of an impossible label.
+ * {@link SELECTOR_PATTERN}, naming the pattern and
+ * quoting the offending input.
  *
  * @param value - candidate selector
  * @param context - optional prefix prepended to the
@@ -43,7 +42,7 @@ export const assertValidSelector = (
   if (!isValidSelector(value)) {
     const prefix = context === undefined ? '' : `${context}: `;
     throw new TypeError(
-      `${prefix}selector must match ${SELECTOR_PATTERN.source}`,
+      `${prefix}selector must match ${SELECTOR_PATTERN.source}, got "${value}"`,
     );
   }
 };
