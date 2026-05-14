@@ -31,6 +31,19 @@ export default defineConfig({
         test: {
           name: 'workerd',
           include: ['src/**/*.workerd.test.ts'],
+          server: {
+            deps: {
+              // Bundle jiti into the worker so its
+              // internal `require('node:process')` is
+              // handled by vite's transform rather than
+              // routed to vitest-pool-workers' module
+              // fallback, whose allowlist omits
+              // `node:process`. Surfaced in the publish
+              // run at
+              // https://github.com/kagal-dev/taistamp/actions/runs/25879706794
+              inline: ['jiti'],
+            },
+          },
         },
       },
       {
