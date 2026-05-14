@@ -1,6 +1,6 @@
 {
   "name": "@kagal/taistamp",
-  "version": "0.0.4",
+  "version": "0.0.5-dummy1",
   "type": "module",
   "description": "Signed TAI64N timestamps over HTTP",
   "author": "Apptly Software Ltd <oss@apptly.co>",
