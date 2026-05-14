@@ -5,6 +5,19 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.0.4] - 2026-05-13
+
+Maintenance release.
+
+### Added
+
+- `test:compat` — framework-free smoke probe at
+  `src/__tests__/compat.mjs` confirming the built
+  dist loads on the current Node version and that
+  public exports (HTTP wire constants, encoding
+  constants, function-typed entries) resolve to the
+  expected shapes.
+
 ## [0.0.3] - 2026-05-13
 
 ### Added

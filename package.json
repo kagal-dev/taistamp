@@ -21,6 +21,7 @@
     "prepack": "run-s lint:root:check prepack:_packages",
     "prepack:_packages": "pnpm -r prepack",
     "test": "pnpm -r test",
+    "test:compat": "pnpm -r test:compat",
     "test:coverage": "pnpm -r test:coverage",
     "type-check": "pnpm -r type-check"
   },
