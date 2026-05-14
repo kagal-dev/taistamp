@@ -5,6 +5,12 @@ documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- DevDependency pins normalised to `^` outside
+  `~0.0.x`, so routine minor bumps no longer require
+  a manual range edit.
+
 ## [0.0.4] - 2026-05-13
 
 Maintenance release.
