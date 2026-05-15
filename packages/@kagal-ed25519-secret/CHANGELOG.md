@@ -12,6 +12,7 @@ documented in this file.
   a manual range edit.
 - DevDependencies refreshed — `@types/node`,
   `@vitest/coverage-istanbul`, `publint`, `vitest`.
+- TypeScript devDependency bumped to `^6.0.3` (major).
 
 ## [0.1.1] - 2026-05-13
 

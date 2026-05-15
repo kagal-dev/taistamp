@@ -13,6 +13,7 @@ documented in this file.
 - DevDependencies refreshed — `@cloudflare/workers-types`,
   `@types/node`, `@vitest/coverage-istanbul`, `publint`,
   `vitest`.
+- TypeScript devDependency bumped to `^6.0.3` (major).
 
 ## [0.0.4] - 2026-05-13
 
