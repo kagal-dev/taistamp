@@ -13,11 +13,11 @@ import {
   TAI64N_HEADER_LEAP_SECONDS,
   TAI64N_HEADER_NONCE,
   TAI64N_HEADER_SIGNATURE,
-  TAI64N_PATH,
   TAI_LEAP_SECONDS,
+  TAISTAMP_PATH,
 } from '..';
 
-const baseURL = `https://example.com${TAI64N_PATH}`;
+const baseURL = `https://example.com${TAISTAMP_PATH}`;
 
 const decodeStructuredBinary = (value: string): ArrayBuffer => {
   const trimmed = value.startsWith(':') && value.endsWith(':') ?

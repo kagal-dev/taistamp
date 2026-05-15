@@ -5,6 +5,11 @@ documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `TAISTAMP_PATH` constant — canonical export for the
+  `/.well-known/taistamp` endpoint path.
+
 ### Changed
 
 - DevDependency pins normalised to `^` outside
@@ -17,6 +22,11 @@ documented in this file.
 - Build toolchain migrated from `unbuild` to `obuild`;
   dist layout (`index.mjs` + `index.d.mts` + sourcemaps)
   is unchanged.
+
+### Deprecated
+
+- `TAI64N_PATH` — renamed to `TAISTAMP_PATH`. Kept as
+  an alias so existing imports continue to work.
 
 ### Removed
 
@@ -34,6 +44,10 @@ documented in this file.
   path, which the `@cloudflare/vitest-pool-workers`
   pool was incompatible with under the publish
   environment.
+- `TAI64N_PATH` was a misnomer for the
+  `/.well-known/taistamp` endpoint; the canonical
+  export is now `TAISTAMP_PATH`. The old name stays
+  as a deprecated alias for back-compat.
 
 ## [0.0.4] - 2026-05-13
 

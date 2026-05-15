@@ -1,4 +1,7 @@
-export const TAI64N_PATH = '/.well-known/taistamp';
+export const TAISTAMP_PATH = '/.well-known/taistamp';
+
+/** @deprecated Renamed to {@link TAISTAMP_PATH}. */
+export const TAI64N_PATH = TAISTAMP_PATH;
 
 export const TAI64N_CONTENT_TYPE = 'application/tai64n';
 export const TAI64N_CONTENT_LENGTH = 1 + 16 + 8; // '@' + sec (16 hex chars) + nano (8 hex chars)

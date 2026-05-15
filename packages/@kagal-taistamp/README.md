@@ -15,14 +15,14 @@ pnpm add @kagal/taistamp
 ## Handler
 
 ```typescript
-import { newTaistampHandler, TAI64N_PATH } from '@kagal/taistamp';
+import { newTaistampHandler, TAISTAMP_PATH } from '@kagal/taistamp';
 
 const taistamp = newTaistampHandler();
 
 // Worker fetch handler
 export default {
   async fetch(request: Request): Promise<Response> {
-    if (new URL(request.url).pathname === TAI64N_PATH) {
+    if (new URL(request.url).pathname === TAISTAMP_PATH) {
       return taistamp(request);
     }
     // ...
@@ -30,7 +30,7 @@ export default {
 };
 
 // Hono route
-app.get(TAI64N_PATH, (c) => taistamp(c.req.raw));
+app.get(TAISTAMP_PATH, (c) => taistamp(c.req.raw));
 ```
 
 `newTaistampHandler()` returns an
@@ -305,7 +305,7 @@ history.
 
 | Name | Value |
 |------|-------|
-| `TAI64N_PATH` | `/.well-known/taistamp` |
+| `TAISTAMP_PATH` | `/.well-known/taistamp` |
 | `TAI64N_CONTENT_TYPE` | `application/tai64n` |
 | `TAI64N_CONTENT_LENGTH` | `25` |
 | `TAI64N_HEADER_KEY_SELECTOR` | `TAI-Key-Selector` |
