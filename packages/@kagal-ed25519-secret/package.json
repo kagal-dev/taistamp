@@ -16,10 +16,16 @@
   },
   "keywords": [
     "kagal",
+    "base64url",
+    "cryptography",
+    "dkim",
     "ed25519",
+    "eddsa",
+    "rfc8032",
     "selector",
     "signer",
-    "typescript"
+    "typescript",
+    "webcrypto"
   ],
   "types": "./dist/index.d.mts",
   "exports": {
