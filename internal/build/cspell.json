@@ -12,6 +12,7 @@
     "apptly",
     "dkim",
     "dmarc",
+    "eddsa",
     "hono",
     "kagal",
     "poupe",

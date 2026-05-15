@@ -16,9 +16,19 @@
   },
   "keywords": [
     "kagal",
+    "cryptography",
+    "ed25519",
+    "eddsa",
+    "handler",
+    "http",
+    "nonce",
+    "rfc8032",
+    "signing",
     "tai64n",
     "taistamp",
-    "typescript"
+    "timestamp",
+    "typescript",
+    "webcrypto"
   ],
   "types": "./dist/index.d.mts",
   "exports": {

@@ -1,4 +1,8 @@
-# @kagal/taistamp
+# @kagal/taistamp — HTTP handler for Ed25519-signed TAI64N timestamps
+
+[![jsDocs.io][jsdocs-badge]][jsdocs-url]
+[![npm version][npm-badge]][npm-url]
+[![Licence: MIT][mit-badge]][mit]
 
 Platform-neutral handler for `/.well-known/taistamp` —
 serves signed [TAI64N][tai64n] timestamps over HTTP for
@@ -6,13 +10,24 @@ clients that need authenticated wall-clock time without
 running an NTP stack or trusting an unauthenticated TLS
 handshake clock.
 
+Runs anywhere with `crypto.subtle` — modern browsers,
+Node ≥ 20, Cloudflare Workers, Deno, and Bun.
+
 ## Install
+
+```sh
+npm install @kagal/taistamp
+```
+
+```sh
+yarn add @kagal/taistamp
+```
 
 ```sh
 pnpm add @kagal/taistamp
 ```
 
-## Handler
+## Usage
 
 ```typescript
 import { newTaistampHandler, TAISTAMP_PATH } from '@kagal/taistamp';
@@ -98,7 +113,7 @@ answered with `200` and
 (RFC 9110 §9.3.7) is independent of cross-origin
 policy.
 
-## Signing
+## Signing the response
 
 ```typescript
 import {
@@ -122,12 +137,13 @@ package directly.
 `signer` and `selector` are co-required: pass both to
 sign, neither for an unsigned handler. Construction
 throws if only one is supplied, or if `selector` does
-not match `[A-Za-z][A-Za-z0-9_-]{0,62}` (a single
-DNS-safe label that starts with a letter and is also a
-valid Structured Field token).
+not match `/^[A-Za-z](?:[\dA-Za-z_-]{0,61}[\dA-Za-z])?$/`
+(a single DNS-safe label that starts with a letter,
+ends with a letter or digit, and is also a valid
+Structured Field token).
 
 When the request is a `GET` carrying a valid
-`TAI-Nonce` (see Handler section for the
+`TAI-Nonce` (see Usage section for the
 "treat as absent" rules) *and* a signer is configured,
 the response gains:
 
@@ -199,7 +215,7 @@ then removing the old TXT once cached responses have
 expired. Verifiers cache by selector, so old
 signatures stay verifiable until their TXT is removed.
 
-## Verifying
+## Verifying a signature
 
 Spec §7 requires verifiers to use the RFC 8032
 §5.1.7 strict verification procedure (cofactor
@@ -282,7 +298,58 @@ outside 14..174 octets). Comparing the verifier's
 recorded nonce against the response's `TAI-Nonce`
 defends against replay.
 
-## TAI64N helpers
+## API
+
+- `VERSION` — package version string, mirrors
+  `package.json#version`.
+
+### Handler
+
+- `newTaistampHandler(config?)` — async fetch
+  handler for `/.well-known/taistamp`. See
+  [Usage](#usage) above for behaviour,
+  [Signing the response](#signing-the-response) for
+  signed responses, and
+  [CORS](#cors) for cross-origin policy.
+- `TaistampHandlerConfig` — `{ cors?, selector?,
+  signer? }`. `cors` accepts `'*'` (default), a
+  specific origin string, or `false`; `signer` and
+  `selector` are co-required.
+
+### Signer
+
+Re-exported from `@kagal/ed25519-secret`:
+
+- `Signer` — `{ sign: (message: BufferSource) =>
+  Promise<ArrayBuffer> }`.
+- `newEd25519Signer(key)` — WebCrypto Ed25519
+  signer factory. Pass an Ed25519 private
+  `CryptoKey` with `'sign'` in `usages`.
+
+### Verification helpers
+
+For verifier-side validation of a signed response
+(see [Verifying a signature](#verifying-a-signature)):
+
+- `composeSignaturePayload(label, leapSeconds,
+  selector, nonce)` — reconstructs the exact byte
+  sequence the server signed.
+- `asLeapSeconds(number)` — brand a numeric
+  leap-second count; returns `undefined` for
+  out-of-range input.
+- `extractLeapSeconds(headers)` — parse
+  `TAI-Leap-Seconds` from response headers; returns
+  `undefined` if missing, non-numeric, non-integer,
+  negative, or out of range.
+- `LeapSeconds` — branded leap-second count
+  accepted by `composeSignaturePayload`.
+- `asNonce(value)` — brand a recorded nonce;
+  returns `undefined` for any value that fails
+  sf-binary syntax or the 14..174 octet range.
+- `Nonce` — branded sf-binary nonce accepted by
+  `composeSignaturePayload`.
+
+### TAI64N helpers
 
 The handler uses these primitives internally; they
 are re-exported for callers that need raw TAI64N
@@ -301,7 +368,7 @@ spanning a leap-second boundary need caller-side
 adjustment — the constant tracks the present, not
 history.
 
-## Constants
+### Constants
 
 | Name | Value |
 |------|-------|
@@ -321,5 +388,10 @@ history.
 [MIT][mit]
 
 <!-- references -->
+[jsdocs-badge]: https://img.shields.io/badge/jsDocs.io-reference-blue
+[jsdocs-url]: https://www.jsdocs.io/package/@kagal/taistamp
 [mit]: ../../LICENCE.txt
+[mit-badge]: https://img.shields.io/badge/Licence-MIT-blue.svg
+[npm-badge]: https://img.shields.io/npm/v/@kagal/taistamp.svg
+[npm-url]: https://www.npmjs.com/package/@kagal/taistamp
 [tai64n]: https://cr.yp.to/libtai/tai64.html
