@@ -1,6 +1,8 @@
 name: renovate-config-validator
 on:
   push:
+    branches-ignore:
+      - '**-wip'
     paths:
       - 'renovate.json'
   pull_request:

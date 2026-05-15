@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 import {
   newTaistampHandler,
   TAI64N_HEADER_NONCE,
-  TAI64N_PATH,
+  TAISTAMP_PATH,
 } from '..';
 
-const baseURL = `https://example.com${TAI64N_PATH}`;
+const baseURL = `https://example.com${TAISTAMP_PATH}`;
 
 const exposeHeaders =
   'TAI-Leap-Seconds, TAI-Nonce, TAI-Key-Selector, TAI-Signature';

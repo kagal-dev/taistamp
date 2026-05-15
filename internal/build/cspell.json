@@ -18,8 +18,8 @@
     "prepack",
     "tai64n",
     "taistamp",
+    "obuild",
     "tsdoc",
-    "unbuild",
     "webcrypto",
     "workerd"
   ]

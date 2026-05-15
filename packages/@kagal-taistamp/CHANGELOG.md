@@ -5,6 +5,56 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.0.5] - 2026-05-15
+
+Maintenance release.
+
+### Added
+
+- `TAISTAMP_PATH` constant — canonical export for the
+  `/.well-known/taistamp` endpoint path.
+
+### Changed
+
+- DevDependency pins normalised to `^` outside
+  `~0.0.x`, so routine minor bumps no longer require
+  a manual range edit.
+- DevDependencies refreshed — `@cloudflare/workers-types`,
+  `@types/node`, `@vitest/coverage-istanbul`, `publint`,
+  `vitest`.
+- TypeScript devDependency bumped to `^6.0.3` (major).
+- Build toolchain migrated from `unbuild` to `obuild`;
+  dist layout (`index.mjs` + `index.d.mts` + sourcemaps)
+  is unchanged.
+- `@kagal/ed25519-secret` workspace dependency
+  re-resolves to `^0.1.2` at publish time.
+
+### Deprecated
+
+- `TAI64N_PATH` — renamed to `TAISTAMP_PATH`. Kept as
+  an alias so existing imports continue to work.
+
+### Removed
+
+- TSDoc extraction is no longer wired into the build.
+  The `_docs/api*.json` artefacts previously emitted by
+  `@kagal/build-tsdoc`'s `newDocumentsHook` are no
+  longer produced; a placeholder build hook prints
+  `TSDoc extraction not run`.
+
+### Fixed
+
+- Publish workflow no longer fails on `node:process`
+  resolution. The unbuild → obuild bundler swap
+  removes jiti's TypeScript loader from the prepack
+  path, which the `@cloudflare/vitest-pool-workers`
+  pool was incompatible with under the publish
+  environment.
+- `TAI64N_PATH` was a misnomer for the
+  `/.well-known/taistamp` endpoint; the canonical
+  export is now `TAISTAMP_PATH`. The old name stays
+  as a deprecated alias for back-compat.
+
 ## [0.0.4] - 2026-05-13
 
 Maintenance release.

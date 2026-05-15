@@ -10,10 +10,10 @@ import {
   TAI64N_HEADER_KEY_SELECTOR,
   TAI64N_HEADER_NONCE,
   TAI64N_HEADER_SIGNATURE,
-  TAI64N_PATH,
+  TAISTAMP_PATH,
 } from '..';
 
-const baseURL = `https://example.com${TAI64N_PATH}`;
+const baseURL = `https://example.com${TAISTAMP_PATH}`;
 
 const decodeStructuredBinary = (value: string): Uint8Array =>
   Uint8Array.from(atob(value.slice(1, -1)), (c) => c.codePointAt(0) ?? 0);

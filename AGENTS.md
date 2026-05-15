@@ -250,15 +250,13 @@ options (ESNext, bundler resolution, strict mode).
 
 ## Build
 
-- **unbuild** for all packages (ESM + DTS, sourcemaps)
-- `build.config.ts` defines entry points
-- `@kagal/build-tsdoc` provides `newDocumentsHook()` —
-  an unbuild `build:done` hook that extracts TSDoc
-  symbols and writes per-export JSON to `_docs/` at the
-  package root (not inside `dist/`, does not ship to npm)
+- **obuild** for all packages (ESM + DTS, sourcemaps)
+- `build.config.ts` defines `bundle` entries; the
+  `rolldownOutput` hook enables sourcemaps and the
+  `end` hook emits a `TSDoc extraction not run` notice
 - `prepare` script: `cross-test -s dist/index.mjs ||
-  unbuild --stub` (conditional stubbing)
-- `dev:prepare`: `unbuild --stub` (unconditional)
+  obuild --stub` (conditional stubbing)
+- `dev:prepare`: `obuild --stub` (unconditional)
 
 ## Publishing
 

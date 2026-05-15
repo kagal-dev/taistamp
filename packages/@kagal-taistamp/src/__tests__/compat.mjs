@@ -30,6 +30,7 @@ import {
   tai64nLabelFromUTC,
   TAI_LEAP_SECONDS,
   TAI_LEAP_SECONDS_MAX,
+  TAISTAMP_PATH,
   VERSION,
 } from '../../dist/index.mjs';
 
@@ -82,6 +83,7 @@ console.log(`@kagal/taistamp v${VERSION}`);
 checkString('VERSION', VERSION);
 
 // Constants
+checkString('TAISTAMP_PATH', TAISTAMP_PATH, '/.well-known/taistamp');
 checkString('TAI64N_PATH', TAI64N_PATH, '/.well-known/taistamp');
 checkString('TAI64N_CONTENT_TYPE', TAI64N_CONTENT_TYPE, 'application/tai64n');
 checkNumber('TAI64N_CONTENT_LENGTH', TAI64N_CONTENT_LENGTH, 25);
