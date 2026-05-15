@@ -10,6 +10,8 @@ documented in this file.
 - DevDependency pins normalised to `^` outside
   `~0.0.x`, so routine minor bumps no longer require
   a manual range edit.
+- DevDependencies refreshed — `@types/node`,
+  `@vitest/coverage-istanbul`, `publint`, `vitest`.
 
 ## [0.1.1] - 2026-05-13
 

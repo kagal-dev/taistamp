@@ -10,6 +10,9 @@ documented in this file.
 - DevDependency pins normalised to `^` outside
   `~0.0.x`, so routine minor bumps no longer require
   a manual range edit.
+- DevDependencies refreshed — `@cloudflare/workers-types`,
+  `@types/node`, `@vitest/coverage-istanbul`, `publint`,
+  `vitest`.
 
 ## [0.0.4] - 2026-05-13
 
