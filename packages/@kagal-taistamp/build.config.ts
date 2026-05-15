@@ -1,14 +1,22 @@
-import { newDocumentsHook } from '@kagal/build-tsdoc';
-import { defineBuildConfig } from 'unbuild';
+import { type BuildConfig, defineBuildConfig } from 'obuild/config';
+
+type BuildContext = Parameters<
+  NonNullable<NonNullable<BuildConfig['hooks']>['end']>
+>[0];
+
+function extractDocumentation(context: BuildContext): void {
+  // TODO: replace with a real TSDoc extractor.
+  console.warn(`[${context.pkg.name}] TSDoc extraction not run`);
+}
 
 export default defineBuildConfig({
   entries: [
-    { input: 'src/index', name: 'index' },
+    { type: 'bundle', input: ['./src/index.ts'] },
   ],
-  declaration: true,
-  sourcemap: true,
-
   hooks: {
-    'build:done': newDocumentsHook(),
+    rolldownOutput(outConfig) {
+      outConfig.sourcemap = true;
+    },
+    end: extractDocumentation,
   },
 });

@@ -13,6 +13,17 @@ documented in this file.
 - DevDependencies refreshed — `@types/node`,
   `@vitest/coverage-istanbul`, `publint`, `vitest`.
 - TypeScript devDependency bumped to `^6.0.3` (major).
+- Build toolchain migrated from `unbuild` to `obuild`;
+  dist layout (`index.mjs` + `index.d.mts` + sourcemaps)
+  is unchanged.
+
+### Removed
+
+- TSDoc extraction is no longer wired into the build.
+  The `_docs/api*.json` artefacts previously emitted by
+  `@kagal/build-tsdoc`'s `newDocumentsHook` are no
+  longer produced; a placeholder build hook prints
+  `TSDoc extraction not run`.
 
 ## [0.1.1] - 2026-05-13
 

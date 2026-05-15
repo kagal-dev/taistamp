@@ -14,6 +14,26 @@ documented in this file.
   `@types/node`, `@vitest/coverage-istanbul`, `publint`,
   `vitest`.
 - TypeScript devDependency bumped to `^6.0.3` (major).
+- Build toolchain migrated from `unbuild` to `obuild`;
+  dist layout (`index.mjs` + `index.d.mts` + sourcemaps)
+  is unchanged.
+
+### Removed
+
+- TSDoc extraction is no longer wired into the build.
+  The `_docs/api*.json` artefacts previously emitted by
+  `@kagal/build-tsdoc`'s `newDocumentsHook` are no
+  longer produced; a placeholder build hook prints
+  `TSDoc extraction not run`.
+
+### Fixed
+
+- Publish workflow no longer fails on `node:process`
+  resolution. The unbuild → obuild bundler swap
+  removes jiti's TypeScript loader from the prepack
+  path, which the `@cloudflare/vitest-pool-workers`
+  pool was incompatible with under the publish
+  environment.
 
 ## [0.0.4] - 2026-05-13
 
