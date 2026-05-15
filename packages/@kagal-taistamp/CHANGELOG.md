@@ -5,6 +5,10 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.0.5] - 2026-05-15
+
+Maintenance release.
+
 ### Added
 
 - `TAISTAMP_PATH` constant — canonical export for the
@@ -22,6 +26,8 @@ documented in this file.
 - Build toolchain migrated from `unbuild` to `obuild`;
   dist layout (`index.mjs` + `index.d.mts` + sourcemaps)
   is unchanged.
+- `@kagal/ed25519-secret` workspace dependency
+  re-resolves to `^0.1.2` at publish time.
 
 ### Deprecated
 
