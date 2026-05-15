@@ -5,6 +5,10 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-05-15
+
+Maintenance release.
+
 ### Changed
 
 - DevDependency pins normalised to `^` outside
