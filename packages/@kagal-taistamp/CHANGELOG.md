@@ -5,6 +5,33 @@ documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- README reworked for shopfront and SEO — H1
+  tagline, jsDocs.io / npm / Licence badges,
+  runtime-compat line, and `npm install` /
+  `yarn add` blocks alongside `pnpm add`.
+  `## Handler` → `## Usage`, `## Signing` →
+  `## Signing the response`, `## Verifying` →
+  `## Verifying a signature`. New `## API`
+  umbrella documents the verifier-side helpers
+  (`composeSignaturePayload`, `asLeapSeconds`,
+  `extractLeapSeconds`, `asNonce`) and branded
+  types previously left implicit.
+- `keywords` expanded — `cryptography`,
+  `ed25519`, `eddsa`, `handler`, `http`,
+  `nonce`, `rfc8032`, `signing`, `timestamp`,
+  `webcrypto`.
+
+### Fixed
+
+- Selector-regex prose in the README — quoted
+  as `[A-Za-z][A-Za-z0-9_-]{0,62}`, missing the
+  trailing-letter-or-digit constraint that
+  `SELECTOR_PATTERN` enforces. Now quotes the
+  pattern verbatim; surrounding prose notes
+  "ends with a letter or digit".
+
 ## [0.0.5] - 2026-05-15
 
 Maintenance release.

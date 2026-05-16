@@ -5,6 +5,28 @@ documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- README reworked for shopfront and SEO — H1
+  tagline, jsDocs.io / npm / Licence badges,
+  runtime-compat line, and `npm install` /
+  `yarn add` blocks alongside `pnpm add`.
+  Usage H3s rewritten to name the operation
+  ("Generating a fresh Ed25519 key pair",
+  "Verifying an Ed25519 signature in
+  WebCrypto", "Validating a DKIM-style
+  selector"). `## API` sub-categorised into
+  `Keys and seeds`, `Secrets`, `Signer`,
+  `Selector validation`, and `Byte helpers`.
+  Hero replaces the cross-package "no
+  dependency on `@kagal/taistamp`" note with
+  "Zero runtime dependencies — only the host
+  runtime's WebCrypto", and adds verification
+  to the surface enumeration.
+- `keywords` expanded — `base64url`,
+  `cryptography`, `dkim`, `eddsa`, `rfc8032`,
+  `webcrypto`.
+
 ## [0.1.2] - 2026-05-15
 
 Maintenance release.

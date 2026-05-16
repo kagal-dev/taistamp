@@ -1,10 +1,26 @@
-# @kagal/ed25519-secret
+# @kagal/ed25519-secret — Ed25519 keys, signing, and verification for WebCrypto
 
-WebCrypto Ed25519 — key-pair construction, signing,
-DKIM-style selector validation, and base64 helpers.
-Self-contained — no dependency on `@kagal/taistamp`.
+[![jsDocs.io][jsdocs-badge]][jsdocs-url]
+[![npm version][npm-badge]][npm-url]
+[![Licence: MIT][license-badge]][license-url]
+
+WebCrypto Ed25519 — key-pair construction, signing and
+verification, DKIM-style selector validation, and base64
+helpers. Zero runtime dependencies — only the host
+runtime's WebCrypto.
+
+Runs anywhere with `crypto.subtle` — modern browsers,
+Node ≥ 20, Cloudflare Workers, Deno, and Bun.
 
 ## Install
+
+```sh
+npm install @kagal/ed25519-secret
+```
+
+```sh
+yarn add @kagal/ed25519-secret
+```
 
 ```sh
 pnpm add @kagal/ed25519-secret
@@ -12,7 +28,7 @@ pnpm add @kagal/ed25519-secret
 
 ## Usage
 
-### Generating a fresh secret
+### Generating a fresh Ed25519 key pair
 
 `newKeyPair()` mints both the private seed (to store) and the
 public key (to publish) in one call:
@@ -32,7 +48,7 @@ const distributable = encodeBase64(
 );
 ```
 
-### Building a key-pair from your own seed
+### Building an Ed25519 key pair from your own seed
 
 When you already hold a 32-byte seed (raw bytes or its
 base64 encoding — e.g. derived from a KDF):
@@ -40,10 +56,11 @@ base64 encoding — e.g. derived from a KDF):
 ```ts
 import { newKeyPair } from '@kagal/ed25519-secret';
 
+// `seed`: a 32-byte Uint8Array or its base64 encoding
 const { privateKey, publicKey } = await newKeyPair(seed);
 ```
 
-### Parsing and signing
+### Parsing a secret and signing a message
 
 ```ts
 import { encodeBase64, parseSecretToKey } from '@kagal/ed25519-secret';
@@ -125,7 +142,7 @@ const publicKey = await crypto.subtle.importKey(
 );
 ```
 
-### Verifying a signature
+### Verifying an Ed25519 signature in WebCrypto
 
 WebCrypto's `Ed25519 verify` is specified to apply RFC 8032 §5.1.7
 strict verification (cofactor handling, signature-malleability
@@ -143,7 +160,7 @@ const ok = await crypto.subtle.verify(
 );
 ```
 
-### Validating a selector
+### Validating a DKIM-style selector
 
 ```ts
 import { assertValidSelector, isValidSelector } from '@kagal/ed25519-secret';
@@ -161,6 +178,9 @@ assertValidSelector(value, 'config');
 
 - `VERSION` — package version string, mirrors
   `package.json#version`.
+
+### Keys and seeds
+
 - `KeyPair` — the returned triple: `privateKey` (the
   branded `Ed25519Seed`, for persistence), `publicKey`
   (extractable, for distribution), and `signKey`
@@ -176,6 +196,9 @@ assertValidSelector(value, 'config');
   omit / pass `undefined` to generate a fresh seed via
   `crypto.getRandomValues`. `context` prefixes any
   thrown error and defaults to `'newKeyPair'`.
+
+### Secrets
+
 - `KeyConfig` — the returned config: selector, the
   Ed25519 key triple, and a `Signer`:
   - `selector: string` — validated against
@@ -190,12 +213,18 @@ assertValidSelector(value, 'config');
   base64 portion is a 32-byte Ed25519 seed (standard
   or URL-safe). `context` prefixes any thrown error
   and defaults to `'parseSecretToKey'`.
+
+### Signer
+
 - `Signer` — `{ sign: (message: BufferSource) => Promise<ArrayBuffer> }`
 - `newSigner(key, context?)` — WebCrypto Ed25519
   signer factory. Pass an Ed25519 private `CryptoKey`
   with `'sign'` in `usages`; returns 64-byte raw
   RFC 8032 signatures. Throws `TypeError` if the key
   fails either check; `context` prefixes the message.
+
+### Selector validation
+
 - `SELECTOR_PATTERN` —
   `/^[A-Za-z](?:[\dA-Za-z_-]{0,61}[\dA-Za-z])?$/`, the
   DKIM selector grammar (RFC 6376 §3.1, narrowed to a
@@ -229,3 +258,11 @@ assertValidSelector(value, 'config');
 ## Licence
 
 MIT — see [LICENCE.txt](./LICENCE.txt).
+
+<!-- Badge references -->
+[jsdocs-badge]: https://img.shields.io/badge/jsDocs.io-reference-blue
+[jsdocs-url]: https://www.jsdocs.io/package/@kagal/ed25519-secret
+[license-badge]: https://img.shields.io/badge/Licence-MIT-blue.svg
+[license-url]: ./LICENCE.txt
+[npm-badge]: https://img.shields.io/npm/v/@kagal/ed25519-secret.svg
+[npm-url]: https://www.npmjs.com/package/@kagal/ed25519-secret
