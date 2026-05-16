@@ -1,4 +1,14 @@
 /**
+ * `Uint8Array<ArrayBuffer>`-shaped on TS lib 5.7+
+ * (`Uint8Array` on older) — the backing buffer
+ * narrowed to plain `ArrayBuffer`, not
+ * `SharedArrayBuffer`. Matches what `BufferSource`
+ * requires, and therefore what every `crypto.subtle.*`
+ * byte parameter accepts.
+ */
+export type Bytes = ReturnType<typeof Uint8Array.from>;
+
+/**
  * Encode bytes as standard base64 (RFC 4648 §4) with
  * padding. The output round-trips through
  * {@link decodeBase64}.
@@ -20,7 +30,7 @@ export const encodeBase64 = (bytes: Readonly<Uint8Array>): string => {
 export const decodeBase64 = (
   b64: string,
   context?: string,
-): Uint8Array => {
+): Bytes => {
   const standard = b64.replaceAll('-', '+').replaceAll('_', '/');
   let binary: string;
   try {
@@ -57,7 +67,7 @@ export const decodeBase64 = (
 export const getRandom = (
   length: number,
   context?: string,
-): Uint8Array => {
+): Bytes => {
   if (!Number.isInteger(length) || length < 0) {
     const prefix = context === undefined ? '' : `${context}: `;
     throw new TypeError(
@@ -82,7 +92,7 @@ export const getRandom = (
 export const asBytes = (
   input: Readonly<Uint8Array> | string,
   context?: string,
-): Uint8Array =>
+): Bytes =>
   typeof input === 'string' ?
     decodeBase64(input, context) :
     new Uint8Array(input);

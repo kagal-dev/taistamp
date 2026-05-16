@@ -239,6 +239,12 @@ assertValidSelector(value, 'config');
 
 ### Byte helpers
 
+- `Bytes` — `Uint8Array<ArrayBuffer>`-shaped type (TS
+  lib 5.7+; plain `Uint8Array` on older), matching
+  what `BufferSource` (and therefore every
+  `crypto.subtle.*` byte parameter) accepts. The
+  return type of `decodeBase64`, `getRandom`, and
+  `asBytes`.
 - `encodeBase64(bytes)` — encode bytes as standard
   base64 with `=` padding.
 - `decodeBase64(b64, context?)` — decode standard or

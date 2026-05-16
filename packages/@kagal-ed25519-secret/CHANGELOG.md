@@ -5,6 +5,15 @@ documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `Bytes` — type alias for `Uint8Array<ArrayBuffer>`
+  (TS lib 5.7+; plain `Uint8Array` on older), the
+  shape `BufferSource` accepts. The byte helpers
+  (`decodeBase64`, `getRandom`, `asBytes`) now return
+  `Bytes`, so callers can pass results into
+  `crypto.subtle.*` without casting.
+
 ### Changed
 
 - README reworked for shopfront and SEO — H1

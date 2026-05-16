@@ -24,6 +24,7 @@ export {
 } from './signer';
 export {
   asBytes,
+  type Bytes,
   decodeBase64,
   encodeBase64,
   getRandom,
