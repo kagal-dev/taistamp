@@ -51,7 +51,7 @@ importers:
         specifier: ^8.0.4
         version: 8.0.4
       obuild:
-        specifier: ^0.4.34
+        specifier: ^0.4.35
         version: 0.4.35(jiti@2.6.1)(magicast@0.5.2)(typescript@6.0.3)
       publint:
         specifier: ^0.3.21
@@ -100,7 +100,7 @@ importers:
         specifier: ^8.0.4
         version: 8.0.4
       obuild:
-        specifier: ^0.4.34
+        specifier: ^0.4.35
         version: 0.4.35(jiti@2.6.1)(magicast@0.5.2)(typescript@6.0.3)
       publint:
         specifier: ^0.3.21
