@@ -2,7 +2,8 @@
 
 Two TypeScript packages: an HTTP handler that issues
 Ed25519-signed TAI64N timestamps, and the WebCrypto
-signing toolkit it builds on.
+signing toolkit it builds on, with JWKS-ready and
+DNS-TXT-ready public key publication.
 
 [![Licence: MIT](https://img.shields.io/badge/Licence-MIT-blue.svg)](./LICENCE.txt)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](package.json)
@@ -16,8 +17,9 @@ signing toolkit it builds on.
   stack or unauthenticated TLS handshake clock isn't
   enough.
 - Independent verification of timestamps after the fact
-  — clients keep the signed payload and re-check without
-  re-trusting the server.
+  — clients keep the signed payload, fetch the verifying
+  key from a JWKS endpoint or DNS TXT record, and
+  re-check without re-trusting the server.
 
 ## Packages
 
@@ -28,8 +30,9 @@ Ed25519-signed timestamps.
 
 ### [`@kagal/ed25519-secret`](packages/@kagal-ed25519-secret/)
 
-Ed25519 keys, signing, and verification for WebCrypto,
-plus DKIM-style selector validation. Zero runtime
+Ed25519 keys, signing, verification, JWKS-ready and
+DNS-TXT-ready public key publication, and DKIM-style
+selector validation for WebCrypto. Zero runtime
 dependencies.
 
 ## Development

@@ -17,7 +17,7 @@ the package-local layout and conventions.
 └── src/
     ├── index.ts            # public API surface
     ├── secret.ts           # selector:base64 secret parsing
-    ├── key.ts              # Ed25519 key-pair construction
+    ├── key.ts              # Ed25519 key construction and public JWK shape
     ├── signer.ts           # Ed25519 signer interface and factory
     ├── selector.ts         # DKIM selector pattern and validators
     ├── utils.ts            # byte helpers — base64, random, normalisation
@@ -36,7 +36,7 @@ one of two shapes:
   `newSigner`.
 - `context: string = '<factory name>'` — used by
   composing factories that thread the context through
-  to their delegates (`newKeyPair` and
-  `parseSecretToKey`); absence falls back to the
-  factory name so the error always carries
-  attribution.
+  to their delegates (`newKeys`, `parseSecretToKey`,
+  and the deprecated `newKeyPair`); absence falls
+  back to the factory name so the error always
+  carries attribution.

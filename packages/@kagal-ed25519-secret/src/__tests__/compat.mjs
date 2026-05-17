@@ -19,6 +19,7 @@ import {
   getRandom,
   isValidSelector,
   newKeyPair,
+  newKeys,
   newSigner,
   parseSecretToKey,
   SELECTOR_PATTERN,
@@ -70,6 +71,7 @@ console.log(`@kagal/ed25519-secret v${VERSION}`);
 
 checkString('VERSION', VERSION);
 checkFunction('newKeyPair', newKeyPair);
+checkFunction('newKeys', newKeys);
 checkFunction('asEd25519Seed', asEd25519Seed);
 checkFunction('parseSecretToKey', parseSecretToKey);
 checkFunction('newSigner', newSigner);

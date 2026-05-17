@@ -5,9 +5,12 @@ export const VERSION: string = pkg.version;
 
 export {
   asEd25519Seed,
+  type Ed25519PublicJWK,
   type Ed25519Seed,
+  type KeyContext,
   type KeyPair,
   newKeyPair,
+  newKeys,
 } from './key';
 export {
   type KeyConfig,

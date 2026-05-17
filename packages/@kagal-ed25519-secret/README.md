@@ -5,8 +5,9 @@
 [![Licence: MIT][license-badge]][license-url]
 
 WebCrypto Ed25519 — key-pair construction, signing and
-verification, DNS-TXT-ready public key publication,
-DKIM-style selector validation, and base64 helpers.
+verification, JWKS-ready and DNS-TXT-ready public key
+publication, DKIM-style selector validation, and
+base64 helpers.
 Zero runtime dependencies — only the host runtime's
 WebCrypto.
 
@@ -31,20 +32,25 @@ pnpm add @kagal/ed25519-secret
 
 ### Generating a fresh Ed25519 key pair
 
-`newKeyPair()` mints both the private seed (to store) and the
-public key (to publish) in one call:
+`newKeys()` mints the private seed (to store), the
+public key (to publish), and a JWKS-ready `publicJWK`
+in one call:
 
 ```ts
-import { encodeBase64, encodeKey, newKeyPair } from '@kagal/ed25519-secret';
+import { encodeBase64, encodeKey, newKeys } from '@kagal/ed25519-secret';
 
 const selector = 's1';
-const { privateKey, publicKey } = await newKeyPair();
+// `undefined` ⇒ generate a fresh seed; the selector
+// becomes `publicJWK.kid`.
+const { privateKey, publicKey, publicJWK } =
+  await newKeys(undefined, selector);
 
 // Private — store somewhere safe (env var, secret manager, etc.)
 const secret = `${selector}:${encodeBase64(privateKey)}`;
 
 // Public — base64 of the raw public key for DNS-style
-// distribution (e.g. a DNS TXT record)
+// distribution; `publicJWK` (carrying `kid: selector`)
+// for a JWKS endpoint
 const distributable = await encodeKey(publicKey);
 ```
 
@@ -54,11 +60,39 @@ When you already hold a 32-byte seed (raw bytes or its
 base64 encoding — e.g. derived from a KDF):
 
 ```ts
-import { newKeyPair } from '@kagal/ed25519-secret';
+import { newKeys } from '@kagal/ed25519-secret';
 
 // `seed`: a 32-byte Uint8Array or its base64 encoding
-const { privateKey, publicKey } = await newKeyPair(seed);
+const { privateKey, publicKey } = await newKeys(seed);
 ```
+
+### Publishing a JWKS endpoint
+
+`newKeys` returns a `publicJWK` ready to drop into a
+JWKS `keys` array (RFC 7517 §5); the optional `kid`
+argument is threaded through verbatim:
+
+```ts
+import { newKeys } from '@kagal/ed25519-secret';
+
+// `seed` from your secret store (or `undefined` for a fresh seed)
+const { publicJWK } = await newKeys(seed, 's1');
+// {
+//   kty: 'OKP', crv: 'Ed25519', x: '<base64url>',
+//   use: 'sig', alg: 'EdDSA', kid: 's1',
+// }
+
+const jwks = { keys: [publicJWK] };
+
+// Serve as application/jwk-set+json (RFC 7517 §8.5.1):
+return new Response(JSON.stringify(jwks), {
+  headers: { 'content-type': 'application/jwk-set+json' },
+});
+```
+
+For rotation, collect `publicJWK`s from multiple
+`newKeys` calls — each pinned to its own `kid` — and
+publish them together: `{ keys: [current, previous] }`.
 
 ### Parsing a secret and signing a message
 
@@ -109,6 +143,10 @@ const { publicKey } = await parseSecretToKey(secret);
 const distributable = await encodeKey(publicKey);
 // publish under a selector-scoped channel (e.g. a DNS TXT record)
 ```
+
+The same config also carries `publicJWK` — drop that
+into a JWKS `keys` array if you publish over HTTP
+rather than DNS.
 
 ### Fetching a published public key
 
@@ -179,10 +217,18 @@ assertValidSelector(value, 'config');
 
 ### Keys and seeds
 
-- `KeyPair` — the returned triple: `privateKey` (the
+- `KeyContext` — the returned value: `privateKey` (the
   branded `Ed25519Seed`, for persistence), `publicKey`
-  (extractable, for distribution), and `signKey`
-  (non-extractable, for in-process signing).
+  (extractable, for distribution), `signKey`
+  (non-extractable, for in-process signing), and
+  `publicJWK` (publication-ready JWK).
+- `KeyPair` — deprecated alias for `KeyContext`.
+- `Ed25519PublicJWK` — typed public JWK for Ed25519
+  (RFC 8037 §3.1): literal `kty: 'OKP'`,
+  `crv: 'Ed25519'`, `x` (base64url public key),
+  `use: 'sig'`, `alg: 'EdDSA'`, and the optional
+  `kid` (RFC 7517 §4.5). Values returned by `newKeys`
+  are `Object.freeze`d.
 - `Ed25519Seed` — branded 32-byte seed (RFC 8032);
   values are length-validated and defensive-copied at
   construction.
@@ -199,22 +245,27 @@ assertValidSelector(value, 'config');
   if it isn't a public key, or if WebCrypto refuses to
   export the raw bytes (non-extractable); pass
   `context` to prefix the error message.
-- `newKeyPair(input?, context?)` — build a `KeyPair`
-  from a 32-byte raw seed (or its base64 encoding);
-  omit / pass `undefined` to generate a fresh seed via
-  `crypto.getRandomValues`. `context` prefixes any
-  thrown error and defaults to `'newKeyPair'`.
+- `newKeys(input?, kid?, context?)` — build a
+  `KeyContext` from a 32-byte raw seed (or its base64
+  encoding); omit / pass `undefined` to generate a
+  fresh seed via `crypto.getRandomValues`. `kid`
+  (optional, free-form string) is threaded into
+  `publicJWK.kid`; falsy values (`undefined`, empty
+  string) omit the field. `context` prefixes any
+  thrown error and defaults to `'newKeys'`.
+- `newKeyPair(input?, context?)` — deprecated wrapper
+  over `newKeys` preserving the original 2-arg
+  signature. `context` defaults to `'newKeyPair'`;
+  the returned `publicJWK` carries no `kid`.
 
 ### Secrets
 
-- `KeyConfig` — the returned config: selector, the
-  Ed25519 key triple, and a `Signer`:
+- `KeyConfig` — extends `KeyContext` with two fields,
+  inheriting `privateKey`, `publicKey`, `signKey`,
+  `publicJWK` from it:
   - `selector: string` — validated against
-    `SELECTOR_PATTERN`.
-  - `privateKey: Ed25519Seed` — raw seed for
-    persistence.
-  - `publicKey: CryptoKey` — extractable, verify-only.
-  - `signKey: CryptoKey` — non-extractable, sign-only.
+    `SELECTOR_PATTERN`; also set as
+    `publicJWK.kid`.
   - `signer: Signer` — pre-built, backed by `signKey`.
 - `parseSecretToKey(secretString, context?)` — parse
   a `selector:base64` secret into a `KeyConfig`. The

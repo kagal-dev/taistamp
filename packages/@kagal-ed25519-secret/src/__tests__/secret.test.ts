@@ -34,6 +34,15 @@ describe('parseSecretToKey', () => {
     expect(publicKey.usages).toEqual(['verify']);
   });
 
+  it('surfaces a publicJWK carrying the selector as kid', async () => {
+    const { publicJWK } = await parseSecretToKey(`s1:${testB64}`);
+    expect(publicJWK.kty).toBe('OKP');
+    expect(publicJWK.crv).toBe('Ed25519');
+    expect(publicJWK.use).toBe('sig');
+    expect(publicJWK.alg).toBe('EdDSA');
+    expect(publicJWK.kid).toBe('s1');
+  });
+
   it('signs with the signer and verifies under the publicKey', async () => {
     const { publicKey, signer } = await parseSecretToKey(`s1:${testB64}`);
     const message = new TextEncoder().encode('parsed-round-trip');

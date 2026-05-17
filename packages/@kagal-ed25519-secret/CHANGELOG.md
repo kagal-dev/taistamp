@@ -7,13 +7,28 @@ documented in this file.
 
 ### Added
 
+- `newKeys(input?, kid?, context?)` — supersedes
+  `newKeyPair`. Accepts an optional `kid` (RFC 7517
+  §4.5; free-form, threaded verbatim; falsy values
+  omit the field) and returns a `KeyContext` that
+  also carries a publication-ready `publicJWK`
+  (`Object.freeze`d at construction). `context`
+  defaults to `'newKeys'`.
+- `KeyContext` — `{ privateKey, publicKey, signKey,
+  publicJWK }`. New canonical return type for
+  `newKeys`.
+- `Ed25519PublicJWK` — typed public JWK for Ed25519
+  (RFC 8037 §3.1) with literal `kty: 'OKP'`,
+  `crv: 'Ed25519'`, plus `x` (base64url-encoded raw
+  public key), `use: 'sig'`, `alg: 'EdDSA'`, and the
+  optional `kid`.
 - `encodeKey(key, context?)` — export an extractable
   Ed25519 public `CryptoKey` as standard base64 of its
   32-byte raw form, for out-of-band distribution.
   Throws `TypeError` on non-Ed25519 or non-public
   input, or when WebCrypto refuses to export the raw
   bytes (non-extractable) — the underlying rejection
-  is preserved as `cause` on the rewrap.
+  is preserved as `cause`.
 - `Bytes` — type alias for `Uint8Array<ArrayBuffer>`
   (TS lib 5.7+; plain `Uint8Array` on older), the
   shape `BufferSource` accepts. The byte helpers
@@ -23,6 +38,19 @@ documented in this file.
 
 ### Changed
 
+- Hero gains `JWKS-ready and DNS-TXT-ready public key
+  publication`.
+- JWKS-endpoint walkthrough added under Usage.
+- `KeyConfig` now extends `KeyContext`; the returned
+  shape inherits `publicJWK`, with `kid` set to the
+  parsed selector. Existing fields (`privateKey`,
+  `publicKey`, `signKey`, `selector`, `signer`) are
+  unchanged.
+- `parseSecretToKey` now surfaces the inherited
+  `publicJWK` on the returned `KeyConfig`, with `kid`
+  pinned to the parsed selector — making a
+  selector-scoped secret directly usable as a JWKS
+  entry.
 - README reworked for shopfront and SEO — H1
   tagline, jsDocs.io / npm / Licence badges,
   runtime-compat line, and `npm install` /
@@ -40,8 +68,19 @@ documented in this file.
   runtime's WebCrypto", and adds verification
   to the surface enumeration.
 - `keywords` expanded — `base64url`,
-  `cryptography`, `dkim`, `eddsa`, `rfc8032`,
+  `cryptography`, `dkim`, `eddsa`, `jwk`,
+  `jwks`, `rfc7517`, `rfc8032`, `rfc8037`,
   `webcrypto`.
+
+### Deprecated
+
+- `newKeyPair(input?, context?)` — kept as a thin
+  wrapper over `newKeys` for source-compatibility with
+  0.1.x callers. New code should call `newKeys`
+  directly.
+- `KeyPair` — type alias for `KeyContext`; the surface
+  is now the wider `KeyContext` shape (with
+  `publicJWK`).
 
 ### Fixed
 
