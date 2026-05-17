@@ -2,7 +2,13 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { asBytes, decodeBase64, encodeBase64, getRandom } from '../utils';
+import {
+  asBytes,
+  decodeBase64,
+  encodeBase64,
+  encodeKey,
+  getRandom,
+} from '../utils';
 
 describe('encodeBase64', () => {
   it('returns the empty string on empty input', () => {
@@ -73,6 +79,106 @@ describe('decodeBase64', () => {
     try {
       decodeBase64('!!!not-base64!!!');
       expect.fail('expected decodeBase64 to throw');
+    } catch (error) {
+      expect(error).toBeInstanceOf(TypeError);
+      expect((error as TypeError).cause).toBeDefined();
+    }
+  });
+});
+
+const newEd25519Pair = () =>
+  crypto.subtle.generateKey(
+    { name: 'Ed25519' }, true, ['sign', 'verify'],
+  ) as Promise<CryptoKeyPair>;
+
+const nonExtractablePublicKey = async (): Promise<CryptoKey> => {
+  const { publicKey } = await newEd25519Pair();
+  const raw = await crypto.subtle.exportKey('raw', publicKey);
+  return crypto.subtle.importKey(
+    'raw', raw, { name: 'Ed25519' }, false, ['verify'],
+  );
+};
+
+describe('encodeKey', () => {
+  it('encodes an extractable Ed25519 public key', async () => {
+    const { publicKey } = await newEd25519Pair();
+    const encoded = await encodeKey(publicKey);
+    expect(encoded).toMatch(/^[\d+/=A-Za-z]*$/);
+    expect(decodeBase64(encoded)).toHaveLength(32);
+  });
+
+  it('round-trips through decodeBase64 + importKey raw', async () => {
+    const { publicKey } = await newEd25519Pair();
+    const encoded = await encodeKey(publicKey);
+    const reimported = await crypto.subtle.importKey(
+      'raw', decodeBase64(encoded),
+      { name: 'Ed25519' }, true, ['verify'],
+    );
+    expect(await encodeKey(reimported)).toBe(encoded);
+  });
+
+  it('rejects a non-Ed25519 algorithm', async () => {
+    const hmac = await crypto.subtle.generateKey(
+      { name: 'HMAC', hash: 'SHA-256' }, true, ['sign'],
+    );
+    await expect(encodeKey(hmac as CryptoKey))
+      .rejects.toThrow(TypeError);
+  });
+
+  it('rejects a non-Ed25519 public key (ECDSA P-256)', async () => {
+    const { publicKey } = await crypto.subtle.generateKey(
+      { name: 'ECDSA', namedCurve: 'P-256' },
+      true, ['sign', 'verify'],
+    ) as CryptoKeyPair;
+    await expect(encodeKey(publicKey))
+      .rejects.toThrow(/^expected Ed25519 key, got ECDSA$/);
+  });
+
+  it('rejects a private key', async () => {
+    const { privateKey } = await newEd25519Pair();
+    await expect(encodeKey(privateKey))
+      .rejects.toThrow(/^expected public key, got private$/);
+  });
+
+  it('rejects a non-extractable public key', async () => {
+    const key = await nonExtractablePublicKey();
+    await expect(encodeKey(key))
+      .rejects.toThrow(TypeError);
+  });
+
+  it('omits the prefix on algorithm mismatch', async () => {
+    const hmac = await crypto.subtle.generateKey(
+      { name: 'HMAC', hash: 'SHA-256' }, true, ['sign'],
+    );
+    await expect(encodeKey(hmac as CryptoKey))
+      .rejects.toThrow(/^expected Ed25519 key, got HMAC$/);
+  });
+
+  it('prepends the context prefix on algorithm mismatch', async () => {
+    const hmac = await crypto.subtle.generateKey(
+      { name: 'HMAC', hash: 'SHA-256' }, true, ['sign'],
+    );
+    await expect(encodeKey(hmac as CryptoKey, 'myConfig'))
+      .rejects.toThrow(/^myConfig: expected Ed25519 key, got HMAC$/);
+  });
+
+  it('omits the prefix on export failure', async () => {
+    const key = await nonExtractablePublicKey();
+    await expect(encodeKey(key))
+      .rejects.toThrow(/^cannot export key as raw$/);
+  });
+
+  it('prepends the context prefix on export failure', async () => {
+    const key = await nonExtractablePublicKey();
+    await expect(encodeKey(key, 'myConfig'))
+      .rejects.toThrow(/^myConfig: cannot export key as raw$/);
+  });
+
+  it('preserves the underlying rejection as `cause`', async () => {
+    const key = await nonExtractablePublicKey();
+    try {
+      await encodeKey(key);
+      expect.fail('expected encodeKey to throw');
     } catch (error) {
       expect(error).toBeInstanceOf(TypeError);
       expect((error as TypeError).cause).toBeDefined();

@@ -5,9 +5,10 @@
 [![Licence: MIT][license-badge]][license-url]
 
 WebCrypto Ed25519 — key-pair construction, signing and
-verification, DKIM-style selector validation, and base64
-helpers. Zero runtime dependencies — only the host
-runtime's WebCrypto.
+verification, DNS-TXT-ready public key publication,
+DKIM-style selector validation, and base64 helpers.
+Zero runtime dependencies — only the host runtime's
+WebCrypto.
 
 Runs anywhere with `crypto.subtle` — modern browsers,
 Node ≥ 20, Cloudflare Workers, Deno, and Bun.
@@ -34,7 +35,7 @@ pnpm add @kagal/ed25519-secret
 public key (to publish) in one call:
 
 ```ts
-import { encodeBase64, newKeyPair } from '@kagal/ed25519-secret';
+import { encodeBase64, encodeKey, newKeyPair } from '@kagal/ed25519-secret';
 
 const selector = 's1';
 const { privateKey, publicKey } = await newKeyPair();
@@ -42,10 +43,9 @@ const { privateKey, publicKey } = await newKeyPair();
 // Private — store somewhere safe (env var, secret manager, etc.)
 const secret = `${selector}:${encodeBase64(privateKey)}`;
 
-// Public — publish under a selector-scoped channel (e.g. a DNS TXT record)
-const distributable = encodeBase64(
-  new Uint8Array(await crypto.subtle.exportKey('raw', publicKey)),
-);
+// Public — base64 of the raw public key for DNS-style
+// distribution (e.g. a DNS TXT record)
+const distributable = await encodeKey(publicKey);
 ```
 
 ### Building an Ed25519 key pair from your own seed
@@ -103,12 +103,10 @@ If you already have the `selector:base64` secret and need to
 without rotating the seed:
 
 ```ts
-import { encodeBase64, parseSecretToKey } from '@kagal/ed25519-secret';
+import { encodeKey, parseSecretToKey } from '@kagal/ed25519-secret';
 
 const { publicKey } = await parseSecretToKey(secret);
-const distributable = encodeBase64(
-  new Uint8Array(await crypto.subtle.exportKey('raw', publicKey)),
-);
+const distributable = await encodeKey(publicKey);
 // publish under a selector-scoped channel (e.g. a DNS TXT record)
 ```
 
@@ -191,6 +189,16 @@ assertValidSelector(value, 'config');
 - `asEd25519Seed(input, context?)` — validate length
   and brand a seed; accepts a 32-byte `Uint8Array` or
   its base64 encoding.
+- `encodeKey(key, context?)` — export an extractable
+  Ed25519 public `CryptoKey` as standard base64 of its
+  32-byte raw form, ready for out-of-band distribution
+  (e.g. a DNS TXT record). The output round-trips
+  through `decodeBase64` +
+  `crypto.subtle.importKey('raw', ...)`. Throws
+  `TypeError` if the key's algorithm isn't Ed25519, or
+  if it isn't a public key, or if WebCrypto refuses to
+  export the raw bytes (non-extractable); pass
+  `context` to prefix the error message.
 - `newKeyPair(input?, context?)` — build a `KeyPair`
   from a 32-byte raw seed (or its base64 encoding);
   omit / pass `undefined` to generate a fresh seed via

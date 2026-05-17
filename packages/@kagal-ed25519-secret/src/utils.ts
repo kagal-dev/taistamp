@@ -48,6 +48,51 @@ export const decodeBase64 = (
 };
 
 /**
+ * Encode an extractable Ed25519 public `CryptoKey` as
+ * standard base64 (RFC 4648 §4) of its 32-byte raw
+ * form, ready for out-of-band distribution
+ * (e.g. a DNS TXT record). The output round-trips
+ * through `decodeBase64` +
+ * `crypto.subtle.importKey('raw', ...)`.
+ *
+ * @param key - extractable Ed25519 public `CryptoKey`
+ * @param context - optional prefix prepended to the
+ *   thrown error message
+ * @returns base64-encoded 32-byte raw public key
+ * @throws TypeError if `key`'s algorithm isn't
+ *   Ed25519, if it isn't a public key, or if it
+ *   cannot be exported as `'raw'` (non-extractable);
+ *   in the export-failure case the underlying
+ *   rejection is preserved as `cause`.
+ */
+export const encodeKey = async (
+  key: CryptoKey,
+  context?: string,
+): Promise<string> => {
+  const prefix = context === undefined ? '' : `${context}: `;
+  if (key.algorithm.name !== 'Ed25519') {
+    throw new TypeError(
+      `${prefix}expected Ed25519 key, got ${key.algorithm.name}`,
+    );
+  }
+  if (key.type !== 'public') {
+    throw new TypeError(
+      `${prefix}expected public key, got ${key.type}`,
+    );
+  }
+  let raw: ArrayBuffer;
+  try {
+    raw = await crypto.subtle.exportKey('raw', key);
+  } catch (error) {
+    throw new TypeError(
+      `${prefix}cannot export key as raw`,
+      { cause: error },
+    );
+  }
+  return encodeBase64(new Uint8Array(raw));
+};
+
+/**
  * Fill a fresh `Uint8Array` of the requested length
  * with cryptographically secure random bytes via
  * `crypto.getRandomValues`, subject to its length cap

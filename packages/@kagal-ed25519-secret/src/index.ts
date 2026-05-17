@@ -27,5 +27,6 @@ export {
   type Bytes,
   decodeBase64,
   encodeBase64,
+  encodeKey,
   getRandom,
 } from './utils';

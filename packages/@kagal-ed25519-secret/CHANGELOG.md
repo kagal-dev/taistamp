@@ -7,6 +7,13 @@ documented in this file.
 
 ### Added
 
+- `encodeKey(key, context?)` — export an extractable
+  Ed25519 public `CryptoKey` as standard base64 of its
+  32-byte raw form, for out-of-band distribution.
+  Throws `TypeError` on non-Ed25519 or non-public
+  input, or when WebCrypto refuses to export the raw
+  bytes (non-extractable) — the underlying rejection
+  is preserved as `cause` on the rewrap.
 - `Bytes` — type alias for `Uint8Array<ArrayBuffer>`
   (TS lib 5.7+; plain `Uint8Array` on older), the
   shape `BufferSource` accepts. The byte helpers
