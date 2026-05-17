@@ -1,4 +1,14 @@
 /**
+ * `Uint8Array<ArrayBuffer>`-shaped on TS lib 5.7+
+ * (`Uint8Array` on older) — the backing buffer
+ * narrowed to plain `ArrayBuffer`, not
+ * `SharedArrayBuffer`. Matches what `BufferSource`
+ * requires, and therefore what every `crypto.subtle.*`
+ * byte parameter accepts.
+ */
+export type Bytes = ReturnType<typeof Uint8Array.from>;
+
+/**
  * Encode bytes as standard base64 (RFC 4648 §4) with
  * padding. The output round-trips through
  * {@link decodeBase64}.
@@ -20,7 +30,7 @@ export const encodeBase64 = (bytes: Readonly<Uint8Array>): string => {
 export const decodeBase64 = (
   b64: string,
   context?: string,
-): Uint8Array => {
+): Bytes => {
   const standard = b64.replaceAll('-', '+').replaceAll('_', '/');
   let binary: string;
   try {
@@ -35,6 +45,51 @@ export const decodeBase64 = (
   // for an impossible undefined branch.
   // eslint-disable-next-line unicorn/prefer-code-point
   return Uint8Array.from(binary, (c) => c.charCodeAt(0));
+};
+
+/**
+ * Encode an extractable Ed25519 public `CryptoKey` as
+ * standard base64 (RFC 4648 §4) of its 32-byte raw
+ * form, ready for out-of-band distribution
+ * (e.g. a DNS TXT record). The output round-trips
+ * through `decodeBase64` +
+ * `crypto.subtle.importKey('raw', ...)`.
+ *
+ * @param key - extractable Ed25519 public `CryptoKey`
+ * @param context - optional prefix prepended to the
+ *   thrown error message
+ * @returns base64-encoded 32-byte raw public key
+ * @throws TypeError if `key`'s algorithm isn't
+ *   Ed25519, if it isn't a public key, or if it
+ *   cannot be exported as `'raw'` (non-extractable);
+ *   in the export-failure case the underlying
+ *   rejection is preserved as `cause`.
+ */
+export const encodeKey = async (
+  key: CryptoKey,
+  context?: string,
+): Promise<string> => {
+  const prefix = context === undefined ? '' : `${context}: `;
+  if (key.algorithm.name !== 'Ed25519') {
+    throw new TypeError(
+      `${prefix}expected Ed25519 key, got ${key.algorithm.name}`,
+    );
+  }
+  if (key.type !== 'public') {
+    throw new TypeError(
+      `${prefix}expected public key, got ${key.type}`,
+    );
+  }
+  let raw: ArrayBuffer;
+  try {
+    raw = await crypto.subtle.exportKey('raw', key);
+  } catch (error) {
+    throw new TypeError(
+      `${prefix}cannot export key as raw`,
+      { cause: error },
+    );
+  }
+  return encodeBase64(new Uint8Array(raw));
 };
 
 /**
@@ -57,7 +112,7 @@ export const decodeBase64 = (
 export const getRandom = (
   length: number,
   context?: string,
-): Uint8Array => {
+): Bytes => {
   if (!Number.isInteger(length) || length < 0) {
     const prefix = context === undefined ? '' : `${context}: `;
     throw new TypeError(
@@ -82,7 +137,7 @@ export const getRandom = (
 export const asBytes = (
   input: Readonly<Uint8Array> | string,
   context?: string,
-): Uint8Array =>
+): Bytes =>
   typeof input === 'string' ?
     decodeBase64(input, context) :
     new Uint8Array(input);

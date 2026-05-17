@@ -15,6 +15,7 @@ import {
   assertValidSelector,
   decodeBase64,
   encodeBase64,
+  encodeKey,
   getRandom,
   isValidSelector,
   newKeyPair,
@@ -75,6 +76,7 @@ checkFunction('newSigner', newSigner);
 checkFunction('assertValidSelector', assertValidSelector);
 checkFunction('isValidSelector', isValidSelector);
 checkFunction('encodeBase64', encodeBase64);
+checkFunction('encodeKey', encodeKey);
 checkFunction('decodeBase64', decodeBase64);
 checkFunction('getRandom', getRandom);
 checkFunction('asBytes', asBytes);
