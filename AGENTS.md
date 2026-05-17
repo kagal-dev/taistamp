@@ -2,7 +2,11 @@
 
 This file provides guidance to AI coding assistants
 (Claude Code, GitHub Copilot, Cody, etc.) when working
-with code in the kagal-dev/taistamp monorepo.
+with code in the kagal-dev/taistamp monorepo. It
+collects the shared guidelines that apply across the
+repo; per-package source layout and local conventions
+live in each package's AGENTS.md (linked from the
+Project Overview below).
 
 ## Project Overview
 
@@ -10,44 +14,29 @@ This monorepo holds MIT-licensed TypeScript packages
 implementing Taistamp — signed TAI64N timestamps over
 HTTP at `/.well-known/taistamp`.
 
-- **`@kagal/taistamp`** — platform-neutral handler
-- **`@kagal/ed25519-secret`** — WebCrypto Ed25519 signer
-  plus DKIM-style selector validation
+- [`@kagal/taistamp`](packages/@kagal-taistamp/AGENTS.md)
+  — platform-neutral handler.
+- [`@kagal/ed25519-secret`](packages/@kagal-ed25519-secret/AGENTS.md)
+  — WebCrypto Ed25519 signer plus DKIM-style selector
+  validation.
 
 ## Monorepo Structure
 
 ```text
 taistamp/
 ├── packages/
-│   ├── @kagal-taistamp/              # @kagal/taistamp
-│   │   ├── src/
-│   │   │   ├── index.ts              # public API surface
-│   │   │   ├── handler.ts            # newTaistampHandler, composeSignaturePayload
-│   │   │   ├── cors.ts               # buildCORSHeaders
-│   │   │   ├── nonce.ts              # Nonce brand + extract
-│   │   │   ├── leap-seconds.ts       # LeapSeconds brand + extract
-│   │   │   ├── const.ts, utils.ts    # protocol constants, TAI64N helpers
-│   │   │   └── __tests__/            # default + .workerd + .noble pools
-│   │   └── wrangler.jsonc            # workerd test pool stub
-│   └── @kagal-ed25519-secret/        # @kagal/ed25519-secret
-│       └── src/
-│           ├── index.ts              # public API surface
-│           ├── secret.ts             # selector:base64 secret parsing
-│           ├── key.ts                # Ed25519 key-pair construction
-│           ├── signer.ts             # Ed25519 signer interface and factory
-│           ├── selector.ts           # DKIM selector pattern and validators
-│           ├── utils.ts              # base64 helpers
-│           └── __tests__/
-├── docs/                             # design notes (untracked)
-├── internal/build/cspell.json        # shared cspell config
-└── .github/workflows/                # build, publish, renovate
+│   ├── @kagal-taistamp/        # @kagal/taistamp
+│   └── @kagal-ed25519-secret/  # @kagal/ed25519-secret
+├── docs/                       # design notes (untracked)
+├── internal/build/cspell.json  # shared cspell config
+└── .github/workflows/          # build, publish, renovate
 ```
 
 Each package also carries the usual TS workspace boilerplate
 (`package.json`, `tsconfig.{json,tests.json,tools.json}`,
 `build.config.ts`, `vitest.config.ts`, `eslint.config.mjs`,
-`README.md`, `CHANGELOG.md`, `LICENCE.txt`); the same set
-exists at the root for shared/ignore configuration plus
+`README.md`, `CHANGELOG.md`, `LICENCE.txt`). The repo
+root mirrors these for the monorepo as a whole, plus
 `pnpm-workspace.yaml` and `renovate.json`.
 
 ## Common Commands
@@ -58,16 +47,16 @@ pnpm build              # Build all packages
 pnpm test               # Test all packages
 pnpm lint               # Lint all (root + packages)
 pnpm type-check         # Type-check all packages
-pnpm precommit          # dev:prepare → lint → type-check → build → test
-pnpm prepack            # lint:root:check → per-package prepack
-pnpm test:coverage      # test with istanbul coverage report
+pnpm precommit          # Full pre-commit verification gate
+pnpm prepack            # Pre-publication checks
+pnpm test:coverage      # Test with istanbul coverage report
 ```
 
 Per-package commands via `--filter`:
 
 ```bash
 pnpm --filter @kagal/taistamp build
-pnpm --filter @kagal/taistamp test
+pnpm --filter @kagal/ed25519-secret test
 ```
 
 ## Code Style Guidelines
@@ -94,23 +83,7 @@ Enforced by .editorconfig and @poupe/eslint-config:
 Prefer `new` or `make` prefix, not `create`
 (e.g. `newFoo()`, `makeFoo()`).
 
-### Throwing helpers
-
-In `@kagal-ed25519-secret`, helpers that throw accept a
-trailing context parameter — prepended as `${context}:`
-to the error message — in one of two shapes:
-
-- `context?: string` — absent means no prefix. Used by
-  `asBytes`, `asEd25519Seed`, `assertValidSelector`,
-  `decodeBase64`, `getRandom`, and `newSigner`.
-- `context: string = '<factory name>'` — used by
-  composing factories that thread the context through
-  to their delegates (currently `newKeyPair` and
-  `parseSecretToKey`); absence falls back to the
-  factory name so the error always carries
-  attribution.
-
-### Handling cspell findings
+## Handling cspell findings
 
 `pnpm lint` runs `cspell` against the tree using
 `internal/build/cspell.json`. When cspell flags a
@@ -154,51 +127,47 @@ than adding literal fragments to `words`.
 
 ## Development Practices
 
-### Pre-commit (MANDATORY)
+### Pre-commit
 
-Before committing any changes, ALWAYS run:
+Before committing any changes, run:
 
-1. `pnpm precommit`
-2. Fix any issues found
+1. `pnpm precommit`.
+2. Fix any issues found.
 
 ### DO
 
 - Use workspace protocol (`workspace:^`) for internal
-  dependencies
-- Write tests for all new functionality
-- Check existing code patterns before creating new ones
-- Follow strict TypeScript practices
+  dependencies.
+- Write tests for all new functionality.
 - Run `pnpm dev:prepare` before `lint` or `type-check`
-  (stubs gate cross-package resolution)
+  (stubs gate cross-package resolution).
 
 ### DON'T
 
 - Create files unless necessary — prefer editing
-  existing ones
+  existing ones.
 - Add external dependencies without careful
-  consideration
-- Ignore TypeScript errors or ESLint warnings
-- Use relative imports between packages (use workspace
-  deps)
-- **NEVER use `git add .` or `git add -A`**
-- **NEVER commit without explicitly listing files**
-- **NEVER use `cd`** — use `pnpm --filter`, `git -C`,
-  or relative paths
+  consideration.
+- Ignore TypeScript errors or ESLint warnings.
+- Use relative imports between packages (use
+  workspace deps).
+- Use `cd` — prefer `pnpm --filter`, `git -C`, or
+  relative paths.
 
 ## Git Workflow
 
 ### Commits
 
-- Always use `-s` flag for sign-off
-- Write clear messages describing actual changes
-- No AI advertising in commit messages
-- Focus on the final result, not the iterations
+- Always use `-s` flag for sign-off.
+- Write clear messages describing actual changes.
+- No AI advertising in commit messages.
+- Focus on the final result, not the iterations.
 
-### Direct Commits (MANDATORY)
+### Direct Commits
 
-ALWAYS list files explicitly in the commit command.
-Use `git add` only for new/untracked files, then pass
-all files (new and modified) to `git commit`.
+List files explicitly in the commit command. Use
+`git add` only for new/untracked files, then pass all
+files (new and modified) to `git commit`.
 
 ```bash
 git add src/new-file.ts
@@ -212,51 +181,46 @@ Temporary files use `.tmp/` with a shared prefix:
 
 ### Commit Message Guidelines
 
-- First line: type(scope): brief description (50 chars)
-- Blank line
-- Body: what and why, not how (wrap at 72 chars)
-- Use bullet points for multiple changes
-- Reference issues/PRs when relevant
+- First line: type(scope): brief description (50 chars).
+- Blank line.
+- Body: what and why, not how (wrap at 72 chars).
+- Use bullet points for multiple changes.
+- Reference issues/PRs when relevant.
 
 ## TypeScript Configuration
 
 Each package has multiple tsconfig files:
 
-- `tsconfig.json` — source code (no Node types)
+- `tsconfig.json` — source code (no Node types).
 - `tsconfig.tools.json` — adds Node types for
-  build.config.ts, vitest.config.ts
+  build.config.ts, vitest.config.ts.
 - `tsconfig.tests.json` — test files and compile-time
-  type assertions
+  type assertions.
 
 The root `tsconfig.json` provides shared compiler
 options (ESNext, bundler resolution, strict mode).
 
 ## Testing
 
-- All packages use Vitest
-- Test files: `*.test.ts` under `src/__tests__/`
-- Cross-runtime split via `vitest.config.ts` projects:
-  - `*.workerd.test.ts` → workerd pool
-    (`@cloudflare/vitest-pool-workers`, configured
-    via `wrangler.jsonc` — a test-only stub, not a
-    deployment target)
-  - `*.noble.test.ts` → Node pool with `@noble/ed25519`
-    as an independent reference verifier — catches
-    framing mismatches between WebCrypto and pure-JS
-    Ed25519 implementations
-  - all other `*.test.ts` → Node pool
-- `@kagal/cross-test` (external dep) provides the
-  conditional stub helper for `prepare` scripts
+- All packages use Vitest.
+- Test files: `*.test.ts` under `src/__tests__/`.
+- Per-package pool/runtime details (cross-runtime
+  splits, workerd stubs, reference verifiers): see the
+  package's AGENTS.md.
+- `@kagal/cross-test` (from a
+  [sibling repo](#sibling-repositories)) provides the
+  conditional stub helper for `prepare` scripts.
 
 ## Build
 
-- **obuild** for all packages (ESM + DTS, sourcemaps)
-- `build.config.ts` defines `bundle` entries; the
-  `rolldownOutput` hook enables sourcemaps and the
-  `end` hook emits a `TSDoc extraction not run` notice
+- **obuild** for all packages (ESM + DTS).
+- `build.config.ts` defines `bundle` entries with
+  sourcemaps enabled.
+- Builds print `TSDoc extraction not run` —
+  placeholder hook, no extraction performed.
 - `prepare` script: `cross-test -s dist/index.mjs ||
-  obuild --stub` (conditional stubbing)
-- `dev:prepare`: `obuild --stub` (unconditional)
+  obuild --stub` (conditional stubbing).
+- `dev:prepare`: `obuild --stub` (unconditional).
 
 ## Publishing
 
@@ -264,12 +228,15 @@ npm packages are published via GitHub Actions using
 npm's OIDC trusted publishing with `--provenance`.
 No tokens stored as secrets.
 
-1. Push a version tag (`v*`) to trigger `publish.yml`
-2. GitHub Actions authenticates to npm via OIDC
-3. `pnpm -r publish:maybe` checks each package —
-   publishes only if `$name@$version` is not yet on npm
+1. Push a per-package tag (`@<scope>/<name>@<version>`,
+   e.g. `@kagal/taistamp@0.0.5`) to trigger
+   `publish.yml`.
+2. GitHub Actions authenticates to npm via OIDC.
+3. The workflow filters to the tagged package and runs
+   `publish:maybe`, which publishes only if
+   `$name@$version` is not yet on npm.
 4. `pkg-pr-new` provides preview publishes on non-tag
-   pushes
+   pushes.
 
 <!-- cspell:words npmjs -->
 ### Setup (per package on npmjs.com)
@@ -291,5 +258,5 @@ This repo has siblings under the same org:
 - **tsdoc** — TSDoc extraction hook (`@kagal/build-tsdoc`).
 - **cross-test** — shared test utilities.
 
-Conventions (commit style, tooling, CI patterns) should
-stay consistent across the family.
+Commit style, tooling, and CI patterns stay consistent
+across these repos.
