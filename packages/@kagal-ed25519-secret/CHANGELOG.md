@@ -43,6 +43,17 @@ documented in this file.
   `cryptography`, `dkim`, `eddsa`, `rfc8032`,
   `webcrypto`.
 
+### Fixed
+
+- `dist/index.d.ts` companion — restored
+  alongside `.d.mts`. obuild emits only the
+  modern extension; legacy declaration
+  extractors (notably jsDocs.io) probe for
+  `.d.ts` and treat the package as untyped
+  when only `.d.mts` is present. Byte-identical
+  to the `.d.mts`, matching the pre-obuild
+  tarball shape.
+
 ## [0.1.2] - 2026-05-15
 
 Maintenance release.
