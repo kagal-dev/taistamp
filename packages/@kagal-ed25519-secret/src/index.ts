@@ -14,6 +14,7 @@ export {
 } from './key';
 export {
   type KeyConfig,
+  parseSecretsToKeys,
   parseSecretToKey,
 } from './secret';
 export {

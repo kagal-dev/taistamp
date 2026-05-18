@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseSecretToKey } from '../secret';
+import { parseSecretsToKeys, parseSecretToKey } from '../secret';
 import { encodeBase64 } from '../utils';
 
 const testSeed = new Uint8Array(32).fill(7);
@@ -113,5 +113,127 @@ describe('parseSecretToKey', () => {
   it('rejects a selector that fails SELECTOR_PATTERN', async () => {
     await expect(parseSecretToKey(`-bad:${testB64}`))
       .rejects.toThrow(/parseSecretToKey: selector must match/);
+  });
+});
+
+describe('parseSecretsToKeys', () => {
+  describe('input shape', () => {
+    it('returns an empty array for an empty string', async () => {
+      expect(await parseSecretsToKeys('')).toEqual([]);
+    });
+
+    it('returns an empty array for whitespace-only input', async () => {
+      expect(await parseSecretsToKeys('   \n\t  ')).toEqual([]);
+    });
+
+    it('returns an empty array for punctuation-only input', async () => {
+      expect(await parseSecretsToKeys(',;|.\n')).toEqual([]);
+    });
+
+    it('parses a single secret', async () => {
+      const keys = await parseSecretsToKeys(`s1:${testB64}`);
+      expect(keys).toHaveLength(1);
+      expect(keys[0].selector).toBe('s1');
+    });
+  });
+
+  describe('delimiters', () => {
+    it('splits on whitespace (newline, tab, space)', async () => {
+      const input = `s1:${testB64}\ts2:${testB64} s3:${testB64}\ns4:${testB64}`;
+      const keys = await parseSecretsToKeys(input);
+      expect(keys.map((k) => k.selector)).toEqual(['s1', 's2', 's3', 's4']);
+    });
+
+    it('splits on comma-separated secrets', async () => {
+      const input = `s1:${testB64},s2:${testB64}`;
+      const keys = await parseSecretsToKeys(input);
+      expect(keys.map((k) => k.selector)).toEqual(['s1', 's2']);
+    });
+
+    it('splits on mixed whitespace and punctuation', async () => {
+      const input = `s1:${testB64}, s2:${testB64};\ts3:${testB64}\n`;
+      const keys = await parseSecretsToKeys(input);
+      expect(keys.map((k) => k.selector)).toEqual(['s1', 's2', 's3']);
+    });
+
+    it('drops empty fragments from leading, trailing, and consecutive delimiters', async () => {
+      const input = `,,,s1:${testB64},,,s2:${testB64},,,`;
+      const keys = await parseSecretsToKeys(input);
+      expect(keys.map((k) => k.selector)).toEqual(['s1', 's2']);
+    });
+
+    it('preserves input order', async () => {
+      const input = `c:${testB64} a:${testB64} b:${testB64}`;
+      const keys = await parseSecretsToKeys(input);
+      expect(keys.map((k) => k.selector)).toEqual(['c', 'a', 'b']);
+    });
+  });
+
+  describe('strict mode (default)', () => {
+    it('returns all entries when every entry parses', async () => {
+      const input = `a:${testB64} b:${testB64}`;
+      const keys = await parseSecretsToKeys(input);
+      expect(keys.map((k) => k.selector)).toEqual(['a', 'b']);
+    });
+
+    it('throws on the malformed entry, naming the 1-based index', async () => {
+      const input = `s1:${testB64} bogus s3:${testB64}`;
+      await expect(parseSecretsToKeys(input))
+        .rejects.toThrow(/^parseSecretsToKeys: secret 2: /);
+    });
+
+    it('threads the supplied context through to the per-entry error', async () => {
+      const input = `s1:${testB64} bogus`;
+      await expect(parseSecretsToKeys(input, true, 'myConfig'))
+        .rejects.toThrow(/^myConfig: secret 2: /);
+    });
+
+    it('explicit strict=true matches the default behaviour', async () => {
+      const input = `s1:${testB64} bogus`;
+      await expect(parseSecretsToKeys(input, true))
+        .rejects.toThrow(/^parseSecretsToKeys: secret 2: /);
+    });
+
+    it('treats `:` alone as a single token and identifies it by index', async () => {
+      const input = `s1:${testB64} : s3:${testB64}`;
+      await expect(parseSecretsToKeys(input))
+        .rejects.toThrow(/^parseSecretsToKeys: secret 2: .+ empty selector/);
+    });
+  });
+
+  describe('lenient mode (strict: false)', () => {
+    it('skips malformed entries and preserves order among the successes', async () => {
+      const input = `s1:${testB64} bogus s3:${testB64}`;
+      const keys = await parseSecretsToKeys(input, false);
+      expect(keys.map((k) => k.selector)).toEqual(['s1', 's3']);
+    });
+
+    it('returns an empty array when every entry fails', async () => {
+      const keys = await parseSecretsToKeys('bogus1 bogus2 bogus3', false);
+      expect(keys).toEqual([]);
+    });
+
+    it('returns all entries when no entry fails', async () => {
+      const input = `a:${testB64} b:${testB64}`;
+      const keys = await parseSecretsToKeys(input, false);
+      expect(keys.map((k) => k.selector)).toEqual(['a', 'b']);
+    });
+
+    it('skips entries regardless of which check rejects them', async () => {
+      const shortB64 = encodeBase64(new Uint8Array(16).fill(7));
+      const input = [
+        `s1:${testB64}`, // OK
+        'bogus', // no separator
+        'a:b:c', // too many colons
+        ':', // empty selector
+        `:${testB64}`, // empty selector
+        's:', // empty base64
+        `s:${shortB64}`, // wrong seed length
+        `-bad:${testB64}`, // bad selector pattern
+        `s9:${testB64}`, // OK
+      ].join(' ');
+      const keys = await parseSecretsToKeys(input, false);
+      expect(keys.map((k) => k.selector)).toEqual(['s1', 's9']);
+    });
   });
 });

@@ -35,6 +35,15 @@ documented in this file.
   (`decodeBase64`, `getRandom`, `asBytes`) now return
   `Bytes`, so callers can pass results into
   `crypto.subtle.*` without casting.
+- `parseSecretsToKeys(secrets, strict?, context?)` —
+  parse multiple `selector:base64` secrets from a
+  single string. Splits on any character outside the
+  `selector:base64` alphabet — whitespace, commas,
+  semicolons, pipes, etc. — and drops empty fragments.
+  `strict: true` (default) rejects on a malformed
+  entry with `<context>: secret N: ...`;
+  `strict: false` silently skips failures. Input
+  order preserved.
 
 ### Changed
 

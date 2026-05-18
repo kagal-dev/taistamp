@@ -90,9 +90,8 @@ return new Response(JSON.stringify(jwks), {
 });
 ```
 
-For rotation, collect `publicJWK`s from multiple
-`newKeys` calls — each pinned to its own `kid` — and
-publish them together: `{ keys: [current, previous] }`.
+For the env-var rotation pattern, see
+[Parsing multiple secrets at once](#parsing-multiple-secrets-at-once).
 
 ### Parsing a secret and signing a message
 
@@ -105,6 +104,49 @@ const signature = await config.signer.sign(
   new TextEncoder().encode('payload'),
 );
 const wire = encodeBase64(new Uint8Array(signature)); // for transport
+```
+
+### Parsing multiple secrets at once
+
+One rotation pattern: append new secrets to the end
+of the env var so existing entries keep their
+position. Which entry signs new tokens is a
+signing-side choice — the example uses the last
+entry.
+
+The JWKS publishes every entry's `publicJWK` and
+verifiers match by `kid` (RFC 7517 §4.5), so
+signatures issued before the rotation continue to
+verify:
+
+```ts
+import { Hono } from 'hono';
+import { parseSecretsToKeys } from '@kagal/ed25519-secret';
+// hypothetical — your token-issuing handler
+import { mountTokensHandler } from './tokens';
+
+const raw = process.env.SIGNING_SECRETS;
+if (!raw) {
+  throw new Error('SIGNING_SECRETS is not set');
+}
+
+const keys = await parseSecretsToKeys(raw);
+const current = keys.at(-1);
+if (!current) {
+  throw new Error('SIGNING_SECRETS contained no usable secrets');
+}
+
+const app = new Hono();
+
+// Publish every public key — verifiers match by `kid`
+app.get('/.well-known/jwks.json', (c) =>
+  c.json({ keys: keys.map((k) => k.publicJWK) }),
+);
+
+// Issue tokens with the most recent secret
+mountTokensHandler(app, current.signer);
+
+export default app;
 ```
 
 ### Plugging in a custom Signer
@@ -272,6 +314,17 @@ assertValidSelector(value, 'config');
   base64 portion is a 32-byte Ed25519 seed (standard
   or URL-safe). `context` prefixes any thrown error
   and defaults to `'parseSecretToKey'`.
+- `parseSecretsToKeys(secrets, strict?, context?)` —
+  parse multiple `selector:base64` secrets from a
+  single string with whitespace- or
+  punctuation-separated entries; empty fragments are
+  dropped.
+  - `strict: true` (default) rejects on a malformed
+    entry with `<context>: secret N: ...`.
+  - `strict: false` silently skips failures and
+    returns only the entries that parsed (input
+    order preserved).
+  - `context` defaults to `'parseSecretsToKeys'`.
 
 ### Signer
 
