@@ -68,21 +68,27 @@ const { privateKey, publicKey } = await newKeys(seed);
 
 ### Publishing a JWKS endpoint
 
-`newKeys` returns a `publicJWK` ready to drop into a
-JWKS `keys` array (RFC 7517 §5); the optional `kid`
-argument is threaded through verbatim:
+`makeJWKS` wraps one or many keys into the JWK Set
+body (RFC 7517 §5) served by a `jwks.json` endpoint;
+each `publicJWK` carries the `kid` supplied to
+`newKeys` verbatim (RFC 7517 §4.5):
 
 ```ts
-import { newKeys } from '@kagal/ed25519-secret';
+import { makeJWKS, newKeys } from '@kagal/ed25519-secret';
 
 // `seed` from your secret store (or `undefined` for a fresh seed)
-const { publicJWK } = await newKeys(seed, 's1');
+const key = await newKeys(seed, 's1');
+const jwks = makeJWKS(key);
+// jwks:
 // {
-//   kty: 'OKP', crv: 'Ed25519', x: '<base64url>',
-//   use: 'sig', alg: 'EdDSA', kid: 's1',
+//   keys: [{
+//     kty: 'OKP', crv: 'Ed25519', x: '<base64url>',
+//     use: 'sig', alg: 'EdDSA', kid: 's1',
+//   }],
 // }
-
-const jwks = { keys: [publicJWK] };
+//
+// Pass an array of keys to publish many at once —
+// each entry's `kid` rides on its own `publicJWK`.
 
 // Serve as application/jwk-set+json (RFC 7517 §8.5.1):
 return new Response(JSON.stringify(jwks), {
@@ -121,7 +127,11 @@ verify:
 
 ```ts
 import { Hono } from 'hono';
-import { parseSecretsToKeys, splitLast } from '@kagal/ed25519-secret';
+import {
+  makeJWKS,
+  parseSecretsToKeys,
+  splitLast,
+} from '@kagal/ed25519-secret';
 // hypothetical — your token-issuing handler factory
 import { mountTokensHandler } from './tokens';
 
@@ -141,7 +151,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 // Publish every public key — verifiers match by `kid`
 app.get('/.well-known/jwks.json', async (c) => {
   const { keys } = await loadKeys(c.env);
-  return c.json({ keys: keys.map((k) => k.publicJWK) });
+  return c.json(makeJWKS(keys));
 });
 
 // Issue tokens with the most recent secret
@@ -185,14 +195,14 @@ without rotating the seed:
 ```ts
 import { encodeKey, parseSecretToKey } from '@kagal/ed25519-secret';
 
-const { publicKey } = await parseSecretToKey(secret);
-const distributable = await encodeKey(publicKey);
+const config = await parseSecretToKey(secret);
+const distributable = await encodeKey(config.publicKey);
 // publish under a selector-scoped channel (e.g. a DNS TXT record)
 ```
 
-The same config also carries `publicJWK` — drop that
-into a JWKS `keys` array if you publish over HTTP
-rather than DNS.
+For HTTP publication, pass the same config to
+`makeJWKS` — the carried `publicJWK` lands in the
+JWK Set's `keys` array.
 
 ### Fetching a published public key
 
@@ -303,6 +313,21 @@ assertValidSelector(value, 'config');
   over `newKeys` preserving the original 2-arg
   signature. `context` defaults to `'newKeyPair'`;
   the returned `publicJWK` carries no `kid`.
+
+### JWKS
+
+- `Ed25519JWKSet` — JWK Set (RFC 7517 §5) containing
+  Ed25519 public JWKs only — the shape served by a
+  `jwks.json` endpoint when every key is Ed25519:
+  `{ keys: Ed25519PublicJWK[] }`. Values returned by
+  `makeJWKS` are `Object.freeze`d (the set and its
+  `keys` array).
+- `makeJWKS(keys)` — collect every entry's `publicJWK`
+  into an `Ed25519JWKSet`. Accepts a single
+  `KeyContext` (or any `{ publicJWK }` container), an
+  array (including empty), or `undefined`; empty
+  inputs yield `{ keys: [] }`. Input order is
+  preserved.
 
 ### Secrets
 

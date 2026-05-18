@@ -4,6 +4,10 @@ import pkg from '../package.json' with { type: 'json' };
 export const VERSION: string = pkg.version;
 
 export {
+  type Ed25519JWKSet,
+  makeJWKS,
+} from './jwks';
+export {
   asEd25519Seed,
   type Ed25519PublicJWK,
   type Ed25519Seed,

@@ -18,6 +18,7 @@ import {
   encodeKey,
   getRandom,
   isValidSelector,
+  makeJWKS,
   newKeyPair,
   newKeys,
   newSigner,
@@ -75,6 +76,7 @@ console.log(`@kagal/ed25519-secret v${VERSION}`);
 checkString('VERSION', VERSION);
 checkFunction('newKeyPair', newKeyPair);
 checkFunction('newKeys', newKeys);
+checkFunction('makeJWKS', makeJWKS);
 checkFunction('asEd25519Seed', asEd25519Seed);
 checkFunction('parseSecretToKey', parseSecretToKey);
 checkFunction('parseSecretsToKeys', parseSecretsToKeys);

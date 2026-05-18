@@ -54,6 +54,16 @@ documented in this file.
   `{ last?, rest }`. `undefined` or an empty array
   yields `{ rest: [] }`; a single value or a
   one-element array yields `{ last, rest: [] }`.
+- `makeJWKS(keys)` — collect every entry's `publicJWK`
+  into an `Ed25519JWKSet` (RFC 7517 §5). Accepts a
+  single `KeyContext` (or any `{ publicJWK }`
+  container), an array (including empty), or
+  `undefined`; empty inputs yield `{ keys: [] }`.
+  Input order is preserved. The returned set and its
+  `keys` array are `Object.freeze`d.
+- `Ed25519JWKSet` — typed JWK Set (RFC 7517 §5)
+  containing Ed25519 public JWKs only;
+  `{ keys: Ed25519PublicJWK[] }`.
 
 ### Changed
 

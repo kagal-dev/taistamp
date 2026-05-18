@@ -18,6 +18,7 @@ the package-local layout and conventions.
     ├── index.ts            # public API surface
     ├── secret.ts           # selector:base64 secret parsing
     ├── key.ts              # Ed25519 key construction and public JWK shape
+    ├── jwks.ts             # Ed25519 JWK Set assembly
     ├── signer.ts           # Ed25519 signer interface and factory
     ├── selector.ts         # DKIM selector pattern and validators
     ├── utils.ts            # byte helpers and list splitters
