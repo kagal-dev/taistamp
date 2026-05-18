@@ -25,6 +25,14 @@ documented in this file.
 
 ### Fixed
 
+- `dist/index.d.ts` companion — restored
+  alongside `.d.mts`. obuild emits only the
+  modern extension; legacy declaration
+  extractors (notably jsDocs.io) probe for
+  `.d.ts` and treat the package as untyped
+  when only `.d.mts` is present. Byte-identical
+  to the `.d.mts`, matching the pre-obuild
+  tarball shape.
 - Selector-regex prose in the README — quoted
   as `[A-Za-z][A-Za-z0-9_-]{0,62}`, missing the
   trailing-letter-or-digit constraint that
