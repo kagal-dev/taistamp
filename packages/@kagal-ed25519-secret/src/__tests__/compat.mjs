@@ -21,6 +21,7 @@ import {
   newKeyPair,
   newKeys,
   newSigner,
+  parseSecretsToKeys,
   parseSecretToKey,
   SELECTOR_PATTERN,
   VERSION,
@@ -74,6 +75,7 @@ checkFunction('newKeyPair', newKeyPair);
 checkFunction('newKeys', newKeys);
 checkFunction('asEd25519Seed', asEd25519Seed);
 checkFunction('parseSecretToKey', parseSecretToKey);
+checkFunction('parseSecretsToKeys', parseSecretsToKeys);
 checkFunction('newSigner', newSigner);
 checkFunction('assertValidSelector', assertValidSelector);
 checkFunction('isValidSelector', isValidSelector);

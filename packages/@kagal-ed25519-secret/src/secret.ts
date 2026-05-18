@@ -84,3 +84,57 @@ export const parseSecretToKey = async (
     signer: newSigner(keys.signKey, context),
   };
 };
+
+/**
+ * Parse a string containing multiple `selector:base64`
+ * secrets into an array of {@link KeyConfig}s. Splits
+ * on any character outside the `selector:base64`
+ * alphabet (alphanumerics, `:`, `+`, `/`, `=`, `_`,
+ * `-`) — so whitespace, commas, semicolons, pipes,
+ * and other punctuation all work as delimiters. Empty
+ * fragments (from leading, trailing, or consecutive
+ * delimiters) are dropped before any decode is
+ * attempted.
+ *
+ * Returned entries preserve input order; in lenient
+ * mode that's the order among entries that parsed.
+ *
+ * @param secrets - one or more `selector:base64`
+ *   secrets separated by whitespace or punctuation
+ * @param strict - when `true` (default), a malformed
+ *   entry rejects the whole call; when
+ *   `false`, malformed entries are silently skipped
+ *   and the returned array contains only the entries
+ *   that parsed
+ * @param context - prefix prepended to per-entry
+ *   error messages; only visible in strict mode
+ *   (lenient mode swallows the errors); defaults to
+ *   `'parseSecretsToKeys'`
+ * @returns array of {@link KeyConfig}s, one per
+ *   successfully-parsed secret; empty when `secrets`
+ *   yields no usable tokens
+ * @throws TypeError (in strict mode) — the message
+ *   identifies the 1-based index of the offending
+ *   entry: `<context>: secret N: <inner error>`
+ */
+export const parseSecretsToKeys = async (
+  secrets: string,
+  strict: boolean = true,
+  context: string = 'parseSecretsToKeys',
+): Promise<KeyConfig[]> => {
+  const tokens = secrets.split(/[^A-Za-z0-9:+/=_-]+/).filter(Boolean);
+  const promises = tokens.map((token, index) =>
+    parseSecretToKey(token, `${context}: secret ${index + 1}`),
+  );
+
+  if (strict) {
+    return Promise.all(promises);
+  }
+
+  const results = await Promise.allSettled(promises);
+  return results
+    .filter(
+      (r): r is PromiseFulfilledResult<KeyConfig> => r.status === 'fulfilled',
+    )
+    .map((r) => r.value);
+};

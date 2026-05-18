@@ -37,6 +37,6 @@ one of two shapes:
 - `context: string = '<factory name>'` — used by
   composing factories that thread the context through
   to their delegates (`newKeys`, `parseSecretToKey`,
-  and the deprecated `newKeyPair`); absence falls
-  back to the factory name so the error always
-  carries attribution.
+  `parseSecretsToKeys`, and the deprecated `newKeyPair`);
+  absence falls back to the factory name so the error
+  always carries attribution.
