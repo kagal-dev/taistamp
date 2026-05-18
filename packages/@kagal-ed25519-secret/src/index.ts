@@ -33,4 +33,6 @@ export {
   encodeBase64,
   encodeKey,
   getRandom,
+  splitFirst,
+  splitLast,
 } from './utils';

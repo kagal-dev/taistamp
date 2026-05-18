@@ -24,6 +24,8 @@ import {
   parseSecretsToKeys,
   parseSecretToKey,
   SELECTOR_PATTERN,
+  splitFirst,
+  splitLast,
   VERSION,
 } from '../../dist/index.mjs';
 
@@ -84,6 +86,8 @@ checkFunction('encodeKey', encodeKey);
 checkFunction('decodeBase64', decodeBase64);
 checkFunction('getRandom', getRandom);
 checkFunction('asBytes', asBytes);
+checkFunction('splitFirst', splitFirst);
+checkFunction('splitLast', splitLast);
 checkInstance('SELECTOR_PATTERN', SELECTOR_PATTERN, RegExp);
 
 if (failures > 0) {

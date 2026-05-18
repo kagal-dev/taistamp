@@ -44,6 +44,16 @@ documented in this file.
   entry with `<context>: secret N: ...`;
   `strict: false` silently skips failures. Input
   order preserved.
+- `splitFirst(items)` — generic list helper. Takes a
+  list, a single value, or `undefined`; returns
+  `{ first?, rest }`. `undefined` or an empty array
+  yields `{ rest: [] }`; a single value or a
+  one-element array yields `{ first, rest: [] }`.
+- `splitLast(items)` — generic list helper. Takes a
+  list, a single value, or `undefined`; returns
+  `{ last?, rest }`. `undefined` or an empty array
+  yields `{ rest: [] }`; a single value or a
+  one-element array yields `{ last, rest: [] }`.
 
 ### Changed
 

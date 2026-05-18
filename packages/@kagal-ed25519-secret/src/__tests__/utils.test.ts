@@ -8,6 +8,8 @@ import {
   encodeBase64,
   encodeKey,
   getRandom,
+  splitFirst,
+  splitLast,
 } from '../utils';
 
 describe('encodeBase64', () => {
@@ -248,5 +250,83 @@ describe('asBytes', () => {
       expect(error).toBeInstanceOf(TypeError);
       expect((error as TypeError).cause).toBeDefined();
     }
+  });
+});
+
+describe('splitFirst', () => {
+  it('returns { rest: [] } for undefined', () => {
+    expect(splitFirst(undefined)).toEqual({ rest: [] });
+  });
+
+  it('returns { rest: [] } for an empty array', () => {
+    expect(splitFirst([])).toEqual({ rest: [] });
+  });
+
+  it('returns { first, rest: [] } for a single non-array value', () => {
+    expect(splitFirst('only')).toEqual({ first: 'only', rest: [] });
+  });
+
+  it('returns { first: 0, rest: [] } for 0', () => {
+    expect(splitFirst(0)).toEqual({ first: 0, rest: [] });
+  });
+
+  it('returns { first: "", rest: [] } for an empty string', () => {
+    expect(splitFirst('')).toEqual({ first: '', rest: [] });
+  });
+
+  it('returns { first: false, rest: [] } for false', () => {
+    expect(splitFirst(false)).toEqual({ first: false, rest: [] });
+  });
+
+  it('returns { first: NaN, rest: [] } for NaN', () => {
+    expect(splitFirst(Number.NaN)).toEqual({ first: Number.NaN, rest: [] });
+  });
+
+  it('returns { first, rest } for a non-empty array, preserving order', () => {
+    expect(splitFirst(['a', 'b', 'c']))
+      .toEqual({ first: 'a', rest: ['b', 'c'] });
+  });
+
+  it('returns { first, rest: [] } for a one-element array', () => {
+    expect(splitFirst(['only'])).toEqual({ first: 'only', rest: [] });
+  });
+});
+
+describe('splitLast', () => {
+  it('returns { rest: [] } for undefined', () => {
+    expect(splitLast(undefined)).toEqual({ rest: [] });
+  });
+
+  it('returns { rest: [] } for an empty array', () => {
+    expect(splitLast([])).toEqual({ rest: [] });
+  });
+
+  it('returns { last, rest: [] } for a single non-array value', () => {
+    expect(splitLast('only')).toEqual({ last: 'only', rest: [] });
+  });
+
+  it('returns { last: 0, rest: [] } for 0', () => {
+    expect(splitLast(0)).toEqual({ last: 0, rest: [] });
+  });
+
+  it('returns { last: "", rest: [] } for an empty string', () => {
+    expect(splitLast('')).toEqual({ last: '', rest: [] });
+  });
+
+  it('returns { last: false, rest: [] } for false', () => {
+    expect(splitLast(false)).toEqual({ last: false, rest: [] });
+  });
+
+  it('returns { last: NaN, rest: [] } for NaN', () => {
+    expect(splitLast(Number.NaN)).toEqual({ last: Number.NaN, rest: [] });
+  });
+
+  it('returns { last, rest } for a non-empty array, preserving order', () => {
+    expect(splitLast(['a', 'b', 'c']))
+      .toEqual({ last: 'c', rest: ['a', 'b'] });
+  });
+
+  it('returns { last, rest: [] } for a one-element array', () => {
+    expect(splitLast(['only'])).toEqual({ last: 'only', rest: [] });
   });
 });
