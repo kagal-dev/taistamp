@@ -121,7 +121,7 @@ verify:
 
 ```ts
 import { Hono } from 'hono';
-import { parseSecretsToKeys } from '@kagal/ed25519-secret';
+import { parseSecretsToKeys, splitLast } from '@kagal/ed25519-secret';
 // hypothetical — your token-issuing handler factory
 import { mountTokensHandler } from './tokens';
 
@@ -129,7 +129,7 @@ type Bindings = { SIGNING_SECRETS: string };
 
 async function loadKeys(env: Bindings) {
   const keys = await parseSecretsToKeys(env.SIGNING_SECRETS);
-  const current = keys.at(-1);
+  const { last: current } = splitLast(keys);
   if (!current) {
     throw new Error('SIGNING_SECRETS contained no usable secrets');
   }
@@ -376,6 +376,15 @@ assertValidSelector(value, 'config');
   `crypto.getRandomValues`. Throws `TypeError` on
   non-integer or negative `length`; pass `context` to
   prefix the error message.
+
+### List helpers
+
+- `splitFirst(items)` / `splitLast(items)` — split
+  `items` into `first`/`last` + `rest`. Accepts a
+  list, a single value, or `undefined`. `undefined`
+  or an empty array yields `{ rest: [] }`; a single
+  value or a one-element array yields
+  `{ first/last, rest: [] }`.
 
 ## Licence
 

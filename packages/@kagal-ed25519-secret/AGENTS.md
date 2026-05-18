@@ -20,7 +20,7 @@ the package-local layout and conventions.
     ├── key.ts              # Ed25519 key construction and public JWK shape
     ├── signer.ts           # Ed25519 signer interface and factory
     ├── selector.ts         # DKIM selector pattern and validators
-    ├── utils.ts            # byte helpers — base64, random, normalisation
+    ├── utils.ts            # byte helpers and list splitters
     └── __tests__/
 ```
 
