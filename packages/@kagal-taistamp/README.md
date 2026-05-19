@@ -13,6 +13,14 @@ handshake clock.
 Runs anywhere with `crypto.subtle` — modern browsers,
 Node ≥ 20, Cloudflare Workers, Deno, and Bun.
 
+## Specification
+
+Implements [`draft-mery-nagy-taistamp`][draft], the
+IETF Internet-Draft for signed TAI64N timestamps over
+HTTP. Working version: [`karasz/rfc-taistamp`][rfc-repo].
+Inline `spec §N` citations in this README resolve
+against that document.
+
 ## Install
 
 ```sh
@@ -56,7 +64,7 @@ with `Allow: GET, HEAD, OPTIONS`; other methods return
 `405` with the same `Allow`. A `TAI-Nonce` that is
 missing, empty, duplicated, not a valid sf-binary
 value, or outside the 14–174 octet range is treated as
-absent (no echo, no signature) per spec §5.2.
+absent (no echo, no signature) per [spec §5.4][spec-nonce].
 
 Response headers on success:
 
@@ -217,8 +225,8 @@ signatures stay verifiable until their TXT is removed.
 
 ## Verifying a signature
 
-Spec §7 requires verifiers to use the RFC 8032
-§5.1.7 strict verification procedure (cofactor
+[Spec §9][spec-verify] requires verifiers to use the
+RFC 8032 §5.1.7 strict verification procedure (cofactor
 handling, signature-malleability resistance).
 WebCrypto's `Ed25519 verify` is specified to apply
 strict verification; confirm your runtime conforms,
@@ -239,7 +247,7 @@ const label = await response.text();
 const selector = response.headers.get('TAI-Key-Selector')!;
 const sigSf = response.headers.get('TAI-Signature')!;
 
-// Spec §5.1: a `TAI-Leap-Seconds` value outside the
+// Spec §5.3: a `TAI-Leap-Seconds` value outside the
 // signed-payload u32 range MUST be treated as unsigned.
 // `extractLeapSeconds` returns `undefined` whenever
 // the field is missing, empty, non-numeric, non-integer,
@@ -289,7 +297,7 @@ branded `LeapSeconds` — obtain one from
 `asLeapSeconds(number)` (when you already have the
 value). Both return `undefined` for out-of-range
 input, collapsing every "treat as unsigned" case in
-spec §5.1 into one verdict. `nonce` must be a branded
+[spec §5.3][spec-leap] into one verdict. `nonce` must be a branded
 `Nonce` — wrap the recorded client nonce with
 `asNonce(value)`, which returns `undefined` for any
 value that would have been treated as absent on the
@@ -388,10 +396,15 @@ history.
 [MIT][mit]
 
 <!-- references -->
+[draft]: https://datatracker.ietf.org/doc/draft-mery-nagy-taistamp/
 [jsdocs-badge]: https://img.shields.io/badge/jsDocs.io-reference-blue
 [jsdocs-url]: https://www.jsdocs.io/package/@kagal/taistamp
 [mit]: ../../LICENCE.txt
 [mit-badge]: https://img.shields.io/badge/Licence-MIT-blue.svg
 [npm-badge]: https://img.shields.io/npm/v/@kagal/taistamp.svg
 [npm-url]: https://www.npmjs.com/package/@kagal/taistamp
+[rfc-repo]: https://github.com/karasz/rfc-taistamp
+[spec-leap]: https://datatracker.ietf.org/doc/html/draft-mery-nagy-taistamp-00#section-5.3
+[spec-nonce]: https://datatracker.ietf.org/doc/html/draft-mery-nagy-taistamp-00#section-5.4
+[spec-verify]: https://datatracker.ietf.org/doc/html/draft-mery-nagy-taistamp-00#section-9
 [tai64n]: https://cr.yp.to/libtai/tai64.html

@@ -1,5 +1,7 @@
 # Changelog
 
+<!-- cspell:words Datatracker -->
+
 All notable changes to `@kagal/taistamp` will be
 documented in this file.
 
@@ -22,6 +24,15 @@ documented in this file.
   `ed25519`, `eddsa`, `handler`, `http`,
   `nonce`, `rfc8032`, `signing`, `timestamp`,
   `webcrypto`.
+- README now names the IETF Internet-Draft the
+  implementation tracks (`draft-mery-nagy-taistamp`
+  / `karasz/rfc-taistamp`) via a `## Specification`
+  section linking Datatracker and the GitHub
+  working tree. Inline `spec §N` citations across
+  the README, `cors.ts`, `handler.ts`,
+  `leap-seconds.ts`, and `nonce.ts` are refreshed
+  against draft `-00` (notably §5.2 → §5.4, §5.1
+  → §5.3, §7 → §9).
 
 ### Fixed
 

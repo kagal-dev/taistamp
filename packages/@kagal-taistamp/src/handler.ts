@@ -167,7 +167,7 @@ export interface TaistampHandlerConfig {
    * gains `Access-Control-Allow-Origin`; pre-flight
    * `OPTIONS` also carries `-Allow-Methods`,
    * `-Allow-Headers`, `-Expose-Headers`, and
-   * `-Max-Age: 600` per spec §4.2; success
+   * `-Max-Age: 600` per spec §5.2; success
    * `GET` / `HEAD` carry `-Expose-Headers` so browser
    * JS can read the `TAI-*` response headers. A
    * non-`'*'` value adds `Vary: Origin` so caches can
@@ -284,9 +284,9 @@ const fromHandlerConfig = (config: TaistampHandlerConfig) => {
  *   verbatim in the response. A missing, empty,
  *   duplicated, structurally malformed, or out-of-range
  *   (14..174 octets) field is treated as absent (no
- *   echo, no signature) per spec §5.2 — see
+ *   echo, no signature) per spec §5.4 — see
  *   {@link extractNonce}. `HEAD`, `OPTIONS`, and `405`
- *   responses never carry `TAI-Nonce` per spec §4.1.
+ *   responses never carry `TAI-Nonce` per spec §5.1.
  * - Request `TAI-Nonce` *and* `signer` configured *and*
  *   the request method is `GET` — adds
  *   `TAI-Key-Selector` and `TAI-Signature` (sf-binary)
