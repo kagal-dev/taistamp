@@ -2,6 +2,7 @@
   "version": "0.2",
   "language": "en-GB",
   "ignorePaths": [
+    "**/draft-*.txt",
     "**/pnpm-lock.yaml"
   ],
   "ignoreRegExpList": [
