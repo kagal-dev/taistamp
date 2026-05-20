@@ -5,6 +5,10 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-20
+
+JWKS publication and multi-secret parsing.
+
 ### Added
 
 - `newKeys(input?, kid?, context?)` — supersedes
@@ -100,6 +104,7 @@ documented in this file.
   `cryptography`, `dkim`, `eddsa`, `jwk`,
   `jwks`, `rfc7517`, `rfc8032`, `rfc8037`,
   `webcrypto`.
+- `obuild` devDependency bumped to `^0.4.35`.
 
 ### Deprecated
 
