@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { asEd25519Seed, newKeyPair } from '../key';
+import { asEd25519Seed, newKeyPair, newKeys } from '../key';
 import { encodeBase64 } from '../utils';
 
 const testSeed = new Uint8Array(32).fill(7);
@@ -83,10 +83,10 @@ describe('asEd25519Seed', () => {
   });
 });
 
-describe('newKeyPair', () => {
+describe('newKeys', () => {
   describe('with bytes input', () => {
     it('returns the seed as a Uint8Array, byte-equal to the input', async () => {
-      const { privateKey } = await newKeyPair(testSeed);
+      const { privateKey } = await newKeys(testSeed);
       expect(privateKey).toBeInstanceOf(Uint8Array);
       expect(privateKey).toHaveLength(32);
       expect(privateKey).toEqual(testSeed);
@@ -94,13 +94,13 @@ describe('newKeyPair', () => {
 
     it('returns a defensive copy of the input seed', async () => {
       const mutable = new Uint8Array(testSeed);
-      const { privateKey } = await newKeyPair(mutable);
+      const { privateKey } = await newKeys(mutable);
       mutable[0] = 0xFF;
       expect(privateKey[0]).toBe(7);
     });
 
     it('returns a verify-only public and a sign-only non-extractable signKey', async () => {
-      const { publicKey, signKey } = await newKeyPair(testSeed);
+      const { publicKey, signKey } = await newKeys(testSeed);
       expect(signKey.algorithm.name).toBe('Ed25519');
       expect(signKey.extractable).toBe(false);
       expect(signKey.usages).toEqual(['sign']);
@@ -110,7 +110,7 @@ describe('newKeyPair', () => {
     });
 
     it('signs with the signKey and verifies with the publicKey', async () => {
-      const { publicKey, signKey } = await newKeyPair(testSeed);
+      const { publicKey, signKey } = await newKeys(testSeed);
       const message = new TextEncoder().encode('keypair-round-trip');
       const signature = await crypto.subtle.sign('Ed25519', signKey, message);
       expect(
@@ -119,22 +119,22 @@ describe('newKeyPair', () => {
     });
 
     it('rejects a seed that is not 32 bytes', async () => {
-      await expect(newKeyPair(new Uint8Array(16)))
-        .rejects.toThrow(/^newKeyPair: expected 32-byte seed, got 16$/);
-      await expect(newKeyPair(new Uint8Array(33)))
-        .rejects.toThrow(/^newKeyPair: expected 32-byte seed, got 33$/);
+      await expect(newKeys(new Uint8Array(16)))
+        .rejects.toThrow(/^newKeys: expected 32-byte seed, got 16$/);
+      await expect(newKeys(new Uint8Array(33)))
+        .rejects.toThrow(/^newKeys: expected 32-byte seed, got 33$/);
     });
 
     it('uses the supplied context as the error prefix', async () => {
-      await expect(newKeyPair(new Uint8Array(16), 'myConfig'))
+      await expect(newKeys(new Uint8Array(16), undefined, 'myConfig'))
         .rejects.toThrow(/^myConfig: expected 32-byte seed, got 16$/);
     });
   });
 
   describe('with base64 input', () => {
     it('produces the same triple as the raw-seed path', async () => {
-      const fromB64 = await newKeyPair(testB64);
-      const fromSeed = await newKeyPair(testSeed);
+      const fromB64 = await newKeys(testB64);
+      const fromSeed = await newKeys(testSeed);
       expect(fromB64.privateKey).toEqual(fromSeed.privateKey);
 
       const bytesFromB64 = new Uint8Array(
@@ -158,30 +158,30 @@ describe('newKeyPair', () => {
       const urlSafe = standard.replaceAll('+', '-').replaceAll('/', '_');
       expect(urlSafe).not.toBe(standard);
 
-      const { signKey } = await newKeyPair(urlSafe);
+      const { signKey } = await newKeys(urlSafe);
       expect(signKey.algorithm.name).toBe('Ed25519');
     });
 
     it('rejects a decoded seed that is not 32 bytes', async () => {
       const shortB64 = encodeBase64(new Uint8Array(16));
-      await expect(newKeyPair(shortB64))
-        .rejects.toThrow(/^newKeyPair: expected 32-byte seed, got 16$/);
+      await expect(newKeys(shortB64))
+        .rejects.toThrow(/^newKeys: expected 32-byte seed, got 16$/);
     });
 
     it('rejects invalid base64 input', async () => {
-      await expect(newKeyPair('!!!not-base64!!!'))
-        .rejects.toThrow(/^newKeyPair: invalid base64$/);
+      await expect(newKeys('!!!not-base64!!!'))
+        .rejects.toThrow(/^newKeys: invalid base64$/);
     });
 
     it('threads the supplied context through to the decode error', async () => {
-      await expect(newKeyPair('!!!not-base64!!!', 'myConfig'))
+      await expect(newKeys('!!!not-base64!!!', undefined, 'myConfig'))
         .rejects.toThrow(/^myConfig: invalid base64$/);
     });
   });
 
   describe('without input', () => {
     it('generates a fresh key-pair when called with no argument', async () => {
-      const { privateKey, publicKey, signKey } = await newKeyPair();
+      const { privateKey, publicKey, signKey } = await newKeys();
       expect(privateKey).toBeInstanceOf(Uint8Array);
       expect(privateKey).toHaveLength(32);
       expect(publicKey.algorithm.name).toBe('Ed25519');
@@ -191,14 +191,14 @@ describe('newKeyPair', () => {
     });
 
     it('generates a fresh key-pair when called with explicit undefined', async () => {
-      const { privateKey } = await newKeyPair(undefined);
+      const { privateKey } = await newKeys(undefined);
       expect(privateKey).toBeInstanceOf(Uint8Array);
       expect(privateKey).toHaveLength(32);
     });
 
     it('produces distinct key-pairs across two seedless calls', async () => {
-      const a = await newKeyPair();
-      const b = await newKeyPair();
+      const a = await newKeys();
+      const b = await newKeys();
       expect(a.privateKey).not.toEqual(b.privateKey);
       const pubA = new Uint8Array(
         await crypto.subtle.exportKey('raw', a.publicKey),
@@ -210,12 +210,93 @@ describe('newKeyPair', () => {
     });
 
     it('signs and verifies with a fresh seedless key-pair', async () => {
-      const { publicKey, signKey } = await newKeyPair();
+      const { publicKey, signKey } = await newKeys();
       const message = new TextEncoder().encode('seedless-round-trip');
       const signature = await crypto.subtle.sign('Ed25519', signKey, message);
       expect(
         await crypto.subtle.verify('Ed25519', publicKey, signature, message),
       ).toBe(true);
     });
+  });
+
+  describe('publicJWK', () => {
+    it('exposes the public key as an Ed25519 OKP JWK with use+alg', async () => {
+      const { publicJWK } = await newKeys(testSeed);
+      expect(publicJWK.kty).toBe('OKP');
+      expect(publicJWK.crv).toBe('Ed25519');
+      expect(publicJWK.use).toBe('sig');
+      expect(publicJWK.alg).toBe('EdDSA');
+      expect(publicJWK.x).toMatch(/^[\dA-Za-z_-]+$/);
+    });
+
+    it('encodes a 32-byte key as 43 base64url chars (unpadded)', async () => {
+      const { publicJWK } = await newKeys(testSeed);
+      expect(publicJWK.x).toHaveLength(43);
+      expect(publicJWK.x).not.toContain('=');
+    });
+
+    it('freezes the returned publicJWK', async () => {
+      const { publicJWK } = await newKeys(testSeed);
+      expect(Object.isFrozen(publicJWK)).toBe(true);
+    });
+
+    it('omits kid when no kid is supplied', async () => {
+      const { publicJWK } = await newKeys(testSeed);
+      expect(publicJWK.kid).toBeUndefined();
+      expect(Object.hasOwn(publicJWK, 'kid')).toBe(false);
+    });
+
+    it('omits kid when an empty string is supplied', async () => {
+      const { publicJWK } = await newKeys(testSeed, '');
+      expect(publicJWK.kid).toBeUndefined();
+      expect(Object.hasOwn(publicJWK, 'kid')).toBe(false);
+    });
+
+    it('passes the supplied kid through verbatim', async () => {
+      const { publicJWK } = await newKeys(testSeed, 's1');
+      expect(publicJWK.kid).toBe('s1');
+    });
+
+    it('accepts free-form kid strings', async () => {
+      const kid = 'tenant-42/2026-05-14 ::rotation';
+      const { publicJWK } = await newKeys(testSeed, kid);
+      expect(publicJWK.kid).toBe(kid);
+    });
+
+    it('round-trips publicJWK back to a verifying CryptoKey', async () => {
+      const { signKey, publicJWK } = await newKeys(testSeed);
+      const imported = await crypto.subtle.importKey(
+        'jwk', publicJWK, { name: 'Ed25519' }, true, ['verify'],
+      );
+      const message = new TextEncoder().encode('jwk-round-trip');
+      const signature = await crypto.subtle.sign('Ed25519', signKey, message);
+      expect(
+        await crypto.subtle.verify('Ed25519', imported, signature, message),
+      ).toBe(true);
+    });
+  });
+});
+
+describe('newKeyPair (deprecated wrapper)', () => {
+  it('delegates to newKeys and preserves the original signature', async () => {
+    const fromWrapper = await newKeyPair(testSeed);
+    const fromNewKeys = await newKeys(testSeed);
+    expect(fromWrapper.privateKey).toEqual(fromNewKeys.privateKey);
+  });
+
+  it('reports newKeyPair as the default error context', async () => {
+    await expect(newKeyPair(new Uint8Array(16)))
+      .rejects.toThrow(/^newKeyPair: expected 32-byte seed, got 16$/);
+  });
+
+  it('uses the supplied context as the error prefix', async () => {
+    await expect(newKeyPair(new Uint8Array(16), 'myConfig'))
+      .rejects.toThrow(/^myConfig: expected 32-byte seed, got 16$/);
+  });
+
+  it('surfaces publicJWK on the returned object without a kid', async () => {
+    const { publicJWK } = await newKeyPair(testSeed);
+    expect(publicJWK.kty).toBe('OKP');
+    expect(publicJWK.kid).toBeUndefined();
   });
 });

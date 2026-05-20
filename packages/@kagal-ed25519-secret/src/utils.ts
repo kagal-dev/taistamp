@@ -141,3 +141,33 @@ export const asBytes = (
   typeof input === 'string' ?
     decodeBase64(input, context) :
     new Uint8Array(input);
+
+/**
+ * Split a list (or single value) into `first` + `rest`.
+ * `undefined` or an empty array yields `{ rest: [] }`;
+ * a single value or a one-element array yields
+ * `{ first, rest: [] }`.
+ */
+export const splitFirst = <T>(
+  items: T | T[] | undefined,
+): { first?: T; rest: T[] } => {
+  if (items === undefined) return { rest: [] };
+  if (!Array.isArray(items)) return { first: items, rest: [] };
+  if (items.length === 0) return { rest: [] };
+  return { first: items.at(0), rest: items.slice(1) };
+};
+
+/**
+ * Split a list (or single value) into `last` + `rest`.
+ * `undefined` or an empty array yields `{ rest: [] }`;
+ * a single value or a one-element array yields
+ * `{ last, rest: [] }`.
+ */
+export const splitLast = <T>(
+  items: T | T[] | undefined,
+): { last?: T; rest: T[] } => {
+  if (items === undefined) return { rest: [] };
+  if (!Array.isArray(items)) return { last: items, rest: [] };
+  if (items.length === 0) return { rest: [] };
+  return { last: items.at(-1), rest: items.slice(0, -1) };
+};

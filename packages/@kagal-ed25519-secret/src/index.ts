@@ -4,13 +4,21 @@ import pkg from '../package.json' with { type: 'json' };
 export const VERSION: string = pkg.version;
 
 export {
+  type Ed25519JWKSet,
+  makeJWKS,
+} from './jwks';
+export {
   asEd25519Seed,
+  type Ed25519PublicJWK,
   type Ed25519Seed,
+  type KeyContext,
   type KeyPair,
   newKeyPair,
+  newKeys,
 } from './key';
 export {
   type KeyConfig,
+  parseSecretsToKeys,
   parseSecretToKey,
 } from './secret';
 export {
@@ -29,4 +37,6 @@ export {
   encodeBase64,
   encodeKey,
   getRandom,
+  splitFirst,
+  splitLast,
 } from './utils';

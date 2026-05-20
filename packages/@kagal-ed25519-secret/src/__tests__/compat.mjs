@@ -18,10 +18,15 @@ import {
   encodeKey,
   getRandom,
   isValidSelector,
+  makeJWKS,
   newKeyPair,
+  newKeys,
   newSigner,
+  parseSecretsToKeys,
   parseSecretToKey,
   SELECTOR_PATTERN,
+  splitFirst,
+  splitLast,
   VERSION,
 } from '../../dist/index.mjs';
 
@@ -70,8 +75,11 @@ console.log(`@kagal/ed25519-secret v${VERSION}`);
 
 checkString('VERSION', VERSION);
 checkFunction('newKeyPair', newKeyPair);
+checkFunction('newKeys', newKeys);
+checkFunction('makeJWKS', makeJWKS);
 checkFunction('asEd25519Seed', asEd25519Seed);
 checkFunction('parseSecretToKey', parseSecretToKey);
+checkFunction('parseSecretsToKeys', parseSecretsToKeys);
 checkFunction('newSigner', newSigner);
 checkFunction('assertValidSelector', assertValidSelector);
 checkFunction('isValidSelector', isValidSelector);
@@ -80,6 +88,8 @@ checkFunction('encodeKey', encodeKey);
 checkFunction('decodeBase64', decodeBase64);
 checkFunction('getRandom', getRandom);
 checkFunction('asBytes', asBytes);
+checkFunction('splitFirst', splitFirst);
+checkFunction('splitLast', splitLast);
 checkInstance('SELECTOR_PATTERN', SELECTOR_PATTERN, RegExp);
 
 if (failures > 0) {
