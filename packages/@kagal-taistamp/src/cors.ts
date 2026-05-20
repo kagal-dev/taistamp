@@ -18,7 +18,7 @@ const CORS_EXPOSE_HEADERS = [
   TAI64N_HEADER_KEY_SELECTOR,
   TAI64N_HEADER_SIGNATURE,
 ].join(', ');
-// Spec §4.2 SHOULDs at least 600s; 10 minutes is the
+// Spec §5.2 SHOULDs at least 600s; 10 minutes is the
 // floor the spec example uses and keeps high-traffic
 // cross-origin clients off a pre-flight per fetch.
 const CORS_MAX_AGE = '600';

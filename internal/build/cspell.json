@@ -2,6 +2,7 @@
   "version": "0.2",
   "language": "en-GB",
   "ignorePaths": [
+    "**/draft-*.txt",
     "**/pnpm-lock.yaml"
   ],
   "ignoreRegExpList": [
@@ -15,6 +16,7 @@
     "eddsa",
     "hono",
     "kagal",
+    "karasz",
     "poupe",
     "prepack",
     "tai64n",

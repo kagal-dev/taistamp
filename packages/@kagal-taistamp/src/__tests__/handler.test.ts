@@ -1,4 +1,4 @@
-import { newSigner } from '@kagal/ed25519-secret';
+import { decodeBase64, newSigner } from '@kagal/ed25519-secret';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -18,14 +18,6 @@ import {
 } from '..';
 
 const baseURL = `https://example.com${TAISTAMP_PATH}`;
-
-const decodeStructuredBinary = (value: string): ArrayBuffer => {
-  const trimmed = value.startsWith(':') && value.endsWith(':') ?
-    value.slice(1, -1) :
-    value;
-  const bytes = Uint8Array.from(atob(trimmed), (c) => c.codePointAt(0) ?? 0);
-  return bytes.buffer as ArrayBuffer;
-};
 
 const newKeypair = async (): Promise<CryptoKeyPair> =>
   await crypto.subtle.generateKey(
@@ -189,7 +181,7 @@ describe('newTaistampHandler', () => {
       const valid = await crypto.subtle.verify(
         'Ed25519',
         publicKey,
-        decodeStructuredBinary(signature!),
+        decodeBase64(signature!.slice(1, -1)),
         payload,
       );
       expect(valid).toBe(true);
@@ -303,7 +295,7 @@ describe('newTaistampHandler', () => {
       const valid = await crypto.subtle.verify(
         'Ed25519',
         publicKey,
-        decodeStructuredBinary(signature),
+        decodeBase64(signature.slice(1, -1)),
         tampered,
       );
       expect(valid).toBe(false);
@@ -333,7 +325,7 @@ describe('newTaistampHandler', () => {
       const valid = await crypto.subtle.verify(
         'Ed25519',
         publicKey,
-        decodeStructuredBinary(signature),
+        decodeBase64(signature.slice(1, -1)),
         tampered,
       );
       expect(valid).toBe(false);
@@ -363,7 +355,7 @@ describe('newTaistampHandler', () => {
       const valid = await crypto.subtle.verify(
         'Ed25519',
         publicKey,
-        decodeStructuredBinary(signature),
+        decodeBase64(signature.slice(1, -1)),
         tampered,
       );
       expect(valid).toBe(false);
@@ -463,9 +455,14 @@ describe('composeSignaturePayload', () => {
     expect(view.slice(selectorStart, selectorStart + selectorBytes.length))
       .toEqual(selectorBytes);
 
-    const nonceBytes = new TextEncoder().encode(nonce);
+    const nonceBytes = decodeBase64(nonce.slice(1, -1));
     expect(view.slice(selectorStart + selectorBytes.length))
       .toEqual(nonceBytes);
+
+    // Regression: 0.0.x signed TextEncoder.encode(nonce) — the wire
+    // form including ':' delimiters — instead of the decoded bytes.
+    expect(view.slice(selectorStart + selectorBytes.length))
+      .not.toEqual(new TextEncoder().encode(nonce));
   });
 });
 

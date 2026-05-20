@@ -8,7 +8,7 @@ import { TAI64N_HEADER_LEAP_SECONDS } from './const';
  * big-endian unsigned integer, so any input outside
  * `[0, 2^32-1]` cannot be represented. Verifiers MUST
  * treat an out-of-range `TAI-Leap-Seconds` response
- * header as unsigned, per spec §5.1.
+ * header as unsigned, per spec §5.3.
  */
 export const TAI_LEAP_SECONDS_MAX = 0xFF_FF_FF_FF;
 
@@ -69,7 +69,7 @@ const DECIMAL_INTEGER = /^(?:0|[1-9]\d*)$/;
  * headers. Returns `undefined` when the
  * `TAI-Leap-Seconds` field is missing, empty,
  * non-numeric, non-integer, negative, or out-of-range
- * — every "treat as unsigned" case in spec §5.1
+ * — every "treat as unsigned" case in spec §5.3
  * collapsed into one verdict.
  */
 export const extractLeapSeconds = (

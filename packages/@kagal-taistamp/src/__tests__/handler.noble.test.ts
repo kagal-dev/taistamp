@@ -1,4 +1,4 @@
-import { newSigner } from '@kagal/ed25519-secret';
+import { decodeBase64, newSigner } from '@kagal/ed25519-secret';
 import * as ed from '@noble/ed25519';
 import { describe, expect, it } from 'vitest';
 
@@ -14,9 +14,6 @@ import {
 } from '..';
 
 const baseURL = `https://example.com${TAISTAMP_PATH}`;
-
-const decodeStructuredBinary = (value: string): Uint8Array =>
-  Uint8Array.from(atob(value.slice(1, -1)), (c) => c.codePointAt(0) ?? 0);
 
 describe('newTaistampHandler (cross-impl: WebCrypto sign, noble verify)', () => {
   it('signed response verifies under @noble/ed25519', async () => {
@@ -51,7 +48,7 @@ describe('newTaistampHandler (cross-impl: WebCrypto sign, noble verify)', () => 
 
     const sigHeader = response.headers.get(TAI64N_HEADER_SIGNATURE);
     expect(sigHeader).not.toBeNull();
-    const signature = decodeStructuredBinary(sigHeader!);
+    const signature = decodeBase64(sigHeader!.slice(1, -1));
 
     const payload = new Uint8Array(
       composeSignaturePayload(label, leap!, selector, asNonce(nonce)!),

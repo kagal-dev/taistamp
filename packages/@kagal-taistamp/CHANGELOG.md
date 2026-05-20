@@ -1,9 +1,15 @@
 # Changelog
 
+<!-- cspell:words Datatracker -->
+
 All notable changes to `@kagal/taistamp` will be
 documented in this file.
 
 ## [Unreleased]
+
+## [0.1.0] - 2026-05-20
+
+Signed-nonce framing fixed to match spec §6.1 — 0.0.x signatures were never spec-conformant.
 
 ### Changed
 
@@ -22,6 +28,18 @@ documented in this file.
   `ed25519`, `eddsa`, `handler`, `http`,
   `nonce`, `rfc8032`, `signing`, `timestamp`,
   `webcrypto`.
+- README now names the IETF Internet-Draft the
+  implementation tracks (`draft-mery-nagy-taistamp`
+  / `karasz/rfc-taistamp`) via a `## Specification`
+  section linking Datatracker and the GitHub
+  working tree. Inline `spec §N` citations across
+  the README, `cors.ts`, `handler.ts`,
+  `leap-seconds.ts`, and `nonce.ts` are refreshed
+  against draft `-00` (notably §5.2 → §5.4, §5.1
+  → §5.3, §7 → §9).
+- `obuild` devDependency bumped to `^0.4.35`.
+- `@kagal/ed25519-secret` workspace dependency
+  re-resolves to `^0.2.0` at publish time.
 
 ### Fixed
 
@@ -39,6 +57,17 @@ documented in this file.
   `SELECTOR_PATTERN` enforces. Now quotes the
   pattern verbatim; surrounding prose notes
   "ends with a letter or digit".
+- `composeSignaturePayload` now signs the decoded
+  sf-binary octets of the nonce per spec §6.1, not
+  the wire `:base64:` framing. Signatures emitted
+  by previous releases will not verify against a
+  spec-conformant verifier reconstructing the
+  payload from spec text.
+- README and `nonce.ts` doc comments now
+  distinguish the wire-form length range
+  (14..174 octets — a pre-decode optimisation)
+  from spec §5.4's normative decoded-length bound
+  (7..129 octets).
 
 ## [0.0.5] - 2026-05-15
 

@@ -35,6 +35,15 @@ DNS-TXT-ready public key publication, and DKIM-style
 selector validation for WebCrypto. Zero runtime
 dependencies.
 
+## Specification
+
+Implements [`draft-mery-nagy-taistamp`][draft], the
+IETF Internet-Draft for signed TAI64N timestamps over
+HTTP. Working version: [`karasz/rfc-taistamp`][rfc-repo].
+
+[draft]: https://datatracker.ietf.org/doc/draft-mery-nagy-taistamp/
+[rfc-repo]: https://github.com/karasz/rfc-taistamp
+
 ## Development
 
 ```sh
