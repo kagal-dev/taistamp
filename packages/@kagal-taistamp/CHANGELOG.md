@@ -7,6 +7,10 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-05-20
+
+Signed-nonce framing fixed to match spec §6.1 — 0.0.x signatures were never spec-conformant.
+
 ### Changed
 
 - README reworked for shopfront and SEO — H1
@@ -33,6 +37,9 @@ documented in this file.
   `leap-seconds.ts`, and `nonce.ts` are refreshed
   against draft `-00` (notably §5.2 → §5.4, §5.1
   → §5.3, §7 → §9).
+- `obuild` devDependency bumped to `^0.4.35`.
+- `@kagal/ed25519-secret` workspace dependency
+  re-resolves to `^0.2.0` at publish time.
 
 ### Fixed
 
