@@ -50,6 +50,17 @@ documented in this file.
   `SELECTOR_PATTERN` enforces. Now quotes the
   pattern verbatim; surrounding prose notes
   "ends with a letter or digit".
+- `composeSignaturePayload` now signs the decoded
+  sf-binary octets of the nonce per spec §6.1, not
+  the wire `:base64:` framing. Signatures emitted
+  by previous releases will not verify against a
+  spec-conformant verifier reconstructing the
+  payload from spec text.
+- README and `nonce.ts` doc comments now
+  distinguish the wire-form length range
+  (14..174 octets — a pre-decode optimisation)
+  from spec §5.4's normative decoded-length bound
+  (7..129 octets).
 
 ## [0.0.5] - 2026-05-15
 

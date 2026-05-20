@@ -181,8 +181,11 @@ The framed payload is:
   length-prefixed by a single byte, so a downgrade
   attacker cannot rewrite `TAI-Key-Selector` without
   invalidating the signature.
-- `nonceBytes` — the request nonce, verbatim
-  (including any sf-binary `:` framing).
+- `nonceBytes` — the octet sequence obtained by
+  decoding the `TAI-Nonce` field value as an
+  sf-binary item per RFC 9651. The textual
+  `:base64:` framing is not part of the signed
+  input (spec §6.1).
 
 `newEd25519Signer(key: CryptoKey)` is the built-in
 signer — pass an Ed25519 private `CryptoKey` with
@@ -261,9 +264,9 @@ if (leap === undefined) {
 
 // Brand the recorded nonce so it can flow into the
 // signing path. `asNonce` returns `undefined` for any
-// value that fails sf-binary syntax or the 14..174
-// octet range — the same "treat as absent" verdict
-// the server applied.
+// value that fails sf-binary syntax or the wire
+// length range — the same "treat as absent" verdict
+// the server applied per spec §5.4.
 const nonce = asNonce(clientNonce);
 if (nonce === undefined) {
   throw new Error('client nonce is not a valid sf-binary item');
@@ -301,10 +304,10 @@ input, collapsing every "treat as unsigned" case in
 `Nonce` — wrap the recorded client nonce with
 `asNonce(value)`, which returns `undefined` for any
 value that would have been treated as absent on the
-server (missing, empty, malformed sf-binary, or
-outside 14..174 octets). Comparing the verifier's
-recorded nonce against the response's `TAI-Nonce`
-defends against replay.
+server (missing, empty, malformed sf-binary, or out
+of length range — see [spec §5.4][spec-nonce]).
+Comparing the verifier's recorded nonce against the
+response's `TAI-Nonce` defends against replay.
 
 ## API
 
@@ -353,7 +356,8 @@ For verifier-side validation of a signed response
   accepted by `composeSignaturePayload`.
 - `asNonce(value)` — brand a recorded nonce;
   returns `undefined` for any value that fails
-  sf-binary syntax or the 14..174 octet range.
+  sf-binary syntax or the length range checked
+  per [spec §5.4][spec-nonce].
 - `Nonce` — branded sf-binary nonce accepted by
   `composeSignaturePayload`.
 

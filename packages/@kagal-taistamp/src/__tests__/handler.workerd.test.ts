@@ -1,4 +1,4 @@
-import { newSigner } from '@kagal/ed25519-secret';
+import { decodeBase64, newSigner } from '@kagal/ed25519-secret';
 import { env } from 'cloudflare:test';
 import { describe, expect, it } from 'vitest';
 
@@ -14,10 +14,6 @@ import {
 } from '..';
 
 const baseURL = `https://example.com${TAISTAMP_PATH}`;
-
-const decodeStructuredBinary = (value: string): ArrayBuffer =>
-  Uint8Array.from(atob(value.slice(1, -1)), (c) => c.codePointAt(0) ?? 0)
-    .buffer as ArrayBuffer;
 
 describe('newTaistampHandler (workerd pool)', () => {
   it('signed response verifies under workerd WebCrypto', async () => {
@@ -50,7 +46,7 @@ describe('newTaistampHandler (workerd pool)', () => {
 
     const sigHeader = response.headers.get(TAI64N_HEADER_SIGNATURE);
     expect(sigHeader).not.toBeNull();
-    const signature = decodeStructuredBinary(sigHeader!);
+    const signature = decodeBase64(sigHeader!.slice(1, -1));
 
     const payload = composeSignaturePayload(label, leap!, selector, asNonce(nonce)!);
     const ok = await crypto.subtle.verify(

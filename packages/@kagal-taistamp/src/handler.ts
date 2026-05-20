@@ -1,4 +1,9 @@
-import { assertValidSelector, type Signer } from '@kagal/ed25519-secret';
+import {
+  assertValidSelector,
+  decodeBase64,
+  encodeBase64,
+  type Signer,
+} from '@kagal/ed25519-secret';
 
 import {
   TAI64N_CONTENT_LENGTH,
@@ -26,35 +31,6 @@ const textEncoder = new TextEncoder();
  */
 const DOMAIN_SEPARATOR = textEncoder.encode('taistamp-v1\0');
 
-const asBytes = (source: BufferSource): Uint8Array => {
-  if (source instanceof Uint8Array) {
-    return source;
-  }
-  if (ArrayBuffer.isView(source)) {
-    return new Uint8Array(
-      source.buffer,
-      source.byteOffset,
-      source.byteLength,
-    );
-  }
-  return new Uint8Array(source);
-};
-
-/**
- * Encode `source` as a Structured Field Value sf-binary
- * item per [RFC 9651 §3.3.5]: standard base64 with `=`
- * padding, wrapped in a leading and trailing colon.
- *
- * @see {@link https://www.rfc-editor.org/rfc/rfc9651#name-byte-sequences}
- */
-const encodeStructuredBinary = (source: BufferSource): string => {
-  // Spread is safe for the 64-byte signatures handled
-  // here; revisit if larger payloads ever land.
-  const bytes = asBytes(source);
-  const standard = btoa(String.fromCodePoint(...bytes));
-  return `:${standard}:`;
-};
-
 /**
  * Compose the byte sequence covered by a TAI-Signature.
  *
@@ -76,7 +52,9 @@ const encodeStructuredBinary = (source: BufferSource): string => {
  *   trailing NUL byte), then the label bytes, then
  *   the leap-seconds count as a 4-byte big-endian
  *   unsigned integer, then a 1-byte selector length,
- *   then the selector bytes, then the nonce bytes.
+ *   then the selector bytes, then the decoded sf-binary
+ *   octets of the nonce (spec §6.1 — the wire
+ *   `:base64:` framing is not signed).
  *
  * @remarks
  * Binding the selector into the signed payload stops a
@@ -96,7 +74,7 @@ export const composeSignaturePayload = (
 ): ArrayBuffer => {
   const labelBytes = textEncoder.encode(label);
   const selectorBytes = textEncoder.encode(selector);
-  const nonceBytes = textEncoder.encode(nonce);
+  const nonceBytes = decodeBase64(nonce.slice(1, -1));
 
   const buffer = new ArrayBuffer(
     DOMAIN_SEPARATOR.length +
@@ -244,7 +222,7 @@ const fromHandlerConfig = (config: TaistampHandlerConfig) => {
       headers.set(TAI64N_HEADER_KEY_SELECTOR, selector);
       headers.set(
         TAI64N_HEADER_SIGNATURE,
-        encodeStructuredBinary(signature),
+        `:${encodeBase64(new Uint8Array(signature))}:`,
       );
     } :
     undefined;
@@ -282,8 +260,8 @@ const fromHandlerConfig = (config: TaistampHandlerConfig) => {
  *   `Allow: GET, HEAD, OPTIONS`.
  * - Request `TAI-Nonce` — on `GET`, the value is echoed
  *   verbatim in the response. A missing, empty,
- *   duplicated, structurally malformed, or out-of-range
- *   (14..174 octets) field is treated as absent (no
+ *   duplicated, structurally malformed, or
+ *   length-out-of-range field is treated as absent (no
  *   echo, no signature) per spec §5.4 — see
  *   {@link extractNonce}. `HEAD`, `OPTIONS`, and `405`
  *   responses never carry `TAI-Nonce` per spec §5.1.
