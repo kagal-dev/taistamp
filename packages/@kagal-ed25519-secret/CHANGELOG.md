@@ -5,6 +5,41 @@ documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `makeKeyRecords(input, template?, context?)` — build
+  `KeyRecord`s ready for publication as
+  `<selector>._keys.<domain>` DNS TXT values.
+  Accepts a single `KeyRecordInput`, an array
+  (including empty), or `undefined`; returns a frozen
+  `{ [selector]: record }` object keyed by selector
+  (insertion order matches input order; duplicate
+  selectors last-write-wins). `k=` is the public key's
+  algorithm (lowercase WebCrypto name, `'ed25519'`);
+  `p=` is the base64-encoded raw public key via
+  `encodeKey`. An input that omits `publicKey` is a
+  revocation record (empty `p=`, `k=` omitted, RFC 6376
+  §3.6.1). `v=` and additional tags
+  flow from `template` (via its index signature);
+  `context` (default `'makeKeyRecords'`) prefixes any
+  thrown error, with array inputs decorated as
+  `<context>: input N` to disambiguate failures.
+- `KeyRecord<P>` — DKIM-style tag-list key record
+  (RFC 6376 §3.2 syntax, §3.6.1 `p=` semantics) with
+  declared `k?`, `p`, `v?` and an index signature for
+  additional tags. `P` tracks `p`'s value type:
+  `Uint8Array` (default; parse direction), `string`
+  (publish direction), or `CryptoKey` (verify-only,
+  post-import). Consumers needing typed access to a
+  specific tag set extend the interface.
+- `KeyRecordInput` — `{ publicKey?, selector }`; a
+  public `CryptoKey` of a supported algorithm paired
+  with the DKIM selector under which it will be
+  published. Omit
+  `publicKey` to publish a revocation record (empty
+  `p=`, RFC 6376 §3.6.1). `KeyConfig` (and any config
+  carrying a `selector`) satisfies this structurally.
+
 ### Changed
 
 - `newSigner` and `encodeKey` — algorithm-rejection

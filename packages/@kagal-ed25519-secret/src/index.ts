@@ -17,6 +17,11 @@ export {
   newKeys,
 } from './key';
 export {
+  type KeyRecord,
+  type KeyRecordInput,
+  makeKeyRecords,
+} from './key-record';
+export {
   type KeyConfig,
   parseSecretsToKeys,
   parseSecretToKey,

@@ -99,6 +99,38 @@ return new Response(JSON.stringify(jwks), {
 For the env-var rotation pattern, see
 [Parsing multiple secrets at once](#parsing-multiple-secrets-at-once).
 
+### Publishing keys as DKIM-style DNS TXT records
+
+`makeKeyRecords` builds the publishable record body
+for each key (RFC 6376 §3.2 syntax, §3.6.1 `p=`
+semantics) and returns them keyed by selector — ready
+to serialise as DKIM tag-list TXT values:
+
+```ts
+import { makeKeyRecords, newKeys } from '@kagal/ed25519-secret';
+
+// `seed` from your secret store (or `undefined` for a fresh seed)
+const { publicKey } = await newKeys(seed);
+const records = await makeKeyRecords(
+  { publicKey, selector: 's1' },
+  { v: 'DKIM1' },
+);
+// records:
+// {
+//   's1': { v: 'DKIM1', k: 'ed25519', p: '<base64>' },
+// }
+//
+// Pass an array of `{ publicKey, selector }` inputs to
+// publish many at once — each input's selector becomes
+// the dict key. `KeyConfig` (from `parseSecretToKey` /
+// `parseSecretsToKeys`) satisfies the input shape
+// structurally.
+
+// Serialise each entry as a DKIM tag-list TXT value
+// (`v=DKIM1; k=ed25519; p=<base64>`) and publish under
+// `<selector>._domainkey.<domain>`.
+```
+
 ### Parsing a secret and signing a message
 
 ```ts
@@ -328,6 +360,42 @@ assertValidSelector(value, 'config');
   array (including empty), or `undefined`; empty
   inputs yield `{ keys: [] }`. Input order is
   preserved.
+
+### Key records
+
+- `KeyRecord<P>` — DKIM-style tag-list record
+  (RFC 6376 §3.2 syntax, §3.6.1 `p=` semantics) with
+  declared `k?`, `p`, `v?` and an index signature for
+  additional tags. `P` tracks `p`'s value type:
+  `Uint8Array` (default; parse direction),
+  `string` (publish direction), or `CryptoKey`
+  (verify-only, post-import). Consumers needing typed
+  access to a specific tag set extend the interface.
+- `KeyRecordInput` — `{ publicKey?, selector }`; a
+  public `CryptoKey` of a supported algorithm paired
+  with the DKIM selector under which it will be
+  published. Omit `publicKey` to publish a revocation
+  record (empty `p=`, RFC 6376 §3.6.1). `KeyConfig`
+  (and any config carrying a `selector`) satisfies
+  this structurally.
+- `makeKeyRecords(input, template?, context?)` —
+  build `KeyRecord`s ready for publication as
+  `<selector>._keys.<domain>` DNS TXT values.
+  Accepts a single `KeyRecordInput`, an array
+  (including empty), or `undefined`; returns a frozen
+  `{ [selector]: record }` keyed by selector. Input
+  order is preserved; duplicate selectors
+  last-write-wins. `template` supplies `v=` and any
+  additional tags (via its index signature); `k=` (the
+  key's algorithm — lowercase WebCrypto name,
+  `'ed25519'`) and `p` (the base64-encoded public key)
+  are synthesised by the function and override any
+  same-named entries in `template`. An input that omits
+  `publicKey` yields a revocation record (empty `p=`,
+  `k=` omitted, RFC 6376 §3.6.1). `context`
+  (default `'makeKeyRecords'`) prefixes any thrown
+  error; array inputs decorate as
+  `<context>: input N` to disambiguate failures.
 
 ### Secrets
 

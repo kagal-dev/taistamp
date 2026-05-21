@@ -19,6 +19,7 @@ import {
   getRandom,
   isValidSelector,
   makeJWKS,
+  makeKeyRecords,
   newKeyPair,
   newKeys,
   newSigner,
@@ -77,6 +78,7 @@ checkString('VERSION', VERSION);
 checkFunction('newKeyPair', newKeyPair);
 checkFunction('newKeys', newKeys);
 checkFunction('makeJWKS', makeJWKS);
+checkFunction('makeKeyRecords', makeKeyRecords);
 checkFunction('asEd25519Seed', asEd25519Seed);
 checkFunction('parseSecretToKey', parseSecretToKey);
 checkFunction('parseSecretsToKeys', parseSecretsToKeys);

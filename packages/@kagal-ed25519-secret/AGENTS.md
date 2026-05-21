@@ -20,6 +20,7 @@ the package-local layout and conventions.
     ├── algo.ts             # supported-algorithm metadata
     ├── key.ts              # Ed25519 key construction and public JWK shape
     ├── jwks.ts             # Ed25519 JWK Set assembly
+    ├── key-record.ts       # DKIM-style key-record assembly
     ├── signer.ts           # Ed25519 signer interface and factory
     ├── selector.ts         # DKIM selector pattern and validators
     ├── utils.ts            # byte helpers and list splitters
@@ -38,7 +39,7 @@ one of two shapes:
   `getRandom`, and `newSigner`.
 - `context: string = '<factory name>'` — used by
   composing factories that thread the context through
-  to their delegates (`newKeys`, `parseSecretToKey`,
-  `parseSecretsToKeys`, and the deprecated `newKeyPair`);
-  absence falls back to the factory name so the error
-  always carries attribution.
+  to their delegates (`makeKeyRecords`, `newKeys`,
+  `parseSecretToKey`, `parseSecretsToKeys`, and the
+  deprecated `newKeyPair`); absence falls back to the
+  factory name so the error always carries attribution.
