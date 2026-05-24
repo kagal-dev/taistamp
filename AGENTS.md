@@ -16,6 +16,9 @@ HTTP at `/.well-known/taistamp`.
 
 - [`@kagal/taistamp`](packages/@kagal-taistamp/AGENTS.md)
   — platform-neutral handler.
+- [`@kagal/taistamp-cli`](packages/@kagal-taistamp-cli/AGENTS.md)
+  — companion CLI for seed generation and endpoint
+  probing (bin `taistamp`).
 - [`@kagal/ed25519-secret`](packages/@kagal-ed25519-secret/AGENTS.md)
   — WebCrypto Ed25519 signer plus DKIM-style selector
   validation.
@@ -26,6 +29,7 @@ HTTP at `/.well-known/taistamp`.
 taistamp/
 ├── packages/
 │   ├── @kagal-taistamp/        # @kagal/taistamp
+│   ├── @kagal-taistamp-cli/    # @kagal/taistamp-cli (bin: taistamp)
 │   └── @kagal-ed25519-secret/  # @kagal/ed25519-secret
 ├── docs/                       # design notes (untracked)
 ├── internal/build/cspell.json  # shared cspell config
@@ -213,14 +217,17 @@ options (ESNext, bundler resolution, strict mode).
 
 ## Build
 
-- **obuild** for all packages (ESM + DTS).
+- **obuild** for all packages (ESM + DTS, except
+  `@kagal/taistamp-cli` which emits the executable
+  `dist/bin.mjs`).
 - `build.config.ts` defines `bundle` entries with
   sourcemaps enabled.
 - `@kagal/build-tsdoc` supplies obuild hooks that
   extract TSDoc doc models to `dist/*.api.json`,
   one per bundle entry.
 - `prepare` script: `cross-test -s dist/index.mjs ||
-  pnpm dev:prepare` (conditional stubbing).
+  pnpm dev:prepare` (conditional stubbing) for library
+  packages; `@kagal/taistamp-cli` checks `dist/bin.mjs`.
 - `dev:prepare`: `obuild --stub` (unconditional) — the
   single definition of the stub command that `prepare`
   falls back to.
