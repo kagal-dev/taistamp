@@ -1,5 +1,5 @@
-// cSpell:words vars
-import { encodeKey } from './utils';
+// cSpell:words ALNUMPUNC VALCHAR tval tvals vars
+import { decodeBase64, encodeKey } from './utils';
 
 /**
  * DKIM-style tag-list key record (RFC 6376 §3.2
@@ -135,4 +135,200 @@ const buildEntry = async (
   const k = input.publicKey.algorithm.name.toLowerCase();
   const record: KeyRecord<string> = { ...extraTags, k, p };
   return [input.selector, record] as const;
+};
+
+/**
+ * Parse a DNS TXT-record value as a single DKIM-style
+ * key record (RFC 6376 §3.2 tag-list grammar; §3.6.1
+ * `p=` semantics for the base64 key bytes and the
+ * revoked-on-empty convention).
+ *
+ * Returns one record. RFC 6376 §3.6.2.2 mandates one
+ * TXT RR per selector ("TXT RRs MUST be unique for a
+ * particular selector name; that is, if there are
+ * multiple records in an RRset, the results are
+ * undefined"), so rotation is handled with a fresh
+ * selector, not with multiple records under one name.
+ *
+ * Lenient on semantics: unknown tag names and
+ * unknown `v`/`k` values pass through; missing
+ * `v`/`k` is tolerated. Unknown tags land as own
+ * properties on the returned record under their raw
+ * tag name (RFC 6376 §3.2: "Unrecognized tags MUST
+ * be ignored" — preserved here for inspection and
+ * round-trip).
+ *
+ * Strict on syntax: malformed tag-list grammar,
+ * malformed quoted character-strings, duplicate tag
+ * names, missing `p=`, and undecodable `p=` base64 all
+ * throw `TypeError`.
+ *
+ * Input shapes covered:
+ *
+ * - A raw string holding the tag-list:
+ *   `'v=tai1; k=ed25519; p=...'`.
+ * - A DoH-JSON-style string with one or more
+ *   whitespace-separated quoted character-strings,
+ *   concatenated with no intervening whitespace per
+ *   RFC 1035 §3.3 and RFC 6376 §3.6.2.2:
+ *   `'"v=tai1; ...; p=..."'` or
+ *   `'"v=tai1; k=ed" "25519; p=..."'`.
+ * - An array of pre-extracted character-strings (Node
+ *   `dns.resolveTxt` inner array, DoH-wire parsers
+ *   like `dns-packet`), concatenated with no
+ *   intervening whitespace:
+ *   `['v=tai1; k=ed', '25519; p=...']`.
+ *
+ * @param input - TXT record value: raw string,
+ *   DoH-JSON-quoted string, or array of pre-extracted
+ *   character-strings
+ * @param context - optional prefix prepended to thrown
+ *   error messages as `${context}: `
+ */
+export const parseKeyRecord = (
+  input: readonly string[] | string,
+  context?: string,
+): KeyRecord<Uint8Array> => {
+  const prefix = context ? `${context}: ` : '';
+  const source = flatten(input, context);
+  if (source === '') {
+    throw new TypeError(`${prefix}empty input`);
+  }
+  const parts = splitTagSpecs(source);
+  if (parts.length === 0) {
+    throw new TypeError(`${prefix}empty tag-list`);
+  }
+
+  const record: Record<string, string | Uint8Array | undefined> = {};
+  const seen = new Set<string>();
+  let pSeen = false;
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (trimmed === '') {
+      throw new TypeError(`${prefix}empty tag-spec`);
+    }
+    const spec = parseTagSpec(part);
+    if (spec === undefined) {
+      throw new TypeError(`${prefix}invalid tag-spec: ${trimmed}`);
+    }
+    const { name, value } = spec;
+    if (seen.has(name)) {
+      throw new TypeError(`${prefix}duplicate tag: ${name}`);
+    }
+    seen.add(name);
+    if (name === 'p') {
+      pSeen = true;
+      // RFC 6376 §3.6.1: empty `p=` signals revocation.
+      const compact = value.replaceAll(/\s+/g, '');
+      record.p = compact === '' ?
+        undefined :
+        decodeBase64(compact, `${prefix}p`);
+    } else {
+      record[name] = value;
+    }
+  }
+
+  if (!pSeen) {
+    throw new TypeError(`${prefix}missing tag: p`);
+  }
+
+  return record as KeyRecord<Uint8Array>;
+};
+
+/**
+ * Reduce the input to one tag-list source string,
+ * concatenating multi-piece forms (quoted
+ * character-strings or array elements) with no
+ * intervening whitespace per RFC 1035 §3.3 and
+ * RFC 6376 §3.6.2.2.
+ */
+const flatten = (
+  input: readonly string[] | string,
+  context: string | undefined,
+): string => {
+  if (Array.isArray(input)) return input.join('');
+  const raw = input as string;
+  const trimmed = raw.trim();
+  if (trimmed === '') return '';
+  if (!trimmed.startsWith('"')) return raw;
+  return joinQuotedStrings(trimmed, context);
+};
+
+/**
+ * Scan paired `"..."` runs separated by optional
+ * whitespace and return the concatenation of their
+ * contents with no whitespace inserted. Throws on
+ * malformed quoting (stray characters outside a
+ * quoted run, or an unclosed `"`).
+ *
+ * Does not decode backslash escapes; the resolvers we
+ * target pre-resolve them.
+ */
+const joinQuotedStrings = (
+  trimmed: string,
+  context: string | undefined,
+): string => {
+  const prefix = context ? `${context}: ` : '';
+  const pieces: string[] = [];
+  let i = 0;
+  while (i < trimmed.length) {
+    if (trimmed[i] !== '"') {
+      throw new TypeError(
+        `${prefix}stray characters outside quoted character-string`,
+      );
+    }
+    const close = trimmed.indexOf('"', i + 1);
+    if (close === -1) {
+      throw new TypeError(`${prefix}unclosed quoted character-string`);
+    }
+    pieces.push(trimmed.slice(i + 1, close));
+    i = close + 1;
+    while (i < trimmed.length && /\s/.test(trimmed[i] ?? '')) i++;
+  }
+  return pieces.join('');
+};
+
+/**
+ * Split a tag-list into raw tag-spec fragments on
+ * unquoted `;`. RFC 6376 §3.2 does not define quoting
+ * inside tag-values, so a plain split is correct.
+ * Trailing `;` is permitted by the grammar; the empty
+ * fragment it produces is dropped.
+ */
+const splitTagSpecs = (tagList: string): string[] => {
+  const parts = tagList.split(';');
+  while (parts.length > 0 && (parts.at(-1) ?? '').trim() === '') {
+    parts.pop();
+  }
+  return parts;
+};
+
+const TAG_SPEC_PATTERN = /^\s*([A-Za-z][\dA-Za-z_]*)\s*=\s*([\S\s]*?)\s*$/;
+const TVAL_RUN_PATTERN = /^[!-:<-~]+(?:[ \t]+[!-:<-~]+)*$/;
+
+/**
+ * Match a single tag-spec per RFC 6376 §3.2:
+ *
+ *   tag-spec  = [FWS] tag-name [FWS] "=" [FWS] tag-value [FWS]
+ *   tag-name  = ALPHA *ALNUMPUNC           ; ALNUMPUNC = ALPHA / DIGIT / "_"
+ *   tag-value = [ tval *( 1*(WSP / FWS) tval ) ]
+ *   tval      = 1*VALCHAR                  ; VALCHAR = %x21-3A / %x3C-7E
+ *
+ * Returns `undefined` when the fragment does not match.
+ * Whitespace around `=` and around the value is folded
+ * away; whitespace between tvals is left as-is in the
+ * stored value (RFC 6376 §3.2: "Whitespace within a
+ * value MUST be retained unless explicitly excluded by
+ * the specific tag description" — `p=` is the
+ * exception per RFC 6376 §3.6.1).
+ */
+const parseTagSpec = (
+  fragment: string,
+): undefined | { name: string; value: string } => {
+  const match = TAG_SPEC_PATTERN.exec(fragment);
+  if (!match) return undefined;
+  const [, name, value] = match;
+  if (value !== '' && !TVAL_RUN_PATTERN.test(value)) return undefined;
+  return { name, value };
 };

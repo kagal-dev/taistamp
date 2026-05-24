@@ -20,7 +20,7 @@ the package-local layout and conventions.
     ├── algo.ts             # supported-algorithm metadata
     ├── key.ts              # Ed25519 key construction and public JWK shape
     ├── jwks.ts             # Ed25519 JWK Set assembly
-    ├── key-record.ts       # DKIM-style key-record assembly
+    ├── key-record.ts       # DKIM-style key-record assembly and parsing
     ├── signer.ts           # Ed25519 signer interface and factory
     ├── selector.ts         # DKIM selector pattern and validators
     ├── utils.ts            # byte helpers and list splitters
@@ -36,7 +36,7 @@ one of two shapes:
 - `context?: string` — absent means no prefix. Used by
   `asBytes`, `asEd25519Seed`, `assertValidSelector`,
   `decodeASCII`, `decodeBase64`, `encodeKey`,
-  `getRandom`, and `newSigner`.
+  `getRandom`, `newSigner`, and `parseKeyRecord`.
 - `context: string = '<factory name>'` — used by
   composing factories that thread the context through
   to their delegates (`makeKeyRecords`, `newKeys`,

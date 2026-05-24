@@ -24,6 +24,23 @@ documented in this file.
   `context` (default `'makeKeyRecords'`) prefixes any
   thrown error, with array inputs decorated as
   `<context>: input N` to disambiguate failures.
+- `parseKeyRecord(input, context?)` — parse a DNS TXT
+  record value into a `KeyRecord<Uint8Array>` per
+  RFC 6376 §3.2 (tag-list grammar) and §3.6.1 (`p=`
+  semantics). Accepts a raw tag-list string, a
+  DoH-JSON-style string of one or more whitespace-
+  separated quoted character-strings (RFC 1035 §3.3
+  and RFC 6376 §3.6.2.2), or an array of pre-extracted
+  character-strings (Node `dns.resolveTxt`, DoH-wire
+  parsers); multi-piece forms are concatenated with no
+  intervening whitespace. Strict on grammar (rejects
+  empty tag-specs, malformed quoting, duplicate tag
+  names, missing `p=`, undecodable base64); lenient on
+  semantics (unknown tags preserved, unknown `v`/`k`
+  values passed through). Empty `p=` yields
+  `p: undefined` per RFC 6376 §3.6.1's revoked-key
+  convention. `context` (optional) prefixes any thrown
+  error.
 - `KeyRecord<P>` — DKIM-style tag-list key record
   (RFC 6376 §3.2 syntax, §3.6.1 `p=` semantics) with
   declared `k?`, `p`, `v?` and an index signature for
@@ -45,6 +62,11 @@ documented in this file.
 - `newSigner` and `encodeKey` — algorithm-rejection
   error wording changed from `expected Ed25519 key,
   got <X>` to `unsupported algorithm: <X>`.
+- README — the "Fetching a published public key"
+  walkthrough now uses `parseKeyRecord` instead of
+  ad-hoc quote-stripping and a direct `decodeBase64`;
+  covers multi-string concatenation (RFC 1035 §3.3)
+  and revoked-key handling (RFC 6376 §3.6.1).
 
 ## [0.2.1] - 2026-05-29
 

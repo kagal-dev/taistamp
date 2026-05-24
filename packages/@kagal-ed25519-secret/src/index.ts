@@ -20,6 +20,7 @@ export {
   type KeyRecord,
   type KeyRecordInput,
   makeKeyRecords,
+  parseKeyRecord,
 } from './key-record';
 export {
   type KeyConfig,

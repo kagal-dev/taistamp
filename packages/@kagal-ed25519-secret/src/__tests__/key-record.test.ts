@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import { newKeys } from '../key';
-import { makeKeyRecords } from '../key-record';
-import { decodeBase64, encodeKey } from '../utils';
+import { makeKeyRecords, parseKeyRecord } from '../key-record';
+import { decodeBase64, encodeBase64, encodeKey } from '../utils';
 
 const testSeed = new Uint8Array(32).fill(7);
+
+const KEY32 = new Uint8Array(32);
+for (let i = 0; i < 32; i++) KEY32[i] = i;
+const KEY32_B64 = encodeBase64(KEY32);
+const RECORD = `v=tai1; k=ed25519; p=${KEY32_B64}`;
 
 describe('makeKeyRecords', () => {
   describe('cardinality', () => {
@@ -200,5 +205,269 @@ describe('makeKeyRecords', () => {
         { publicKey: signKey, selector: 's2' },
       ])).rejects.toThrow(/^makeKeyRecords: input 1: /);
     });
+  });
+});
+
+describe('parseKeyRecord', () => {
+  describe('string input', () => {
+    it('parses an unquoted single tag-list', () => {
+      const record = parseKeyRecord(RECORD);
+      expect(record.v).toBe('tai1');
+      expect(record.k).toBe('ed25519');
+      expect(record.p).toEqual(KEY32);
+      expect(Object.keys(record)).toHaveLength(3);
+    });
+
+    it('parses a DoH-style quoted single string', () => {
+      const record = parseKeyRecord(`"${RECORD}"`);
+      expect(record.v).toBe('tai1');
+      expect(record.k).toBe('ed25519');
+      expect(record.p).toEqual(KEY32);
+    });
+
+    it('concatenates a DoH-style multi-string with whitespace between quotes', () => {
+      const split = `"v=tai1; k=ed" "25519; p=${KEY32_B64}"`;
+      const record = parseKeyRecord(split);
+      expect(record.v).toBe('tai1');
+      expect(record.k).toBe('ed25519');
+      expect(record.p).toEqual(KEY32);
+    });
+
+    it('concatenates adjacent quoted strings with no separating whitespace', () => {
+      const split = `"v=tai1; k=ed25519; ""p=${KEY32_B64}"`;
+      const record = parseKeyRecord(split);
+      expect(record.p).toEqual(KEY32);
+    });
+
+    it('tolerates leading and trailing whitespace on the whole input', () => {
+      expect(parseKeyRecord(`   ${RECORD}   `).p).toEqual(KEY32);
+    });
+
+    it('accepts a trailing `;`', () => {
+      expect(parseKeyRecord(`${RECORD};`).p).toEqual(KEY32);
+    });
+
+    it('tolerates whitespace around `=` per RFC 6376 §3.2 FWS', () => {
+      const record = parseKeyRecord(
+        `v = tai1 ; k =  ed25519 ; p = ${KEY32_B64}`,
+      );
+      expect(record.v).toBe('tai1');
+      expect(record.k).toBe('ed25519');
+      expect(record.p).toEqual(KEY32);
+    });
+  });
+
+  describe('array input', () => {
+    it('concatenates a string[] with no intervening whitespace', () => {
+      const split = ['v=tai1; k=ed', `25519; p=${KEY32_B64}`];
+      const record = parseKeyRecord(split);
+      expect(record.v).toBe('tai1');
+      expect(record.k).toBe('ed25519');
+      expect(record.p).toEqual(KEY32);
+    });
+
+    it('accepts a single-element string[]', () => {
+      expect(parseKeyRecord([RECORD]).p).toEqual(KEY32);
+    });
+  });
+
+  describe('p= semantics', () => {
+    it('returns undefined p for an empty `p=` (revoked)', () => {
+      const record = parseKeyRecord('v=tai1; k=ed25519; p=');
+      expect(record.p).toBeUndefined();
+    });
+
+    it('strips internal whitespace from `p=` before decoding (RFC 6376 §3.6.1)', () => {
+      const split = `${KEY32_B64.slice(0, 22)} ${KEY32_B64.slice(22)}`;
+      const record = parseKeyRecord(`v=tai1; k=ed25519; p=${split}`);
+      expect(record.p).toEqual(KEY32);
+    });
+
+    it('throws when `p=` is missing', () => {
+      expect(() => parseKeyRecord('v=tai1; k=ed25519'))
+        .toThrow(/^missing tag: p$/);
+    });
+
+    it('throws when `p=` is undecodable', () => {
+      expect(() => parseKeyRecord('v=tai1; k=ed25519; p=!!!not-base64!!!'))
+        .toThrow(/^p: invalid base64$/);
+    });
+  });
+
+  describe('empty vs omitted v/k', () => {
+    it('reports omitted `v` as undefined', () => {
+      const record = parseKeyRecord(`k=ed25519; p=${KEY32_B64}`);
+      expect(record.v).toBeUndefined();
+    });
+
+    it('reports empty `v=` as empty string', () => {
+      const record = parseKeyRecord(`v=; k=ed25519; p=${KEY32_B64}`);
+      expect(record.v).toBe('');
+    });
+
+    it('reports omitted `k` as undefined', () => {
+      const record = parseKeyRecord(`v=tai1; p=${KEY32_B64}`);
+      expect(record.k).toBeUndefined();
+    });
+
+    it('reports empty `k=` as empty string', () => {
+      const record = parseKeyRecord(`v=tai1; k=; p=${KEY32_B64}`);
+      expect(record.k).toBe('');
+    });
+  });
+
+  describe('unknown tags', () => {
+    it('keeps unknown tags as own properties, in insertion order', () => {
+      const record = parseKeyRecord(
+        `v=tai1; h=sha256; k=ed25519; s=email; p=${KEY32_B64}; t=y`,
+      );
+      const extras = Object.entries(record).filter(
+        ([k]) => k !== 'v' && k !== 'k' && k !== 'p',
+      );
+      expect(extras).toEqual([
+        ['h', 'sha256'],
+        ['s', 'email'],
+        ['t', 'y'],
+      ]);
+    });
+
+    it('preserves all tags in input order including v, k, p', () => {
+      const record = parseKeyRecord(
+        `v=tai1; h=sha256; k=ed25519; s=email; p=${KEY32_B64}; t=y`,
+      );
+      expect(Object.keys(record)).toEqual([
+        'v', 'h', 'k', 's', 'p', 't',
+      ]);
+    });
+  });
+
+  describe('case sensitivity', () => {
+    it('treats `V=` and `v=` as distinct tags (no collapse)', () => {
+      const record = parseKeyRecord(
+        `V=DKIM1; v=tai1; k=ed25519; p=${KEY32_B64}`,
+      );
+      expect(record.v).toBe('tai1');
+      expect(record['V']).toBe('DKIM1');
+    });
+  });
+
+  describe('syntax errors', () => {
+    it('throws on empty input string', () => {
+      expect(() => parseKeyRecord('')).toThrow(/^empty input$/);
+    });
+
+    it('throws on whitespace-only input', () => {
+      expect(() => parseKeyRecord('   ')).toThrow(/^empty input$/);
+    });
+
+    it('throws on empty array input', () => {
+      expect(() => parseKeyRecord([])).toThrow(/^empty input$/);
+    });
+
+    it('throws on an empty tag-list (just `;`)', () => {
+      expect(() => parseKeyRecord(';')).toThrow(/^empty tag-list$/);
+    });
+
+    it('throws on a tag-spec without `=`', () => {
+      expect(() => parseKeyRecord(`v=tai1; broken; p=${KEY32_B64}`))
+        .toThrow(/^invalid tag-spec: broken$/);
+    });
+
+    it('throws on a tag-name starting with a digit', () => {
+      expect(() => parseKeyRecord(`9bad=x; p=${KEY32_B64}`))
+        .toThrow(/^invalid tag-spec: /);
+    });
+
+    it('throws on a tag-name containing `-` (outside the allowed set)', () => {
+      expect(() => parseKeyRecord(`bad-name=x; p=${KEY32_B64}`))
+        .toThrow(/^invalid tag-spec: /);
+    });
+
+    it('throws on duplicate tag names', () => {
+      expect(() => parseKeyRecord(`v=tai1; v=tai2; p=${KEY32_B64}`))
+        .toThrow(/^duplicate tag: v$/);
+    });
+
+    it('throws on an unclosed quoted character-string', () => {
+      expect(() => parseKeyRecord(`"v=tai1; k=ed25519; p=${KEY32_B64}`))
+        .toThrow(/^unclosed quoted character-string$/);
+    });
+
+    it('throws on stray characters between quoted runs', () => {
+      const split = `"v=tai1; k=ed25519;"garbage"p=${KEY32_B64}"`;
+      expect(() => parseKeyRecord(split))
+        .toThrow(/^stray characters outside quoted character-string$/);
+    });
+
+    it('throws on a leading empty tag-spec from `;`', () => {
+      expect(() => parseKeyRecord(`;v=tai1; k=ed25519; p=${KEY32_B64}`))
+        .toThrow(/^empty tag-spec$/);
+    });
+
+    it('throws on an interior empty tag-spec from `;;`', () => {
+      expect(() => parseKeyRecord(`v=tai1;; k=ed25519; p=${KEY32_B64}`))
+        .toThrow(/^empty tag-spec$/);
+    });
+  });
+
+  describe('context prefix', () => {
+    it('omits the prefix when no context is given', () => {
+      expect(() => parseKeyRecord('v=tai1; k=ed25519'))
+        .toThrow(/^missing tag: p$/);
+    });
+
+    it('prepends `${context}: ` on missing-tag errors', () => {
+      expect(() => parseKeyRecord('v=tai1; k=ed25519', 'fetchKey'))
+        .toThrow(/^fetchKey: missing tag: p$/);
+    });
+
+    it('prepends `${context}: ` on syntax errors', () => {
+      expect(() => parseKeyRecord('', 'fetchKey'))
+        .toThrow(/^fetchKey: empty input$/);
+    });
+
+    it('prepends `${context}: ` on duplicate-tag errors', () => {
+      expect(() => parseKeyRecord(`v=tai1; v=tai2; p=${KEY32_B64}`, 'fetchKey'))
+        .toThrow(/^fetchKey: duplicate tag: v$/);
+    });
+
+    it('threads context through to the `p` base64 error', () => {
+      expect(() =>
+        parseKeyRecord('v=tai1; k=ed25519; p=!!!not-base64!!!', 'fetchKey'),
+      ).toThrow(/^fetchKey: p: invalid base64$/);
+    });
+
+    it('threads context through quote-parsing errors', () => {
+      expect(() =>
+        parseKeyRecord(`"v=tai1; k=ed25519; p=${KEY32_B64}`, 'fetchKey'),
+      ).toThrow(/^fetchKey: unclosed quoted character-string$/);
+    });
+  });
+
+  describe('returned shape', () => {
+    it('returns Uint8Array (not a Buffer or array) for p', () => {
+      const record = parseKeyRecord(RECORD);
+      expect(record.p).toBeInstanceOf(Uint8Array);
+    });
+  });
+});
+
+describe('round-trip', () => {
+  it('makeKeyRecords output reparses to the same v/k/p plus template extras', async () => {
+    const { publicKey } = await newKeys(testSeed);
+    const records = await makeKeyRecords(
+      { publicKey, selector: 's1' },
+      { v: 'tai1', h: 'sha256', s: 'email' },
+    );
+    const record = records['s1'];
+    const tagList = Object.entries(record)
+      .map(([name, value]) => `${name}=${value}`)
+      .join('; ');
+    const parsed = parseKeyRecord(tagList);
+    expect(parsed.v).toBe('tai1');
+    expect(parsed.k).toBe('ed25519');
+    expect(parsed['h']).toBe('sha256');
+    expect(parsed['s']).toBe('email');
+    expect(parsed.p).toEqual(decodeBase64(await encodeKey(publicKey)));
   });
 });

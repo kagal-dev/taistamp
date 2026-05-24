@@ -6,8 +6,8 @@
 
 WebCrypto Ed25519 — key-pair construction, signing and
 verification, JWKS-ready and DNS-TXT-ready public key
-publication, DKIM-style selector validation, and
-base64 helpers.
+publication, DKIM-style key-record parsing and
+selector validation, and base64 helpers.
 Zero runtime dependencies — only the host runtime's
 WebCrypto.
 
@@ -238,11 +238,15 @@ JWK Set's `keys` array.
 
 ### Fetching a published public key
 
+`parseKeyRecord` handles the DKIM-style tag-list parsing,
+DoH-JSON quote stripping, and multi-piece concatenation
+(RFC 1035 §3.3 and RFC 6376 §3.6.2.2); feed the returned
+record's `p` straight to WebCrypto's `importKey`.
 DNS-over-HTTPS JSON via `fetch` works in any runtime with
 global `fetch`:
 
 ```ts
-import { decodeBase64 } from '@kagal/ed25519-secret';
+import { parseKeyRecord } from '@kagal/ed25519-secret';
 
 const response = await fetch(
   `https://1.1.1.1/dns-query?name=${selector}._keys.example.com&type=TXT`,
@@ -251,20 +255,28 @@ const response = await fetch(
 if (!response.ok) throw new Error(`DoH ${response.status}`);
 const { Answer } = await response.json();
 const data = Answer?.[0]?.data;
-if (!data) throw new Error('public key not found');
+if (!data) throw new Error('record not found');
 
-// DNS-over-HTTPS wraps each TXT character-string in
-// quotes; this strips a single-string record only —
-// multi-string records (RFC 1035 §3.3) need further
-// handling.
+const record = parseKeyRecord(data);
+if (record.p === undefined) throw new Error('key has been revoked');
+
 const publicKey = await crypto.subtle.importKey(
   'raw',
-  decodeBase64(data.replaceAll(/^"|"$/g, '')),
+  record.p,
   { name: 'Ed25519' },
-  true,
+  false,
   ['verify'],
 );
 ```
+
+`record.p` is `undefined` when the record uses RFC 6376
+§3.6.1's revoked-on-empty convention; branch on it before
+importing. The `v=` and `k=` values pass through unchecked —
+the package is protocol-agnostic across DKIM-style record
+formats. Protocol-specific version validation (matching
+`record.v` against an expected label) belongs with the
+caller, as does algorithm dispatch via `record.k` (the
+example assumes Ed25519).
 
 ### Verifying an Ed25519 signature in WebCrypto
 
@@ -396,6 +408,14 @@ assertValidSelector(value, 'config');
   (default `'makeKeyRecords'`) prefixes any thrown
   error; array inputs decorate as
   `<context>: input N` to disambiguate failures.
+- `parseKeyRecord(input, context?)` — parse a TXT
+  record value (raw string, DoH-JSON-quoted string,
+  or a pre-extracted character-string array) into a
+  `KeyRecord<Uint8Array>`. Strict on tag-list syntax,
+  lenient on semantics (unknown `v=`/`k=` values and
+  extra tags pass through). Empty `p=` yields
+  `p: undefined` per RFC 6376 §3.6.1's revoked-key
+  convention. `context` prefixes any thrown error.
 
 ### Secrets
 
