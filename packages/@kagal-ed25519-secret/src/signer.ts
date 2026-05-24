@@ -1,4 +1,5 @@
 import { SUPPORTED_ALGORITHMS } from './algo';
+import { asMessageBytes } from './utils';
 
 /**
  * Pluggable abstraction over a private signing key.
@@ -10,12 +11,13 @@ export interface Signer {
   /**
    * Produce a signature over `message`.
    *
-   * @param message - bytes to sign; the caller is
+   * @param message - message to sign, either bytes or
+   *   a string (encoded as UTF-8); the caller is
    *   responsible for any framing or domain separation
    * @returns the raw signature bytes (algorithm-defined
    *   length and encoding)
    */
-  sign: (message: BufferSource) => Promise<ArrayBuffer>
+  sign: (message: BufferSource | string) => Promise<ArrayBuffer>
 }
 
 /**
@@ -27,12 +29,11 @@ export interface Signer {
  * @param context - optional prefix prepended to error
  *   messages, typically the calling function's name
  * @returns a {@link Signer} producing 64-byte raw
- *   Ed25519 signatures (R ‖ s, RFC 8032)
+ *   signatures (R ‖ s) per
+ *   {@link https://datatracker.ietf.org/doc/html/rfc8032 | RFC 8032}
  * @throws `TypeError` when `key.algorithm.name` is not a
  *   supported algorithm or `'sign'` is missing from
  *   `key.usages`
- *
- * @see {@link https://datatracker.ietf.org/doc/html/rfc8032}
  */
 export const newSigner = (
   key: CryptoKey,
@@ -52,6 +53,7 @@ export const newSigner = (
     );
   }
   return {
-    sign: async (message) => crypto.subtle.sign(meta.name, key, message),
+    sign: async (message) =>
+      crypto.subtle.sign(meta.name, key, asMessageBytes(message)),
   };
 };

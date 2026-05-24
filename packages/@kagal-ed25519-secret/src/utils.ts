@@ -1,5 +1,7 @@
 import { SUPPORTED_ALGORITHMS } from './algo';
 
+const UTF8_ENCODER = new TextEncoder();
+
 /**
  * `Uint8Array<ArrayBuffer>`-shaped on TS lib 5.7+
  * (`Uint8Array` on older) — the backing buffer
@@ -175,6 +177,23 @@ export const asBytes = (
   typeof input === 'string' ?
     decodeBase64(input, context) :
     new Uint8Array(input);
+
+/**
+ * Normalise a message input to `BufferSource`.
+ * `BufferSource` values are passed through unchanged;
+ * strings are encoded as UTF-8. Use when calling a
+ * crypto primitive that requires `BufferSource` from a
+ * caller holding a domain-level string. Callers
+ * needing a non-UTF-8 encoding should pass bytes
+ * directly.
+ *
+ * Differs from {@link asBytes} above, where a string
+ * input is decoded as base64.
+ */
+export const asMessageBytes = (
+  message: BufferSource | string,
+): BufferSource =>
+  typeof message === 'string' ? UTF8_ENCODER.encode(message) : message;
 
 /**
  * Split a list (or single value) into `first` + `rest`.

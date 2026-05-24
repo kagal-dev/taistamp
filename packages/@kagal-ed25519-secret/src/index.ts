@@ -38,6 +38,7 @@ export {
 } from './signer';
 export {
   asBytes,
+  asMessageBytes,
   type Bytes,
   decodeASCII,
   decodeBase64,
@@ -47,3 +48,7 @@ export {
   splitFirst,
   splitLast,
 } from './utils';
+export {
+  newVerifier,
+  type Verifier,
+} from './verifier';

@@ -44,6 +44,20 @@ describe('newSigner', () => {
     expect(valid).toBe(false);
   });
 
+  it('accepts a string message (UTF-8)', async () => {
+    const { privateKey, publicKey } = await newKeypair();
+    const signer = newSigner(privateKey);
+
+    const signature = await signer.sign('hello world');
+    const valid = await crypto.subtle.verify(
+      'Ed25519',
+      publicKey,
+      signature,
+      new TextEncoder().encode('hello world'),
+    );
+    expect(valid).toBe(true);
+  });
+
   it('accepts a raw ArrayBuffer input', async () => {
     const { privateKey, publicKey } = await newKeypair();
     const signer = newSigner(privateKey);

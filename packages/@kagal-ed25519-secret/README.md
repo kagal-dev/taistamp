@@ -138,9 +138,7 @@ import { encodeBase64, parseSecretToKey } from '@kagal/ed25519-secret';
 
 // `secret` may use standard or URL-safe base64 — both round-trip
 const config = await parseSecretToKey(secret);
-const signature = await config.signer.sign(
-  new TextEncoder().encode('payload'),
-);
+const signature = await config.signer.sign('payload');
 const wire = encodeBase64(new Uint8Array(signature)); // for transport
 ```
 
@@ -198,24 +196,26 @@ export default app;
 ### Plugging in a custom Signer
 
 Drop in any `Signer` implementation — it's just
-`{ sign: (message: BufferSource) => Promise<ArrayBuffer> }`:
+`{ sign: (message: BufferSource | string) => Promise<ArrayBuffer> }`.
+Implementations that forward the message to another
+byte-oriented API (a fetch body, an HSM SDK, …) can
+use `asMessageBytes` to coerce string inputs to UTF-8
+bytes:
 
 ```ts
-import type { Signer } from '@kagal/ed25519-secret';
+import { asMessageBytes, type Signer } from '@kagal/ed25519-secret';
 
 const remoteSigner: Signer = {
   sign: async (message) => {
     const response = await fetch('https://signer.example.com/sign', {
       method: 'POST',
-      body: message,
+      body: asMessageBytes(message),
     });
     return response.arrayBuffer();
   },
 };
 
-const signature = await remoteSigner.sign(
-  new TextEncoder().encode('payload'),
-);
+const signature = await remoteSigner.sign('payload');
 ```
 
 ### Publishing the public key from a stored secret
@@ -280,21 +280,27 @@ example assumes Ed25519).
 
 ### Verifying an Ed25519 signature in WebCrypto
 
-WebCrypto's `Ed25519 verify` is specified to apply RFC 8032 §5.1.7
-strict verification (cofactor handling, signature-malleability
-resistance); confirm your runtime conforms, or fall back to a
-strict-verify library such as `@noble/ed25519`.
+`newVerifier` wraps an Ed25519 public `CryptoKey` in a
+`Verifier` — the verify-side counterpart to `Signer`. It
+gate-checks `algorithm.name` and `usages` at construction
+and delegates each `verify` call to `crypto.subtle.verify`,
+which is specified to apply RFC 8032 §5.1.7 strict
+verification (cofactor handling and signature-malleability
+resistance); confirm your runtime conforms, or fall back to
+a strict-verify library such as `@noble/ed25519`.
 
 ```ts
+import { newVerifier } from '@kagal/ed25519-secret';
+
 // `publicKey` from the previous snippet; `signature` is the bytes
 // you received over the wire (BufferSource)
-const ok = await crypto.subtle.verify(
-  'Ed25519',
-  publicKey,
-  signature,
-  new TextEncoder().encode('payload'),
-);
+const verifier = newVerifier(publicKey);
+const ok = await verifier.verify(signature, 'payload');
 ```
+
+`verify` accepts the message as bytes (`BufferSource`) or
+as a string; strings are encoded as UTF-8. Callers needing
+another encoding can pass bytes directly.
 
 ### Validating a DKIM-style selector
 
@@ -445,12 +451,27 @@ assertValidSelector(value, 'config');
 
 ### Signer
 
-- `Signer` — `{ sign: (message: BufferSource) => Promise<ArrayBuffer> }`
+- `Signer` — `{ sign: (message) => Promise<ArrayBuffer> }`
+  where `message: BufferSource | string`
 - `newSigner(key, context?)` — WebCrypto Ed25519
   signer factory. Pass an Ed25519 private `CryptoKey`
   with `'sign'` in `usages`; returns 64-byte raw
-  RFC 8032 signatures. Throws `TypeError` if the key
-  fails either check; `context` prefixes the message.
+  RFC 8032 signatures. Throws `TypeError` on a
+  non-Ed25519 key or missing usage; `context`
+  prefixes the message.
+
+### Verifier
+
+- `Verifier` — `{ verify: (sig, msg) => Promise<boolean> }`
+  where `sig: BufferSource` and
+  `msg: BufferSource | string`
+- `newVerifier(key, context?)` — WebCrypto Ed25519
+  verifier factory. Pass an Ed25519 public `CryptoKey`
+  with `'verify'` in `usages`; delegates each call to
+  `crypto.subtle.verify`, which is specified to apply
+  RFC 8032 §5.1.7 strict verification on conformant
+  runtimes. Throws `TypeError` on a non-Ed25519 key or
+  missing usage; `context` prefixes the message.
 
 ### Selector validation
 
@@ -489,6 +510,12 @@ assertValidSelector(value, 'config');
   bytes-or-base64 input to a fresh `Uint8Array`. Bytes
   are defensive-copied; strings go through
   `decodeBase64`.
+- `asMessageBytes(message)` — normalise a
+  `BufferSource | string` input to `BufferSource`.
+  Bytes pass through; strings are encoded as UTF-8.
+  Used internally by `Signer.sign` / `Verifier.verify`
+  to accept either shape; differs from `asBytes`,
+  whose string input is base64-decoded.
 - `getRandom(length, context?)` — fresh `Uint8Array`
   of the requested length filled via
   `crypto.getRandomValues`. Throws `TypeError` on

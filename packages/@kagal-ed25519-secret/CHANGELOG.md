@@ -56,17 +56,40 @@ documented in this file.
   `publicKey` to publish a revocation record (empty
   `p=`, RFC 6376 §3.6.1). `KeyConfig` (and any config
   carrying a `selector`) satisfies this structurally.
+- `Verifier` — verify-side counterpart to `Signer`;
+  `{ verify: (sig, msg) => Promise<boolean> }` where
+  `sig` is `BufferSource` and `msg` is
+  `BufferSource | string` (strings encoded as UTF-8).
+- `newVerifier(key, context?)` — WebCrypto Ed25519
+  verifier factory. Accepts an Ed25519 public
+  `CryptoKey` with `'verify'` in `usages`; delegates
+  each call to `crypto.subtle.verify`, which is
+  specified to apply RFC 8032 §5.1.7 strict
+  verification on conformant runtimes. Throws
+  `TypeError` on a non-Ed25519 key or missing usage;
+  `context` (optional) prefixes the message.
+- `asMessageBytes(message)` — normalise a
+  `BufferSource | string` input to `BufferSource`,
+  encoding strings as UTF-8. Used internally by
+  `Signer.sign` and `Verifier.verify`; exported for
+  callers that need the same coercion.
 
 ### Changed
 
 - `newSigner` and `encodeKey` — algorithm-rejection
   error wording changed from `expected Ed25519 key,
   got <X>` to `unsupported algorithm: <X>`.
+- `Signer.sign` — `message` parameter widened from
+  `BufferSource` to `BufferSource | string`; string
+  inputs are encoded as UTF-8 before signing.
 - README — the "Fetching a published public key"
   walkthrough now uses `parseKeyRecord` instead of
   ad-hoc quote-stripping and a direct `decodeBase64`;
   covers multi-string concatenation (RFC 1035 §3.3)
   and revoked-key handling (RFC 6376 §3.6.1).
+- README — the "Verifying an Ed25519 signature in
+  WebCrypto" walkthrough now uses `newVerifier` in
+  place of bare `crypto.subtle.verify`.
 
 ## [0.2.1] - 2026-05-29
 
