@@ -1,0 +1,74 @@
+{
+  "name": "@kagal/taistamp-cli",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "CLI companion to @kagal/taistamp: seed generation and endpoint probing",
+  "author": "Apptly Software Ltd <oss@apptly.co>",
+  "license": "MIT",
+  "homepage": "https://github.com/kagal-dev/taistamp/tree/main/packages/@kagal-taistamp-cli#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kagal-dev/taistamp.git",
+    "directory": "packages/@kagal-taistamp-cli"
+  },
+  "bugs": {
+    "url": "https://github.com/kagal-dev/taistamp/issues"
+  },
+  "keywords": [
+    "kagal",
+    "bin",
+    "cli",
+    "ed25519",
+    "seed",
+    "tai64n",
+    "taistamp",
+    "timestamp",
+    "typescript"
+  ],
+  "bin": {
+    "taistamp": "./dist/bin.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "obuild && chmod +x dist/bin.mjs",
+    "clean": "rimraf dist node_modules",
+    "cli": "node dist/bin.mjs",
+    "dev": "vitest",
+    "dev:prepare": "obuild --stub",
+    "lint": "eslint --fix .",
+    "lint:check": "eslint .",
+    "precommit": "run-s dev:prepare lint type-check build test test:compat",
+    "prepare": "cross-test -s dist/bin.mjs || obuild --stub",
+    "test": "vitest run",
+    "test:compat": "node src/__tests__/compat.mjs",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "run-s type-check:main type-check:tools type-check:tests",
+    "type-check:main": "tsc --noEmit -p tsconfig.json",
+    "type-check:tests": "tsc --noEmit -p tsconfig.tests.json",
+    "type-check:tools": "tsc --noEmit -p tsconfig.tools.json"
+  },
+  "dependencies": {
+    "@kagal/ed25519-secret": "workspace:^",
+    "@kagal/taistamp": "workspace:^",
+    "citty": "^0.1.6",
+    "consola": "^3.4.2"
+  },
+  "devDependencies": {
+    "@kagal/cross-test": "^0.1.3",
+    "@poupe/eslint-config": "^0.9.1",
+    "@types/node": "^20.19.41",
+    "@vitest/coverage-istanbul": "^4.1.7",
+    "eslint": "^9.39.4",
+    "npm-run-all2": "^9.0.1",
+    "obuild": "^0.4.36",
+    "rimraf": "^6.1.3",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
+  },
+  "engines": {
+    "node": ">= 20.20.1",
+    "pnpm": ">= 10.33.2"
+  }
+}
