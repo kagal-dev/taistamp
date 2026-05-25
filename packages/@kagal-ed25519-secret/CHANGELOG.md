@@ -73,6 +73,12 @@ documented in this file.
   encoding strings as UTF-8. Used internally by
   `Signer.sign` and `Verifier.verify`; exported for
   callers that need the same coercion.
+- `KeyConfig.verifier` — `Verifier` backed by
+  `KeyContext.publicKey`, mirroring the existing
+  `KeyConfig.signer`. Pre-built by
+  `parseSecretToKey` / `parseSecretsToKeys` so
+  callers can verify in-process without an extra
+  `newVerifier` step.
 
 ### Changed
 

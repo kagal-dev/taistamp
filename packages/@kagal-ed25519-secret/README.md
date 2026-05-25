@@ -425,13 +425,14 @@ assertValidSelector(value, 'config');
 
 ### Secrets
 
-- `KeyConfig` — extends `KeyContext` with two fields,
-  inheriting `privateKey`, `publicKey`, `signKey`,
-  `publicJWK` from it:
+- `KeyConfig` — extends `KeyContext` with three
+  fields, inheriting `privateKey`, `publicKey`,
+  `signKey`, `publicJWK` from it:
   - `selector: string` — validated against
     `SELECTOR_PATTERN`; also set as
     `publicJWK.kid`.
   - `signer: Signer` — pre-built, backed by `signKey`.
+  - `verifier: Verifier` — pre-built, backed by `publicKey`.
 - `parseSecretToKey(secretString, context?)` — parse
   a `selector:base64` secret into a `KeyConfig`. The
   base64 portion is a 32-byte Ed25519 seed (standard

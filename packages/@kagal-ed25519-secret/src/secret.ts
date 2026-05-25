@@ -1,13 +1,14 @@
 import { asEd25519Seed, type KeyContext, newKeys } from './key';
 import { assertValidSelector } from './selector';
 import { newSigner, type Signer } from './signer';
+import { newVerifier, type Verifier } from './verifier';
 
 /**
  * Parsed `selector:base64` secret. Extends
  * {@link KeyContext} with the parsed `selector` and
- * a pre-built {@link Signer}; the inherited
- * {@link KeyContext.publicJWK} carries the selector
- * as its `kid`.
+ * pre-built {@link Signer} / {@link Verifier}; the
+ * inherited {@link KeyContext.publicJWK} carries the
+ * selector as its `kid`.
  */
 export interface KeyConfig extends KeyContext {
   /**
@@ -25,6 +26,13 @@ export interface KeyConfig extends KeyContext {
    * and returns the raw 64-byte RFC 8032 signature.
    */
   signer: Signer
+
+  /**
+   * {@link Verifier} backed by {@link KeyContext.publicKey}.
+   * Calls `crypto.subtle.verify('Ed25519', publicKey, signature, message)`
+   * and returns the boolean result.
+   */
+  verifier: Verifier
 }
 
 /**
@@ -41,7 +49,7 @@ export interface KeyConfig extends KeyContext {
  *   (carrying the raw seed, the public / sign-only
  *   `CryptoKey`s, and a `publicJWK` with `kid` set to
  *   the parsed selector) plus the `selector` itself
- *   and a ready-to-use {@link Signer}
+ *   and ready-to-use {@link Signer} / {@link Verifier}
  * @throws TypeError if `secretString` is not in
  *   `selector:base64` form, if the selector fails
  *   {@link SELECTOR_PATTERN}, or if the base64 fails
@@ -82,6 +90,7 @@ export const parseSecretToKey = async (
     ...keys,
     selector,
     signer: newSigner(keys.signKey, context),
+    verifier: newVerifier(keys.publicKey, context),
   };
 };
 
