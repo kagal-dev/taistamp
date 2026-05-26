@@ -79,6 +79,19 @@ documented in this file.
   `parseSecretToKey` / `parseSecretsToKeys` so
   callers can verify in-process without an extra
   `newVerifier` step.
+- `importVerifyKey(algorithm, keyData, context?)` —
+  import a raw-encoded public verifying key (e.g. the
+  `p=` bytes from `parseKeyRecord`) into an extractable
+  verify-only `CryptoKey` ready for `newVerifier` or a
+  direct `crypto.subtle.verify` call. `algorithm`
+  matches case-insensitively so DKIM `k=` values
+  (lowercase `'ed25519'` per RFC 6376 §3.6.1) work
+  without pre-normalisation; the canonical form
+  (`'Ed25519'`) is fed to `crypto.subtle.importKey`.
+  `keyData` accepts raw bytes or their base64 encoding
+  (standard or URL-safe). Throws `TypeError` for an
+  unsupported algorithm, wrong byte length, or
+  undecodable base64 (the last via `asBytes`).
 
 ### Changed
 
@@ -96,6 +109,9 @@ documented in this file.
 - README — the "Verifying an Ed25519 signature in
   WebCrypto" walkthrough now uses `newVerifier` in
   place of bare `crypto.subtle.verify`.
+- README — the "Fetching a published public key"
+  walkthrough now uses `importVerifyKey` in place of
+  a bare `crypto.subtle.importKey('raw', ...)`.
 
 ## [0.2.1] - 2026-05-29
 

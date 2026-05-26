@@ -241,12 +241,12 @@ JWK Set's `keys` array.
 `parseKeyRecord` handles the DKIM-style tag-list parsing,
 DoH-JSON quote stripping, and multi-piece concatenation
 (RFC 1035 §3.3 and RFC 6376 §3.6.2.2); feed the returned
-record's `p` straight to WebCrypto's `importKey`.
+record's `p` to `importVerifyKey`.
 DNS-over-HTTPS JSON via `fetch` works in any runtime with
 global `fetch`:
 
 ```ts
-import { parseKeyRecord } from '@kagal/ed25519-secret';
+import { importVerifyKey, parseKeyRecord } from '@kagal/ed25519-secret';
 
 const response = await fetch(
   `https://1.1.1.1/dns-query?name=${selector}._keys.example.com&type=TXT`,
@@ -260,23 +260,24 @@ if (!data) throw new Error('record not found');
 const record = parseKeyRecord(data);
 if (record.p === undefined) throw new Error('key has been revoked');
 
-const publicKey = await crypto.subtle.importKey(
-  'raw',
-  record.p,
-  { name: 'Ed25519' },
-  false,
-  ['verify'],
-);
+// RFC 6376 §3.6.1: absent k= defaults to rsa.
+const publicKey = await importVerifyKey(record.k ?? 'rsa', record.p);
 ```
 
 `record.p` is `undefined` when the record uses RFC 6376
 §3.6.1's revoked-on-empty convention; branch on it before
-importing. The `v=` and `k=` values pass through unchecked —
+importing. `record.k` is `undefined` when the record omits
+`k=`, which RFC 6376 §3.6.1 defaults to `rsa`; the
+`?? 'rsa'` fallback makes that default explicit, and
+`importVerifyKey` then rejects it as
+`unsupported algorithm: rsa`. `importVerifyKey` matches
+its `algorithm` argument case-insensitively, so DKIM's
+`'ed25519'` lands without pre-normalisation. The
+`v=` tag and any additional tags pass through unchecked —
 the package is protocol-agnostic across DKIM-style record
-formats. Protocol-specific version validation (matching
+formats; protocol-specific version validation (matching
 `record.v` against an expected label) belongs with the
-caller, as does algorithm dispatch via `record.k` (the
-example assumes Ed25519).
+caller.
 
 ### Verifying an Ed25519 signature in WebCrypto
 
@@ -473,6 +474,17 @@ assertValidSelector(value, 'config');
   RFC 8032 §5.1.7 strict verification on conformant
   runtimes. Throws `TypeError` on a non-Ed25519 key or
   missing usage; `context` prefixes the message.
+- `importVerifyKey(algorithm, keyData, context?)` —
+  import a raw-encoded public verifying key (e.g. the
+  `p=` bytes from `parseKeyRecord`) into an extractable
+  verify-only `CryptoKey`. `algorithm` matches
+  case-insensitively, so DKIM `k=` values
+  (`'ed25519'` per RFC 6376 §3.6.1) work without
+  pre-normalisation. `keyData` accepts raw bytes or
+  their base64 encoding (standard or URL-safe). Throws
+  `TypeError` for an unsupported algorithm, wrong byte
+  length, or undecodable base64; `context` prefixes the
+  message.
 
 ### Selector validation
 

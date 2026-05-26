@@ -49,6 +49,7 @@ export {
   splitLast,
 } from './utils';
 export {
+  importVerifyKey,
   newVerifier,
   type Verifier,
 } from './verifier';

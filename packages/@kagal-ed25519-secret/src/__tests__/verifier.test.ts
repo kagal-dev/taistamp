@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { newVerifier } from '../verifier';
+import { encodeBase64 } from '../utils';
+import { importVerifyKey, newVerifier } from '../verifier';
 
 const newKeypair = async (): Promise<CryptoKeyPair> =>
   await crypto.subtle.generateKey(
@@ -101,5 +102,101 @@ describe('newVerifier', () => {
     ) as CryptoKeyPair;
     expect(() => newVerifier(publicKey, ''))
       .toThrow(/^unsupported algorithm: ECDSA$/);
+  });
+});
+
+describe('importVerifyKey', () => {
+  it('imports a raw Ed25519 public key (canonical case)', async () => {
+    const { publicKey } = await newKeypair();
+    const raw = new Uint8Array(
+      await crypto.subtle.exportKey('raw', publicKey),
+    );
+    const imported = await importVerifyKey('Ed25519', raw);
+    expect(imported.algorithm.name).toBe('Ed25519');
+    expect(imported.type).toBe('public');
+    expect(imported.extractable).toBe(true);
+    expect(imported.usages).toEqual(['verify']);
+  });
+
+  it('accepts a lowercase algorithm name (DKIM `k=ed25519`)', async () => {
+    const { publicKey } = await newKeypair();
+    const raw = new Uint8Array(
+      await crypto.subtle.exportKey('raw', publicKey),
+    );
+    const imported = await importVerifyKey('ed25519', raw);
+    expect(imported.algorithm.name).toBe('Ed25519');
+  });
+
+  it('accepts an upper-case algorithm name', async () => {
+    const { publicKey } = await newKeypair();
+    const raw = new Uint8Array(
+      await crypto.subtle.exportKey('raw', publicKey),
+    );
+    const imported = await importVerifyKey('ED25519', raw);
+    expect(imported.algorithm.name).toBe('Ed25519');
+  });
+
+  it('accepts base64-encoded key bytes', async () => {
+    const { publicKey } = await newKeypair();
+    const raw = new Uint8Array(
+      await crypto.subtle.exportKey('raw', publicKey),
+    );
+    const b64 = encodeBase64(raw);
+    const imported = await importVerifyKey('Ed25519', b64);
+    expect(imported.algorithm.name).toBe('Ed25519');
+  });
+
+  it('round-trips through newVerifier and verifies a signature', async () => {
+    const { privateKey, publicKey } = await newKeypair();
+    const raw = new Uint8Array(
+      await crypto.subtle.exportKey('raw', publicKey),
+    );
+    const imported = await importVerifyKey('ed25519', raw);
+    const verifier = newVerifier(imported);
+    const message = new TextEncoder().encode('round-trip');
+    const signature = await crypto.subtle.sign(
+      'Ed25519', privateKey, message,
+    );
+    expect(await verifier.verify(signature, message)).toBe(true);
+  });
+
+  it('rejects an unsupported algorithm, preserving casing', async () => {
+    await expect(importVerifyKey('RSA-PSS', new Uint8Array(32)))
+      .rejects.toThrow(/^unsupported algorithm: RSA-PSS$/);
+  });
+
+  it('rejects \'rsa\' (the DKIM `k=` default fallthrough)', async () => {
+    await expect(importVerifyKey('rsa', new Uint8Array(32)))
+      .rejects.toThrow(/^unsupported algorithm: rsa$/);
+  });
+
+  it('rejects a wrong-length key', async () => {
+    await expect(importVerifyKey('Ed25519', new Uint8Array(16)))
+      .rejects.toThrow(/^expected 32-byte Ed25519 key, got 16$/);
+  });
+
+  it('rejects undecodable base64', async () => {
+    await expect(importVerifyKey('Ed25519', '!!!not-base64!!!'))
+      .rejects.toThrow(/^invalid base64$/);
+  });
+
+  it('prepends the context prefix on the algorithm error', async () => {
+    await expect(importVerifyKey('RSA-PSS', new Uint8Array(32), 'myFn'))
+      .rejects.toThrow(/^myFn: unsupported algorithm: RSA-PSS$/);
+  });
+
+  it('prepends the context prefix on the length error', async () => {
+    await expect(importVerifyKey('Ed25519', new Uint8Array(16), 'myFn'))
+      .rejects.toThrow(/^myFn: expected 32-byte Ed25519 key, got 16$/);
+  });
+
+  it('prepends the context prefix on the base64 error', async () => {
+    await expect(importVerifyKey('Ed25519', '!!!not-base64!!!', 'myFn'))
+      .rejects.toThrow(/^myFn: invalid base64$/);
+  });
+
+  it('treats an empty context as no prefix on the algorithm error', async () => {
+    await expect(importVerifyKey('RSA-PSS', new Uint8Array(32), ''))
+      .rejects.toThrow(/^unsupported algorithm: RSA-PSS$/);
   });
 });

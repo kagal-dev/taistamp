@@ -1,5 +1,5 @@
 import { SUPPORTED_ALGORITHMS } from './algo';
-import { asMessageBytes } from './utils';
+import { asBytes, asMessageBytes } from './utils';
 
 /**
  * Pluggable abstraction over a public verifying key.
@@ -68,4 +68,53 @@ export const newVerifier = (
         meta.name, key, signature, asMessageBytes(message),
       ),
   };
+};
+
+/**
+ * Import a raw-encoded public verifying key (e.g. the
+ * `p=` bytes from a DKIM-style DNS TXT record, RFC 6376
+ * §3.6.1) into an extractable verify-only `CryptoKey`,
+ * suitable for {@link newVerifier} or a direct
+ * `crypto.subtle.verify` call.
+ *
+ * `algorithm` matches case-insensitively against
+ * {@link SUPPORTED_ALGORITHMS} so DKIM `k=` values
+ * (lowercase by RFC 6376 §3.6.1) work without
+ * pre-normalisation; the canonical form (`'Ed25519'`)
+ * is what `crypto.subtle.importKey` receives.
+ *
+ * @param algorithm - algorithm name, e.g. `'Ed25519'`
+ *   or `'ed25519'` (case-insensitive)
+ * @param keyData - raw public-key bytes (32 bytes for
+ *   Ed25519) or their base64 encoding (standard or
+ *   URL-safe per RFC 4648 §4 / §5)
+ * @param context - optional prefix prepended to thrown
+ *   error messages
+ * @returns an extractable verify-only `CryptoKey`
+ * @throws `TypeError` for an unsupported algorithm,
+ *   wrong byte length, or undecodable base64 (the last
+ *   via {@link asBytes})
+ */
+export const importVerifyKey = async (
+  algorithm: string,
+  keyData: Readonly<Uint8Array> | string,
+  context?: string,
+): Promise<CryptoKey> => {
+  const prefix = context ? `${context}: ` : '';
+  const meta = SUPPORTED_ALGORITHMS.get(algorithm.toLowerCase());
+  if (meta === undefined) {
+    throw new TypeError(
+      `${prefix}unsupported algorithm: ${algorithm}`,
+    );
+  }
+  const bytes = asBytes(keyData, context);
+  if (bytes.length !== meta.rawKeyLength) {
+    const want = `${meta.rawKeyLength}-byte ${meta.name} key`;
+    throw new TypeError(
+      `${prefix}expected ${want}, got ${bytes.length}`,
+    );
+  }
+  return crypto.subtle.importKey(
+    'raw', bytes, { name: meta.name }, true, ['verify'],
+  );
 };
