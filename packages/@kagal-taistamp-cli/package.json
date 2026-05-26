@@ -1,6 +1,6 @@
 {
   "name": "@kagal/taistamp-cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "description": "CLI companion to @kagal/taistamp: seed generation and endpoint probing",
   "author": "Apptly Software Ltd <oss@apptly.co>",
