@@ -5,6 +5,12 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-05-26
+
+First release of the `taistamp` CLI companion — Ed25519
+seed minting and `/.well-known/taistamp` endpoint probing
+for `@kagal/taistamp` operators.
+
 ### Added
 
 - `taistamp seed new [selector]` — mints a fresh
