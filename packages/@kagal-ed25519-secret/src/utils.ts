@@ -48,6 +48,36 @@ export const decodeBase64 = (
 };
 
 /**
+ * Decode bytes as 7-bit ASCII, one code point per byte.
+ * A byte ≥ `0x80` is rejected rather than mapped into
+ * the Latin-1 range: the input is declared ASCII, so a
+ * high byte signals a malformed source. The thrown
+ * message is `expected 7-bit ASCII, got 0x<hh>`,
+ * optionally prefixed `<context>: `.
+ *
+ * @param bytes - ASCII octets
+ * @param context - optional prefix prepended to the
+ *   thrown error message
+ * @returns the decoded ASCII string
+ * @throws TypeError if any byte is ≥ `0x80`
+ */
+export const decodeASCII = (
+  bytes: Readonly<Uint8Array>,
+  context?: string,
+): string => {
+  let out = '';
+  for (const byte of bytes) {
+    if (byte > 0x7F) {
+      const prefix = context ? `${context}: ` : '';
+      const hex = byte.toString(16).padStart(2, '0');
+      throw new TypeError(`${prefix}expected 7-bit ASCII, got 0x${hex}`);
+    }
+    out += String.fromCodePoint(byte);
+  }
+  return out;
+};
+
+/**
  * Encode an extractable Ed25519 public `CryptoKey` as
  * standard base64 (RFC 4648 §4) of its 32-byte raw
  * form, ready for out-of-band distribution

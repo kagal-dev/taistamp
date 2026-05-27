@@ -33,8 +33,8 @@ one of two shapes:
 
 - `context?: string` — absent means no prefix. Used by
   `asBytes`, `asEd25519Seed`, `assertValidSelector`,
-  `decodeBase64`, `encodeKey`, `getRandom`, and
-  `newSigner`.
+  `decodeASCII`, `decodeBase64`, `encodeKey`,
+  `getRandom`, and `newSigner`.
 - `context: string = '<factory name>'` — used by
   composing factories that thread the context through
   to their delegates (`newKeys`, `parseSecretToKey`,

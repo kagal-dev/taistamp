@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   asBytes,
+  decodeASCII,
   decodeBase64,
   encodeBase64,
   encodeKey,
@@ -85,6 +86,53 @@ describe('decodeBase64', () => {
       expect(error).toBeInstanceOf(TypeError);
       expect((error as TypeError).cause).toBeDefined();
     }
+  });
+});
+
+describe('decodeASCII', () => {
+  it('returns the empty string on empty input', () => {
+    expect(decodeASCII(new Uint8Array(0))).toBe('');
+  });
+
+  it('decodes printable ASCII bytes', () => {
+    // '@a1' — '@' (0x40), 'a' (0x61), '1' (0x31)
+    expect(decodeASCII(new Uint8Array([0x40, 0x61, 0x31]))).toBe('@a1');
+  });
+
+  it('accepts the 0x00 and 0x7F boundaries', () => {
+    // NUL and DEL are valid 7-bit ASCII, not rejected
+    const decoded = decodeASCII(new Uint8Array([0x00, 0x7F]));
+    expect(decoded).toHaveLength(2);
+    // charCodeAt reads the raw byte value at each index
+    /* eslint-disable unicorn/prefer-code-point */
+    expect(decoded.charCodeAt(0)).toBe(0x00);
+    expect(decoded.charCodeAt(1)).toBe(0x7F);
+    /* eslint-enable unicorn/prefer-code-point */
+  });
+
+  it('decodes a subarray view, not the underlying buffer', () => {
+    const full = new Uint8Array([0x78, 0x40, 0x61, 0x31, 0x78]);
+    expect(decodeASCII(full.subarray(1, 4))).toBe('@a1');
+  });
+
+  it('rejects a 0x80 byte', () => {
+    expect(() => decodeASCII(new Uint8Array([0x80])))
+      .toThrow(/^expected 7-bit ASCII, got 0x80$/);
+  });
+
+  it('rejects a 0xFF byte', () => {
+    expect(() => decodeASCII(new Uint8Array([0x41, 0xFF])))
+      .toThrow(/^expected 7-bit ASCII, got 0xff$/);
+  });
+
+  it('prepends the context prefix when given', () => {
+    expect(() => decodeASCII(new Uint8Array([0x80]), 'myConfig'))
+      .toThrow(/^myConfig: expected 7-bit ASCII, got 0x80$/);
+  });
+
+  it('treats an empty context as no prefix', () => {
+    expect(() => decodeASCII(new Uint8Array([0x80]), ''))
+      .toThrow(/^expected 7-bit ASCII, got 0x80$/);
   });
 });
 

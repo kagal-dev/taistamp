@@ -5,6 +5,14 @@ documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `decodeASCII(bytes, context?)` — decode bytes as 7-bit
+  ASCII, one code point per byte. Rejects any byte ≥
+  `0x80` with `TypeError` (`expected 7-bit ASCII, got
+  0x<hh>`, optional `context` prefix) rather than mapping
+  it into the Latin-1 range.
+
 ## [0.2.0] - 2026-05-20
 
 JWKS publication and multi-secret parsing.

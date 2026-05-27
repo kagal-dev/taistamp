@@ -392,6 +392,11 @@ assertValidSelector(value, 'config');
   URL-safe base64, padding optional. Throws `TypeError`
   on `atob`-rejected input (original rejection as
   `cause`); pass `context` to prefix the error message.
+- `decodeASCII(bytes, context?)` — decode bytes as 7-bit
+  ASCII, one code point per byte. Throws `TypeError` on
+  any byte ≥ `0x80` rather than mapping it into the
+  Latin-1 range; pass `context` to prefix the error
+  message.
 - `asBytes(input, context?)` — normalise a
   bytes-or-base64 input to a fresh `Uint8Array`. Bytes
   are defensive-copied; strings go through
