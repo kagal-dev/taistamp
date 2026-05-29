@@ -7,6 +7,10 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-05-29
+
+Verifier-side response-body readers.
+
 ### Added
 
 - `readLabel(response)` / `readASCII(response)` — read a
@@ -15,6 +19,12 @@ documented in this file.
   `readLabel` returns the TAI64N label and validates the
   25-octet length; `readASCII` is the unvalidated reader
   it builds on.
+
+### Changed
+
+- `@kagal/ed25519-secret` workspace dependency
+  re-resolves to `^0.2.1` at publish time — the readers
+  compose its `decodeASCII` helper.
 
 ## [0.1.0] - 2026-05-20
 
