@@ -78,6 +78,11 @@ describe('decodeBase64', () => {
       .toThrow(/^myConfig: invalid base64$/);
   });
 
+  it('treats an empty context as no prefix', () => {
+    expect(() => decodeBase64('!!!not-base64!!!', ''))
+      .toThrow(/^invalid base64$/);
+  });
+
   it('preserves the underlying rejection as `cause`', () => {
     try {
       decodeBase64('!!!not-base64!!!');
@@ -212,6 +217,14 @@ describe('encodeKey', () => {
       .rejects.toThrow(/^myConfig: expected Ed25519 key, got HMAC$/);
   });
 
+  it('treats an empty context as no prefix on algorithm mismatch', async () => {
+    const hmac = await crypto.subtle.generateKey(
+      { name: 'HMAC', hash: 'SHA-256' }, true, ['sign'],
+    );
+    await expect(encodeKey(hmac as CryptoKey, ''))
+      .rejects.toThrow(/^expected Ed25519 key, got HMAC$/);
+  });
+
   it('omits the prefix on export failure', async () => {
     const key = await nonExtractablePublicKey();
     await expect(encodeKey(key))
@@ -265,6 +278,11 @@ describe('getRandom', () => {
   it('prepends the context prefix when given', () => {
     expect(() => getRandom(-1, 'myConfig'))
       .toThrow(/^myConfig: expected non-negative integer length, got -1$/);
+  });
+
+  it('treats an empty context as no prefix', () => {
+    expect(() => getRandom(-1, ''))
+      .toThrow(/^expected non-negative integer length, got -1$/);
   });
 });
 

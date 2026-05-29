@@ -36,7 +36,7 @@ export const decodeBase64 = (
   try {
     binary = atob(standard);
   } catch (error) {
-    const prefix = context === undefined ? '' : `${context}: `;
+    const prefix = context ? `${context}: ` : '';
     throw new TypeError(`${prefix}invalid base64`, { cause: error });
   }
   // atob returns a binary string: each char's code unit is in
@@ -99,7 +99,7 @@ export const encodeKey = async (
   key: CryptoKey,
   context?: string,
 ): Promise<string> => {
-  const prefix = context === undefined ? '' : `${context}: `;
+  const prefix = context ? `${context}: ` : '';
   if (key.algorithm.name !== 'Ed25519') {
     throw new TypeError(
       `${prefix}expected Ed25519 key, got ${key.algorithm.name}`,
@@ -144,7 +144,7 @@ export const getRandom = (
   context?: string,
 ): Bytes => {
   if (!Number.isInteger(length) || length < 0) {
-    const prefix = context === undefined ? '' : `${context}: `;
+    const prefix = context ? `${context}: ` : '';
     throw new TypeError(
       `${prefix}expected non-negative integer length, got ${length}`,
     );

@@ -71,6 +71,11 @@ describe('assertValidSelector', () => {
       .toThrow(/^myFn: selector must match /);
   });
 
+  it('treats an empty context as no prefix', () => {
+    expect(() => assertValidSelector('bad selector', ''))
+      .toThrow(/^selector must match /);
+  });
+
   it('names the pattern and quotes the input', () => {
     try {
       assertValidSelector('a b');

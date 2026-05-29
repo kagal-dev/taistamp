@@ -13,6 +13,14 @@ documented in this file.
   0x<hh>`, optional `context` prefix) rather than mapping
   it into the Latin-1 range.
 
+### Fixed
+
+- An empty `context` argument no longer prepends a bare
+  `:` to thrown error messages. `decodeBase64`,
+  `encodeKey`, `getRandom`, `asEd25519Seed`,
+  `assertValidSelector`, and `newSigner` now treat `''`
+  the same as an omitted context.
+
 ## [0.2.0] - 2026-05-20
 
 JWKS publication and multi-secret parsing.
