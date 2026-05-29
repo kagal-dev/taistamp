@@ -7,6 +7,7 @@ import {
   composeSignaturePayload,
   extractLeapSeconds,
   newTaistampHandler,
+  readLabel,
   TAI64N_HEADER_KEY_SELECTOR,
   TAI64N_HEADER_NONCE,
   TAI64N_HEADER_SIGNATURE,
@@ -39,7 +40,7 @@ describe('newTaistampHandler (workerd pool)', () => {
     );
 
     expect(response.status).toBe(200);
-    const label = await response.text();
+    const label = await readLabel(response);
     const leap = extractLeapSeconds(response.headers);
     expect(leap).toBeDefined();
     expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBe(selector);

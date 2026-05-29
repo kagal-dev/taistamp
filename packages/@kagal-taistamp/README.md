@@ -239,14 +239,19 @@ or fall back to a strict-verify library such as
 ```typescript
 import {
   asNonce,
-  extractLeapSeconds,
   composeSignaturePayload,
+  extractLeapSeconds,
+  readLabel,
 } from '@kagal/taistamp';
 
 const response = await fetch(taistampURL, {
   headers: { 'TAI-Nonce': clientNonce },
 });
-const label = await response.text();
+// `application/tai64n` is octet-typed, not text. `readLabel`
+// reads the raw body and decodes the 25-octet ASCII label;
+// never `response.text()`, which UTF-8-decodes and would
+// mangle a non-ASCII octet instead of surfacing it.
+const label = await readLabel(response);
 const selector = response.headers.get('TAI-Key-Selector')!;
 const sigSf = response.headers.get('TAI-Signature')!;
 
@@ -342,6 +347,16 @@ Re-exported from `@kagal/ed25519-secret`:
 For verifier-side validation of a signed response
 (see [Verifying a signature](#verifying-a-signature)):
 
+- `readLabel(response, context?)` — read the TAI64N
+  label from a response body. Use this instead of
+  `response.text()`, which UTF-8-decodes the octet-typed
+  `application/tai64n` body. Throws `TypeError` unless
+  the body is exactly 25 ASCII octets; pass `context` to
+  prefix the error. Consumes the body.
+- `readASCII(response, context?)` — the unvalidated
+  reader behind `readLabel`: decode any response body as
+  7-bit ASCII, with no length check. Throws `TypeError`
+  on any byte ≥ `0x80`; consumes the body.
 - `composeSignaturePayload(label, leapSeconds,
   selector, nonce)` — reconstructs the exact byte
   sequence the server signed.

@@ -33,6 +33,7 @@ export {
 export {
   asBytes,
   type Bytes,
+  decodeASCII,
   decodeBase64,
   encodeBase64,
   encodeKey,

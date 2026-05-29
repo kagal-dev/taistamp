@@ -5,6 +5,26 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-05-29
+
+ASCII byte decoding and an empty-context error-prefix fix.
+
+### Added
+
+- `decodeASCII(bytes, context?)` — decode bytes as 7-bit
+  ASCII, one code point per byte. Rejects any byte ≥
+  `0x80` with `TypeError` (`expected 7-bit ASCII, got
+  0x<hh>`, optional `context` prefix) rather than mapping
+  it into the Latin-1 range.
+
+### Fixed
+
+- An empty `context` argument no longer prepends a bare
+  `:` to thrown error messages. `decodeBase64`,
+  `encodeKey`, `getRandom`, `asEd25519Seed`,
+  `assertValidSelector`, and `newSigner` now treat `''`
+  the same as an omitted context.
+
 ## [0.2.0] - 2026-05-20
 
 JWKS publication and multi-secret parsing.

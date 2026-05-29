@@ -33,6 +33,11 @@ describe('asEd25519Seed', () => {
       expect(() => asEd25519Seed(new Uint8Array(16), 'myConfig'))
         .toThrow(/^myConfig: expected 32-byte seed, got 16$/);
     });
+
+    it('treats an empty context as no prefix', () => {
+      expect(() => asEd25519Seed(new Uint8Array(16), ''))
+        .toThrow(/^expected 32-byte seed, got 16$/);
+    });
   });
 
   describe('with base64 input', () => {

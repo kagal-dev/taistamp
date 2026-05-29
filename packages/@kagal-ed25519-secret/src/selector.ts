@@ -40,7 +40,7 @@ export const assertValidSelector = (
   context?: string,
 ): void => {
   if (!isValidSelector(value)) {
-    const prefix = context === undefined ? '' : `${context}: `;
+    const prefix = context ? `${context}: ` : '';
     throw new TypeError(
       `${prefix}selector must match ${SELECTOR_PATTERN.source}, got "${value}"`,
     );

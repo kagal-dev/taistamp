@@ -17,6 +17,7 @@ the package-local layout and conventions.
 ├── src/
 │   ├── index.ts            # public API surface
 │   ├── handler.ts          # request handler and signature payload assembly
+│   ├── body.ts             # verifier-side response-body decoding
 │   ├── cors.ts             # CORS headers keyed by response kind
 │   ├── nonce.ts            # nonce branded type and header parsing
 │   ├── leap-seconds.ts     # leap-seconds branded type and header parsing

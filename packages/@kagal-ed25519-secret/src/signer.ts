@@ -35,7 +35,7 @@ export const newSigner = (
   key: CryptoKey,
   context?: string,
 ): Signer => {
-  const prefix = context === undefined ? '' : `${context}: `;
+  const prefix = context ? `${context}: ` : '';
   if (key.algorithm.name !== 'Ed25519') {
     throw new TypeError(
       `${prefix}expected Ed25519 key, got ${key.algorithm.name}`,

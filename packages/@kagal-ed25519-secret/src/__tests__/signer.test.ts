@@ -102,4 +102,10 @@ describe('newSigner', () => {
     expect(() => newSigner(publicKey, 'myFn'))
       .toThrow(/^myFn: expected sign usage, got \[verify\]$/);
   });
+
+  it('treats an empty context as no prefix on the usage error', async () => {
+    const { publicKey } = await newKeypair();
+    expect(() => newSigner(publicKey, ''))
+      .toThrow(/^expected sign usage, got \[verify\]$/);
+  });
 });

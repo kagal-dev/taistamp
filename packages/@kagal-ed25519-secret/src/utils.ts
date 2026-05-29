@@ -36,7 +36,7 @@ export const decodeBase64 = (
   try {
     binary = atob(standard);
   } catch (error) {
-    const prefix = context === undefined ? '' : `${context}: `;
+    const prefix = context ? `${context}: ` : '';
     throw new TypeError(`${prefix}invalid base64`, { cause: error });
   }
   // atob returns a binary string: each char's code unit is in
@@ -45,6 +45,36 @@ export const decodeBase64 = (
   // for an impossible undefined branch.
   // eslint-disable-next-line unicorn/prefer-code-point
   return Uint8Array.from(binary, (c) => c.charCodeAt(0));
+};
+
+/**
+ * Decode bytes as 7-bit ASCII, one code point per byte.
+ * A byte ≥ `0x80` is rejected rather than mapped into
+ * the Latin-1 range: the input is declared ASCII, so a
+ * high byte signals a malformed source. The thrown
+ * message is `expected 7-bit ASCII, got 0x<hh>`,
+ * optionally prefixed `<context>: `.
+ *
+ * @param bytes - ASCII octets
+ * @param context - optional prefix prepended to the
+ *   thrown error message
+ * @returns the decoded ASCII string
+ * @throws TypeError if any byte is ≥ `0x80`
+ */
+export const decodeASCII = (
+  bytes: Readonly<Uint8Array>,
+  context?: string,
+): string => {
+  let out = '';
+  for (const byte of bytes) {
+    if (byte > 0x7F) {
+      const prefix = context ? `${context}: ` : '';
+      const hex = byte.toString(16).padStart(2, '0');
+      throw new TypeError(`${prefix}expected 7-bit ASCII, got 0x${hex}`);
+    }
+    out += String.fromCodePoint(byte);
+  }
+  return out;
 };
 
 /**
@@ -69,7 +99,7 @@ export const encodeKey = async (
   key: CryptoKey,
   context?: string,
 ): Promise<string> => {
-  const prefix = context === undefined ? '' : `${context}: `;
+  const prefix = context ? `${context}: ` : '';
   if (key.algorithm.name !== 'Ed25519') {
     throw new TypeError(
       `${prefix}expected Ed25519 key, got ${key.algorithm.name}`,
@@ -114,7 +144,7 @@ export const getRandom = (
   context?: string,
 ): Bytes => {
   if (!Number.isInteger(length) || length < 0) {
-    const prefix = context === undefined ? '' : `${context}: `;
+    const prefix = context ? `${context}: ` : '';
     throw new TypeError(
       `${prefix}expected non-negative integer length, got ${length}`,
     );

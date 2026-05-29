@@ -57,7 +57,7 @@ export const asEd25519Seed = (
 ): Ed25519Seed => {
   const bytes = asBytes(input, context);
   if (bytes.length !== 32) {
-    const prefix = context === undefined ? '' : `${context}: `;
+    const prefix = context ? `${context}: ` : '';
     throw new TypeError(
       `${prefix}expected 32-byte seed, got ${bytes.length}`,
     );
