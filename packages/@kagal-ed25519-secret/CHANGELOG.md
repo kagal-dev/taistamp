@@ -5,6 +5,10 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-05-29
+
+ASCII byte decoding and an empty-context error-prefix fix.
+
 ### Added
 
 - `decodeASCII(bytes, context?)` — decode bytes as 7-bit
