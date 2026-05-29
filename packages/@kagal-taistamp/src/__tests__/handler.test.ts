@@ -7,6 +7,8 @@ import {
   composeSignaturePayload,
   extractLeapSeconds,
   newTaistampHandler,
+  readASCII,
+  readLabel,
   TAI64N_CONTENT_LENGTH,
   TAI64N_CONTENT_TYPE,
   TAI64N_HEADER_KEY_SELECTOR,
@@ -41,7 +43,9 @@ describe('newTaistampHandler', () => {
       expect(response.headers.get(TAI64N_HEADER_LEAP_SECONDS))
         .toBe(String(TAI_LEAP_SECONDS));
 
-      const body = await response.text();
+      // readASCII, not readLabel, so the 25-octet length is
+      // asserted here rather than hidden inside the reader.
+      const body = await readASCII(response);
       expect(body).toMatch(/^@[0-9a-f]{24}$/);
       expect(body).toHaveLength(TAI64N_CONTENT_LENGTH);
     });
@@ -55,7 +59,7 @@ describe('newTaistampHandler', () => {
       expect(response.headers.get('content-length'))
         .toBe(String(TAI64N_CONTENT_LENGTH));
       expect(response.headers.get('content-type')).toBe(TAI64N_CONTENT_TYPE);
-      expect(await response.text()).toBe('');
+      expect(await readASCII(response)).toBe('');
     });
 
     it('echoes a TAI-Nonce header when present', async () => {
@@ -163,7 +167,7 @@ describe('newTaistampHandler', () => {
         headers: { [TAI64N_HEADER_NONCE]: nonce },
       }));
 
-      const label = await response.text();
+      const label = await readLabel(response);
       const signature = response.headers.get(TAI64N_HEADER_SIGNATURE);
       expect(signature).not.toBeNull();
       expect(signature).toMatch(/^:[A-Za-z0-9+/]+={0,2}:$/);
@@ -283,7 +287,7 @@ describe('newTaistampHandler', () => {
         headers: { [TAI64N_HEADER_NONCE]: nonce },
       }));
 
-      const label = await response.text();
+      const label = await readLabel(response);
       const signature = response.headers.get(TAI64N_HEADER_SIGNATURE)!;
       const tampered = composeSignaturePayload(
         label,
@@ -313,7 +317,7 @@ describe('newTaistampHandler', () => {
         headers: { [TAI64N_HEADER_NONCE]: nonce },
       }));
 
-      const label = await response.text();
+      const label = await readLabel(response);
       const signature = response.headers.get(TAI64N_HEADER_SIGNATURE)!;
       const tampered = composeSignaturePayload(
         label,
@@ -343,7 +347,7 @@ describe('newTaistampHandler', () => {
         headers: { [TAI64N_HEADER_NONCE]: nonce },
       }));
 
-      const label = await response.text();
+      const label = await readLabel(response);
       const signature = response.headers.get(TAI64N_HEADER_SIGNATURE)!;
       const tampered = composeSignaturePayload(
         label,

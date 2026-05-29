@@ -8,6 +8,7 @@ export {
   type Signer,
 } from '@kagal/ed25519-secret';
 
+export { readASCII, readLabel } from './body';
 export * from './const';
 export {
   composeSignaturePayload,

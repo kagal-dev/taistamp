@@ -7,6 +7,15 @@ documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `readLabel(response)` / `readASCII(response)` — read a
+  response body without routing the octet-typed
+  `application/tai64n` body through `Response.text()`.
+  `readLabel` returns the TAI64N label and validates the
+  25-octet length; `readASCII` is the unvalidated reader
+  it builds on.
+
 ## [0.1.0] - 2026-05-20
 
 Signed-nonce framing fixed to match spec §6.1 — 0.0.x signatures were never spec-conformant.
