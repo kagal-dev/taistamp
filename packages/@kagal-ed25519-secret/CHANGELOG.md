@@ -46,9 +46,10 @@ documented in this file.
   declared `k?`, `p`, `v?` and an index signature for
   additional tags. `P` tracks `p`'s value type:
   `Uint8Array` (default; parse direction), `string`
-  (publish direction), or `CryptoKey` (verify-only,
-  post-import). Consumers needing typed access to a
-  specific tag set extend the interface.
+  (publish direction), `CryptoKey` (verify-only,
+  post-import), or `Verifier` (post-wrap). Consumers
+  needing typed access to a specific tag set extend the
+  interface.
 - `KeyRecordInput` — `{ publicKey?, selector }`; a
   public `CryptoKey` of a supported algorithm paired
   with the DKIM selector under which it will be
@@ -92,6 +93,24 @@ documented in this file.
   (standard or URL-safe). Throws `TypeError` for an
   unsupported algorithm, wrong byte length, or
   undecodable base64 (the last via `asBytes`).
+- `parseRecordToKey(input, context?)` — parse a DNS TXT
+  record value into a `KeyRecord<CryptoKey>`, importing
+  the `p=` key bytes into a verify-only `CryptoKey`. The
+  algorithm comes from the record's `k=`, defaulting to
+  `rsa` only when `k=` is absent (RFC 6376 §3.6.1); an
+  unsupported algorithm — the `rsa` default, an empty
+  `k=`, or any non-Ed25519 value — is rejected rather
+  than silently substituted. A revoked record (empty
+  `p=`) carries through as `p: undefined` with no import;
+  `v`, `k`, and unknown tags pass through unchanged.
+  `context` (default `'parseRecordToKey'`) prefixes any
+  thrown error.
+- `parseRecordToVerifier(input, context?)` — parse a DNS
+  TXT record value into a `KeyRecord<Verifier>`, the
+  record's published key wrapped as a ready-to-use
+  `Verifier`. Same revocation and tag pass-through
+  behaviour as `parseRecordToKey`; `context` (default
+  `'parseRecordToVerifier'`) prefixes any thrown error.
 
 ### Changed
 

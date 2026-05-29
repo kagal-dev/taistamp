@@ -303,6 +303,28 @@ const ok = await verifier.verify(signature, 'payload');
 as a string; strings are encoded as UTF-8. Callers needing
 another encoding can pass bytes directly.
 
+The two walkthroughs above take a record apart step by
+step. Two helpers bundle those steps for production use:
+
+- `parseRecordToKey` — the fetch section's
+  `parseKeyRecord` + `importVerifyKey`, returning the
+  verify-only `CryptoKey`.
+- `parseRecordToVerifier` — the above plus the
+  `newVerifier` wrap, returning a ready `Verifier`.
+
+Both carry the surviving tags alongside the key in the
+returned record, so the revoked-key, `k=`-default, and tag
+pass-through rules described above are unchanged:
+
+```ts
+import { parseRecordToVerifier } from '@kagal/ed25519-secret';
+
+// `data` from the DoH fetch above; `signature` from the wire
+const { p: verifier } = await parseRecordToVerifier(data);
+if (verifier === undefined) throw new Error('key has been revoked');
+const ok = await verifier.verify(signature, 'payload');
+```
+
 ### Validating a DKIM-style selector
 
 ```ts
@@ -387,9 +409,10 @@ assertValidSelector(value, 'config');
   declared `k?`, `p`, `v?` and an index signature for
   additional tags. `P` tracks `p`'s value type:
   `Uint8Array` (default; parse direction),
-  `string` (publish direction), or `CryptoKey`
-  (verify-only, post-import). Consumers needing typed
-  access to a specific tag set extend the interface.
+  `string` (publish direction), `CryptoKey`
+  (verify-only, post-import), or `Verifier`
+  (post-wrap). Consumers needing typed access to a
+  specific tag set extend the interface.
 - `KeyRecordInput` — `{ publicKey?, selector }`; a
   public `CryptoKey` of a supported algorithm paired
   with the DKIM selector under which it will be
@@ -423,6 +446,22 @@ assertValidSelector(value, 'config');
   extra tags pass through). Empty `p=` yields
   `p: undefined` per RFC 6376 §3.6.1's revoked-key
   convention. `context` prefixes any thrown error.
+- `parseRecordToKey(input, context?)` — parse a TXT
+  record value into a `KeyRecord<CryptoKey>`, importing
+  the `p=` bytes into a verify-only `CryptoKey`. The
+  algorithm comes from `k=`, defaulting to `rsa` only
+  when `k=` is absent (RFC 6376 §3.6.1); an unsupported
+  algorithm — the `rsa` default, an empty `k=`, or any
+  non-Ed25519 value — is rejected rather than silently
+  substituted. A revoked record (empty `p=`) carries
+  through as `p: undefined`; other tags pass through.
+  `context` (default `'parseRecordToKey'`) prefixes any
+  thrown error.
+- `parseRecordToVerifier(input, context?)` — like
+  `parseRecordToKey`, but wraps the imported key as a
+  `Verifier`, yielding a `KeyRecord<Verifier>`. Same
+  revocation and tag pass-through behaviour; `context`
+  defaults to `'parseRecordToVerifier'`.
 
 ### Secrets
 

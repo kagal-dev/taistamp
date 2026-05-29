@@ -21,6 +21,8 @@ export {
   type KeyRecordInput,
   makeKeyRecords,
   parseKeyRecord,
+  parseRecordToKey,
+  parseRecordToVerifier,
 } from './key-record';
 export {
   type KeyConfig,

@@ -1,5 +1,6 @@
 // cSpell:words ALNUMPUNC VALCHAR tval tvals vars
 import { decodeBase64, encodeKey } from './utils';
+import { importVerifyKey, newVerifier, type Verifier } from './verifier';
 
 /**
  * DKIM-style tag-list key record (RFC 6376 §3.2
@@ -12,7 +13,8 @@ import { decodeBase64, encodeKey } from './utils';
  * the shape a DNS-record decoder returns); `string`
  * for base64-encoded key bytes (publish direction;
  * the wire shape of `p=`); `CryptoKey` for the
- * verify-only key (post-import).
+ * verify-only key (post-import); `Verifier` for that
+ * key wrapped as a verifier (post-wrap).
  *
  * Additional DKIM tags (e.g. `h`, `s`, `t`, `n`, `g`)
  * appear as own properties under their tag name and
@@ -234,6 +236,72 @@ export const parseKeyRecord = (
   }
 
   return record as KeyRecord<Uint8Array>;
+};
+
+/**
+ * Parse a DNS TXT-record value into a {@link KeyRecord}
+ * whose `p` field is the record's key bytes imported
+ * into a verify-only {@link CryptoKey}.
+ *
+ * The algorithm comes from the record's `k=` tag,
+ * defaulting to `rsa` when `k=` is absent (RFC 6376
+ * §3.6.1); an unsupported algorithm — including that
+ * `rsa` default — is rejected. A revoked record (empty
+ * `p=`, RFC 6376 §3.6.1) carries through as
+ * `p: undefined` with no key imported. `v`, `k`, and any
+ * unknown tags pass through unchanged.
+ *
+ * @param input - TXT record value: raw string,
+ *   DoH-JSON-quoted string, or array of pre-extracted
+ *   character-strings (see {@link parseKeyRecord})
+ * @param context - prefix prepended to thrown error
+ *   messages; defaults to `'parseRecordToKey'`
+ * @returns a {@link KeyRecord} carrying the verify-only
+ *   `CryptoKey` in `p`, or `p: undefined` for a revoked
+ *   record
+ * @throws `TypeError` for malformed record syntax, an
+ *   unsupported algorithm, or a wrong-length key
+ */
+export const parseRecordToKey = async (
+  input: readonly string[] | string,
+  context: string = 'parseRecordToKey',
+): Promise<KeyRecord<CryptoKey>> => {
+  const record = parseKeyRecord(input, context);
+  const p = record.p === undefined ?
+    undefined :
+    await importVerifyKey(record.k ?? 'rsa', record.p, context);
+  return { ...record, p } as KeyRecord<CryptoKey>;
+};
+
+/**
+ * Parse a DNS TXT-record value into a {@link KeyRecord}
+ * whose `p` field is a ready-to-use {@link Verifier} over
+ * the record's published key.
+ *
+ * A revoked record (empty `p=`, RFC 6376 §3.6.1) carries
+ * through as `p: undefined` with no verifier built. `v`,
+ * `k`, and any unknown tags pass through unchanged.
+ *
+ * @param input - TXT record value: raw string,
+ *   DoH-JSON-quoted string, or array of pre-extracted
+ *   character-strings (see {@link parseKeyRecord})
+ * @param context - prefix prepended to thrown error
+ *   messages; defaults to `'parseRecordToVerifier'`
+ * @returns a {@link KeyRecord} carrying the
+ *   {@link Verifier} in `p`, or `p: undefined` for a
+ *   revoked record
+ * @throws `TypeError` for malformed record syntax, an
+ *   unsupported algorithm, or a wrong-length key
+ */
+export const parseRecordToVerifier = async (
+  input: readonly string[] | string,
+  context: string = 'parseRecordToVerifier',
+): Promise<KeyRecord<Verifier>> => {
+  const record = await parseRecordToKey(input, context);
+  const p = record.p === undefined ?
+    undefined :
+    newVerifier(record.p, context);
+  return { ...record, p } as KeyRecord<Verifier>;
 };
 
 /**

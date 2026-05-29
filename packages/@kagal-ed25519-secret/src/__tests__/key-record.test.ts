@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import { newKeys } from '../key';
-import { makeKeyRecords, parseKeyRecord } from '../key-record';
+import {
+  makeKeyRecords,
+  parseKeyRecord,
+  parseRecordToKey,
+  parseRecordToVerifier,
+} from '../key-record';
 import { decodeBase64, encodeBase64, encodeKey } from '../utils';
 
 const testSeed = new Uint8Array(32).fill(7);
@@ -10,6 +15,12 @@ const KEY32 = new Uint8Array(32);
 for (let i = 0; i < 32; i++) KEY32[i] = i;
 const KEY32_B64 = encodeBase64(KEY32);
 const RECORD = `v=tai1; k=ed25519; p=${KEY32_B64}`;
+
+const ed25519Record = async (seed: Uint8Array = testSeed) => {
+  const keys = await newKeys(seed);
+  const record = `v=tai1; k=ed25519; p=${await encodeKey(keys.publicKey)}`;
+  return { keys, record };
+};
 
 describe('makeKeyRecords', () => {
   describe('cardinality', () => {
@@ -469,5 +480,137 @@ describe('round-trip', () => {
     expect(parsed['h']).toBe('sha256');
     expect(parsed['s']).toBe('email');
     expect(parsed.p).toEqual(decodeBase64(await encodeKey(publicKey)));
+  });
+});
+
+describe('parseRecordToKey', () => {
+  it('imports p into a verify-only Ed25519 CryptoKey', async () => {
+    const { record } = await ed25519Record();
+    const { p } = await parseRecordToKey(record);
+    if (p === undefined) throw new Error('expected a key');
+    expect(p.algorithm.name).toBe('Ed25519');
+    expect(p.type).toBe('public');
+    expect(p.extractable).toBe(true);
+    expect(p.usages).toEqual(['verify']);
+  });
+
+  it('preserves v, k, and unknown tags alongside the key', async () => {
+    const { publicKey } = await newKeys(testSeed);
+    const record =
+      `v=tai1; k=ed25519; h=sha256; p=${await encodeKey(publicKey)}`;
+    const parsed = await parseRecordToKey(record);
+    expect(parsed.v).toBe('tai1');
+    expect(parsed.k).toBe('ed25519');
+    expect(parsed['h']).toBe('sha256');
+    expect(parsed.p).toBeDefined();
+  });
+
+  it('carries a revoked record through as p: undefined', async () => {
+    const parsed = await parseRecordToKey('v=tai1; k=ed25519; p=');
+    expect(parsed.p).toBeUndefined();
+    expect(parsed.v).toBe('tai1');
+    expect(parsed.k).toBe('ed25519');
+  });
+
+  it('round-trips: the imported key verifies a matching signature', async () => {
+    const { keys, record } = await ed25519Record();
+    const { p } = await parseRecordToKey(record);
+    if (p === undefined) throw new Error('expected a key');
+    const message = new TextEncoder().encode('payload');
+    const signature = await crypto.subtle.sign(
+      'Ed25519', keys.signKey, message,
+    );
+    expect(await crypto.subtle.verify('Ed25519', p, signature, message))
+      .toBe(true);
+  });
+
+  it('defaults absent k= to rsa and rejects it', async () => {
+    const { publicKey } = await newKeys(testSeed);
+    const record = `v=tai1; p=${await encodeKey(publicKey)}`;
+    await expect(parseRecordToKey(record))
+      .rejects.toThrow(/^parseRecordToKey: unsupported algorithm: rsa$/);
+  });
+
+  it('rejects an empty k= rather than folding it into rsa', async () => {
+    const { publicKey } = await newKeys(testSeed);
+    const record = `v=tai1; k=; p=${await encodeKey(publicKey)}`;
+    await expect(parseRecordToKey(record))
+      .rejects.toThrow(/^parseRecordToKey: unsupported algorithm: $/);
+  });
+
+  it('rejects an explicit unsupported k=', async () => {
+    const { publicKey } = await newKeys(testSeed);
+    const record = `v=tai1; k=ed448; p=${await encodeKey(publicKey)}`;
+    await expect(parseRecordToKey(record))
+      .rejects.toThrow(/^parseRecordToKey: unsupported algorithm: ed448$/);
+  });
+
+  it('rejects a wrong-length key (via importVerifyKey)', async () => {
+    const short = encodeBase64(new Uint8Array(16));
+    await expect(parseRecordToKey(`v=tai1; k=ed25519; p=${short}`))
+      .rejects.toThrow(
+        /^parseRecordToKey: expected 32-byte Ed25519 key, got 16$/,
+      );
+  });
+
+  it('rejects a malformed record (via parseKeyRecord)', async () => {
+    await expect(parseRecordToKey('v=tai1; k=ed25519'))
+      .rejects.toThrow(/^parseRecordToKey: missing tag: p$/);
+  });
+
+  it('threads context through a parse error', async () => {
+    await expect(parseRecordToKey('v=tai1; k=ed25519', 'fetchKey'))
+      .rejects.toThrow(/^fetchKey: missing tag: p$/);
+  });
+
+  it('threads context through an import error', async () => {
+    const { publicKey } = await newKeys(testSeed);
+    const record = `v=tai1; p=${await encodeKey(publicKey)}`;
+    await expect(parseRecordToKey(record, 'fetchKey'))
+      .rejects.toThrow(/^fetchKey: unsupported algorithm: rsa$/);
+  });
+});
+
+describe('parseRecordToVerifier', () => {
+  it('wraps p in a Verifier that verifies a matching signature', async () => {
+    const { keys, record } = await ed25519Record();
+    const { p } = await parseRecordToVerifier(record);
+    if (p === undefined) throw new Error('expected a verifier');
+    const message = new TextEncoder().encode('payload');
+    const signature = await crypto.subtle.sign(
+      'Ed25519', keys.signKey, message,
+    );
+    expect(await p.verify(signature, message)).toBe(true);
+  });
+
+  it('preserves v, k, and unknown tags alongside the verifier', async () => {
+    const { publicKey } = await newKeys(testSeed);
+    const record =
+      `v=tai1; k=ed25519; h=sha256; p=${await encodeKey(publicKey)}`;
+    const parsed = await parseRecordToVerifier(record);
+    expect(parsed.v).toBe('tai1');
+    expect(parsed.k).toBe('ed25519');
+    expect(parsed['h']).toBe('sha256');
+    expect(parsed.p).toBeDefined();
+  });
+
+  it('carries a revoked record through as p: undefined', async () => {
+    const parsed = await parseRecordToVerifier('v=tai1; k=ed25519; p=');
+    expect(parsed.p).toBeUndefined();
+    expect(parsed.k).toBe('ed25519');
+  });
+
+  it('defaults the error prefix to parseRecordToVerifier', async () => {
+    const { publicKey } = await newKeys(testSeed);
+    const record = `v=tai1; p=${await encodeKey(publicKey)}`;
+    await expect(parseRecordToVerifier(record))
+      .rejects.toThrow(/^parseRecordToVerifier: unsupported algorithm: rsa$/);
+  });
+
+  it('rejects absent k= (rsa default), threading context', async () => {
+    const { publicKey } = await newKeys(testSeed);
+    const record = `v=tai1; p=${await encodeKey(publicKey)}`;
+    await expect(parseRecordToVerifier(record, 'fetchVerifier'))
+      .rejects.toThrow(/^fetchVerifier: unsupported algorithm: rsa$/);
   });
 });
