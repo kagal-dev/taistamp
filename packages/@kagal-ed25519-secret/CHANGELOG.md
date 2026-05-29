@@ -5,6 +5,12 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-02
+
+DKIM-style key-record publication and parsing, plus the
+Ed25519 verifier side — in-process verification, raw-key
+import, and record-to-key/verifier parsing.
+
 ### Added
 
 - `makeKeyRecords(input, template?, context?)` — build
