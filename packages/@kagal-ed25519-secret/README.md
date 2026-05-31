@@ -292,12 +292,12 @@ assertValidSelector(value, 'config');
   and brand a seed; accepts a 32-byte `Uint8Array` or
   its base64 encoding.
 - `encodeKey(key, context?)` — export an extractable
-  Ed25519 public `CryptoKey` as standard base64 of its
-  32-byte raw form, ready for out-of-band distribution
-  (e.g. a DNS TXT record). The output round-trips
-  through `decodeBase64` +
+  public `CryptoKey` for a supported algorithm as
+  standard base64 of its raw form, ready for out-of-band
+  distribution (e.g. a DNS TXT record). The output
+  round-trips through `decodeBase64` +
   `crypto.subtle.importKey('raw', ...)`. Throws
-  `TypeError` if the key's algorithm isn't Ed25519, or
+  `TypeError` if the key's algorithm isn't supported, or
   if it isn't a public key, or if WebCrypto refuses to
   export the raw bytes (non-extractable); pass
   `context` to prefix the error message.

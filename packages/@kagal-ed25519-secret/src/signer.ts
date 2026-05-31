@@ -1,3 +1,5 @@
+import { SUPPORTED_ALGORITHMS } from './algo';
+
 /**
  * Pluggable abstraction over a private signing key.
  * Implementations sign caller-provided bytes and
@@ -26,8 +28,9 @@ export interface Signer {
  *   messages, typically the calling function's name
  * @returns a {@link Signer} producing 64-byte raw
  *   Ed25519 signatures (R ‖ s, RFC 8032)
- * @throws `TypeError` when `key.algorithm.name` is not
- *   `'Ed25519'` or `'sign'` is missing from `key.usages`
+ * @throws `TypeError` when `key.algorithm.name` is not a
+ *   supported algorithm or `'sign'` is missing from
+ *   `key.usages`
  *
  * @see {@link https://datatracker.ietf.org/doc/html/rfc8032}
  */
@@ -36,9 +39,11 @@ export const newSigner = (
   context?: string,
 ): Signer => {
   const prefix = context ? `${context}: ` : '';
-  if (key.algorithm.name !== 'Ed25519') {
+  const algorithm = key.algorithm.name;
+  const meta = SUPPORTED_ALGORITHMS.get(algorithm.toLowerCase());
+  if (meta === undefined) {
     throw new TypeError(
-      `${prefix}expected Ed25519 key, got ${key.algorithm.name}`,
+      `${prefix}unsupported algorithm: ${algorithm}`,
     );
   }
   if (!key.usages.includes('sign')) {
@@ -47,6 +52,6 @@ export const newSigner = (
     );
   }
   return {
-    sign: async (message) => crypto.subtle.sign('Ed25519', key, message),
+    sign: async (message) => crypto.subtle.sign(meta.name, key, message),
   };
 };

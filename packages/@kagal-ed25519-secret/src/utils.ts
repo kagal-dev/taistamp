@@ -1,3 +1,5 @@
+import { SUPPORTED_ALGORITHMS } from './algo';
+
 /**
  * `Uint8Array<ArrayBuffer>`-shaped on TS lib 5.7+
  * (`Uint8Array` on older) — the backing buffer
@@ -78,19 +80,20 @@ export const decodeASCII = (
 };
 
 /**
- * Encode an extractable Ed25519 public `CryptoKey` as
- * standard base64 (RFC 4648 §4) of its 32-byte raw
- * form, ready for out-of-band distribution
- * (e.g. a DNS TXT record). The output round-trips
- * through `decodeBase64` +
+ * Encode an extractable public `CryptoKey` whose
+ * algorithm this package supports as standard base64
+ * (RFC 4648 §4) of its raw form, ready for out-of-band
+ * distribution (e.g. a DNS TXT record). The output
+ * round-trips through `decodeBase64` +
  * `crypto.subtle.importKey('raw', ...)`.
  *
- * @param key - extractable Ed25519 public `CryptoKey`
+ * @param key - extractable public `CryptoKey` for a
+ *   supported algorithm
  * @param context - optional prefix prepended to the
  *   thrown error message
- * @returns base64-encoded 32-byte raw public key
+ * @returns base64-encoded raw public key
  * @throws TypeError if `key`'s algorithm isn't
- *   Ed25519, if it isn't a public key, or if it
+ *   supported, if it isn't a public key, or if it
  *   cannot be exported as `'raw'` (non-extractable);
  *   in the export-failure case the underlying
  *   rejection is preserved as `cause`.
@@ -100,9 +103,10 @@ export const encodeKey = async (
   context?: string,
 ): Promise<string> => {
   const prefix = context ? `${context}: ` : '';
-  if (key.algorithm.name !== 'Ed25519') {
+  const algorithm = key.algorithm.name;
+  if (SUPPORTED_ALGORITHMS.get(algorithm.toLowerCase()) === undefined) {
     throw new TypeError(
-      `${prefix}expected Ed25519 key, got ${key.algorithm.name}`,
+      `${prefix}unsupported algorithm: ${algorithm}`,
     );
   }
   if (key.type !== 'public') {

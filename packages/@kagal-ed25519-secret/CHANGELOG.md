@@ -5,6 +5,12 @@ documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- `newSigner` and `encodeKey` — algorithm-rejection
+  error wording changed from `expected Ed25519 key,
+  got <X>` to `unsupported algorithm: <X>`.
+
 ## [0.2.1] - 2026-05-29
 
 ASCII byte decoding and an empty-context error-prefix fix.

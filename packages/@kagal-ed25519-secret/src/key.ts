@@ -1,3 +1,4 @@
+import { ED25519_KEY_BYTES } from './algo';
 import { asBytes, getRandom } from './utils';
 
 const PKCS8_ED25519_HEADER = new Uint8Array([
@@ -56,10 +57,10 @@ export const asEd25519Seed = (
   context?: string,
 ): Ed25519Seed => {
   const bytes = asBytes(input, context);
-  if (bytes.length !== 32) {
+  if (bytes.length !== ED25519_KEY_BYTES) {
     const prefix = context ? `${context}: ` : '';
     throw new TypeError(
-      `${prefix}expected 32-byte seed, got ${bytes.length}`,
+      `${prefix}expected ${ED25519_KEY_BYTES}-byte seed, got ${bytes.length}`,
     );
   }
   return bytes as unknown as Ed25519Seed;
@@ -178,7 +179,10 @@ export const newKeys = async (
   kid?: string,
   context: string = 'newKeys',
 ): Promise<KeyContext> => {
-  const privateKey = asEd25519Seed(input ?? getRandom(32), context);
+  const privateKey = asEd25519Seed(
+    input ?? getRandom(ED25519_KEY_BYTES),
+    context,
+  );
 
   const pkcs8 = composePrivateKeyInfo(privateKey);
 
