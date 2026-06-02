@@ -1,3 +1,7 @@
+import { SUPPORTED_ALGORITHMS } from './algo';
+
+const UTF8_ENCODER = new TextEncoder();
+
 /**
  * `Uint8Array<ArrayBuffer>`-shaped on TS lib 5.7+
  * (`Uint8Array` on older) — the backing buffer
@@ -78,19 +82,20 @@ export const decodeASCII = (
 };
 
 /**
- * Encode an extractable Ed25519 public `CryptoKey` as
- * standard base64 (RFC 4648 §4) of its 32-byte raw
- * form, ready for out-of-band distribution
- * (e.g. a DNS TXT record). The output round-trips
- * through `decodeBase64` +
+ * Encode an extractable public `CryptoKey` whose
+ * algorithm this package supports as standard base64
+ * (RFC 4648 §4) of its raw form, ready for out-of-band
+ * distribution (e.g. a DNS TXT record). The output
+ * round-trips through `decodeBase64` +
  * `crypto.subtle.importKey('raw', ...)`.
  *
- * @param key - extractable Ed25519 public `CryptoKey`
+ * @param key - extractable public `CryptoKey` for a
+ *   supported algorithm
  * @param context - optional prefix prepended to the
  *   thrown error message
- * @returns base64-encoded 32-byte raw public key
+ * @returns base64-encoded raw public key
  * @throws TypeError if `key`'s algorithm isn't
- *   Ed25519, if it isn't a public key, or if it
+ *   supported, if it isn't a public key, or if it
  *   cannot be exported as `'raw'` (non-extractable);
  *   in the export-failure case the underlying
  *   rejection is preserved as `cause`.
@@ -100,9 +105,10 @@ export const encodeKey = async (
   context?: string,
 ): Promise<string> => {
   const prefix = context ? `${context}: ` : '';
-  if (key.algorithm.name !== 'Ed25519') {
+  const algorithm = key.algorithm.name;
+  if (SUPPORTED_ALGORITHMS.get(algorithm.toLowerCase()) === undefined) {
     throw new TypeError(
-      `${prefix}expected Ed25519 key, got ${key.algorithm.name}`,
+      `${prefix}unsupported algorithm: ${algorithm}`,
     );
   }
   if (key.type !== 'public') {
@@ -171,6 +177,23 @@ export const asBytes = (
   typeof input === 'string' ?
     decodeBase64(input, context) :
     new Uint8Array(input);
+
+/**
+ * Normalise a message input to `BufferSource`.
+ * `BufferSource` values are passed through unchanged;
+ * strings are encoded as UTF-8. Use when calling a
+ * crypto primitive that requires `BufferSource` from a
+ * caller holding a domain-level string. Callers
+ * needing a non-UTF-8 encoding should pass bytes
+ * directly.
+ *
+ * Differs from {@link asBytes} above, where a string
+ * input is decoded as base64.
+ */
+export const asMessageBytes = (
+  message: BufferSource | string,
+): BufferSource =>
+  typeof message === 'string' ? UTF8_ENCODER.encode(message) : message;
 
 /**
  * Split a list (or single value) into `first` + `rest`.

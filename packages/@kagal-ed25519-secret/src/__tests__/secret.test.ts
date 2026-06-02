@@ -52,6 +52,12 @@ describe('parseSecretToKey', () => {
     ).toBe(true);
   });
 
+  it('round-trips a signature through signer and verifier', async () => {
+    const { signer, verifier } = await parseSecretToKey(`s1:${testB64}`);
+    const signature = await signer.sign('config-round-trip');
+    expect(await verifier.verify(signature, 'config-round-trip')).toBe(true);
+  });
+
   it('accepts URL-safe base64 (- and _ in place of + and /)', async () => {
     const seed = new Uint8Array(32).fill(0xFF);
     const standard = encodeBase64(seed);

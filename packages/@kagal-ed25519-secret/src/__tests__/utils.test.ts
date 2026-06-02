@@ -172,7 +172,7 @@ describe('encodeKey', () => {
     expect(await encodeKey(reimported)).toBe(encoded);
   });
 
-  it('rejects a non-Ed25519 algorithm', async () => {
+  it('rejects an unsupported algorithm (HMAC)', async () => {
     const hmac = await crypto.subtle.generateKey(
       { name: 'HMAC', hash: 'SHA-256' }, true, ['sign'],
     );
@@ -180,13 +180,13 @@ describe('encodeKey', () => {
       .rejects.toThrow(TypeError);
   });
 
-  it('rejects a non-Ed25519 public key (ECDSA P-256)', async () => {
+  it('rejects an unsupported algorithm (ECDSA P-256)', async () => {
     const { publicKey } = await crypto.subtle.generateKey(
       { name: 'ECDSA', namedCurve: 'P-256' },
       true, ['sign', 'verify'],
     ) as CryptoKeyPair;
     await expect(encodeKey(publicKey))
-      .rejects.toThrow(/^expected Ed25519 key, got ECDSA$/);
+      .rejects.toThrow(/^unsupported algorithm: ECDSA$/);
   });
 
   it('rejects a private key', async () => {
@@ -201,28 +201,28 @@ describe('encodeKey', () => {
       .rejects.toThrow(TypeError);
   });
 
-  it('omits the prefix on algorithm mismatch', async () => {
+  it('omits the prefix on an unsupported algorithm', async () => {
     const hmac = await crypto.subtle.generateKey(
       { name: 'HMAC', hash: 'SHA-256' }, true, ['sign'],
     );
     await expect(encodeKey(hmac as CryptoKey))
-      .rejects.toThrow(/^expected Ed25519 key, got HMAC$/);
+      .rejects.toThrow(/^unsupported algorithm: HMAC$/);
   });
 
-  it('prepends the context prefix on algorithm mismatch', async () => {
+  it('prepends the context prefix on an unsupported algorithm', async () => {
     const hmac = await crypto.subtle.generateKey(
       { name: 'HMAC', hash: 'SHA-256' }, true, ['sign'],
     );
     await expect(encodeKey(hmac as CryptoKey, 'myConfig'))
-      .rejects.toThrow(/^myConfig: expected Ed25519 key, got HMAC$/);
+      .rejects.toThrow(/^myConfig: unsupported algorithm: HMAC$/);
   });
 
-  it('treats an empty context as no prefix on algorithm mismatch', async () => {
+  it('treats an empty context as no prefix on an unsupported algorithm', async () => {
     const hmac = await crypto.subtle.generateKey(
       { name: 'HMAC', hash: 'SHA-256' }, true, ['sign'],
     );
     await expect(encodeKey(hmac as CryptoKey, ''))
-      .rejects.toThrow(/^expected Ed25519 key, got HMAC$/);
+      .rejects.toThrow(/^unsupported algorithm: HMAC$/);
   });
 
   it('omits the prefix on export failure', async () => {

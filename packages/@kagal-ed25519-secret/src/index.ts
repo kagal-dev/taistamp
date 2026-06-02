@@ -17,6 +17,14 @@ export {
   newKeys,
 } from './key';
 export {
+  type KeyRecord,
+  type KeyRecordInput,
+  makeKeyRecords,
+  parseKeyRecord,
+  parseRecordToKey,
+  parseRecordToVerifier,
+} from './key-record';
+export {
   type KeyConfig,
   parseSecretsToKeys,
   parseSecretToKey,
@@ -32,6 +40,7 @@ export {
 } from './signer';
 export {
   asBytes,
+  asMessageBytes,
   type Bytes,
   decodeASCII,
   decodeBase64,
@@ -41,3 +50,8 @@ export {
   splitFirst,
   splitLast,
 } from './utils';
+export {
+  importVerifyKey,
+  newVerifier,
+  type Verifier,
+} from './verifier';

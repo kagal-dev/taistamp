@@ -13,6 +13,7 @@
     "apptly",
     "dkim",
     "dmarc",
+    "domainkey",
     "eddsa",
     "hono",
     "kagal",

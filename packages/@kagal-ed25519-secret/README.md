@@ -6,8 +6,8 @@
 
 WebCrypto Ed25519 — key-pair construction, signing and
 verification, JWKS-ready and DNS-TXT-ready public key
-publication, DKIM-style selector validation, and
-base64 helpers.
+publication, DKIM-style key-record parsing and
+selector validation, and base64 helpers.
 Zero runtime dependencies — only the host runtime's
 WebCrypto.
 
@@ -99,6 +99,38 @@ return new Response(JSON.stringify(jwks), {
 For the env-var rotation pattern, see
 [Parsing multiple secrets at once](#parsing-multiple-secrets-at-once).
 
+### Publishing keys as DKIM-style DNS TXT records
+
+`makeKeyRecords` builds the publishable record body
+for each key (RFC 6376 §3.2 syntax, §3.6.1 `p=`
+semantics) and returns them keyed by selector — ready
+to serialise as DKIM tag-list TXT values:
+
+```ts
+import { makeKeyRecords, newKeys } from '@kagal/ed25519-secret';
+
+// `seed` from your secret store (or `undefined` for a fresh seed)
+const { publicKey } = await newKeys(seed);
+const records = await makeKeyRecords(
+  { publicKey, selector: 's1' },
+  { v: 'DKIM1' },
+);
+// records:
+// {
+//   's1': { v: 'DKIM1', k: 'ed25519', p: '<base64>' },
+// }
+//
+// Pass an array of `{ publicKey, selector }` inputs to
+// publish many at once — each input's selector becomes
+// the dict key. `KeyConfig` (from `parseSecretToKey` /
+// `parseSecretsToKeys`) satisfies the input shape
+// structurally.
+
+// Serialise each entry as a DKIM tag-list TXT value
+// (`v=DKIM1; k=ed25519; p=<base64>`) and publish under
+// `<selector>._domainkey.<domain>`.
+```
+
 ### Parsing a secret and signing a message
 
 ```ts
@@ -106,9 +138,7 @@ import { encodeBase64, parseSecretToKey } from '@kagal/ed25519-secret';
 
 // `secret` may use standard or URL-safe base64 — both round-trip
 const config = await parseSecretToKey(secret);
-const signature = await config.signer.sign(
-  new TextEncoder().encode('payload'),
-);
+const signature = await config.signer.sign('payload');
 const wire = encodeBase64(new Uint8Array(signature)); // for transport
 ```
 
@@ -166,24 +196,26 @@ export default app;
 ### Plugging in a custom Signer
 
 Drop in any `Signer` implementation — it's just
-`{ sign: (message: BufferSource) => Promise<ArrayBuffer> }`:
+`{ sign: (message: BufferSource | string) => Promise<ArrayBuffer> }`.
+Implementations that forward the message to another
+byte-oriented API (a fetch body, an HSM SDK, …) can
+use `asMessageBytes` to coerce string inputs to UTF-8
+bytes:
 
 ```ts
-import type { Signer } from '@kagal/ed25519-secret';
+import { asMessageBytes, type Signer } from '@kagal/ed25519-secret';
 
 const remoteSigner: Signer = {
   sign: async (message) => {
     const response = await fetch('https://signer.example.com/sign', {
       method: 'POST',
-      body: message,
+      body: asMessageBytes(message),
     });
     return response.arrayBuffer();
   },
 };
 
-const signature = await remoteSigner.sign(
-  new TextEncoder().encode('payload'),
-);
+const signature = await remoteSigner.sign('payload');
 ```
 
 ### Publishing the public key from a stored secret
@@ -206,11 +238,15 @@ JWK Set's `keys` array.
 
 ### Fetching a published public key
 
+`parseKeyRecord` handles the DKIM-style tag-list parsing,
+DoH-JSON quote stripping, and multi-piece concatenation
+(RFC 1035 §3.3 and RFC 6376 §3.6.2.2); feed the returned
+record's `p` to `importVerifyKey`.
 DNS-over-HTTPS JSON via `fetch` works in any runtime with
 global `fetch`:
 
 ```ts
-import { decodeBase64 } from '@kagal/ed25519-secret';
+import { importVerifyKey, parseKeyRecord } from '@kagal/ed25519-secret';
 
 const response = await fetch(
   `https://1.1.1.1/dns-query?name=${selector}._keys.example.com&type=TXT`,
@@ -219,37 +255,74 @@ const response = await fetch(
 if (!response.ok) throw new Error(`DoH ${response.status}`);
 const { Answer } = await response.json();
 const data = Answer?.[0]?.data;
-if (!data) throw new Error('public key not found');
+if (!data) throw new Error('record not found');
 
-// DNS-over-HTTPS wraps each TXT character-string in
-// quotes; this strips a single-string record only —
-// multi-string records (RFC 1035 §3.3) need further
-// handling.
-const publicKey = await crypto.subtle.importKey(
-  'raw',
-  decodeBase64(data.replaceAll(/^"|"$/g, '')),
-  { name: 'Ed25519' },
-  true,
-  ['verify'],
-);
+const record = parseKeyRecord(data);
+if (record.p === undefined) throw new Error('key has been revoked');
+
+// RFC 6376 §3.6.1: absent k= defaults to rsa.
+const publicKey = await importVerifyKey(record.k ?? 'rsa', record.p);
 ```
+
+`record.p` is `undefined` when the record uses RFC 6376
+§3.6.1's revoked-on-empty convention; branch on it before
+importing. `record.k` is `undefined` when the record omits
+`k=`, which RFC 6376 §3.6.1 defaults to `rsa`; the
+`?? 'rsa'` fallback makes that default explicit, and
+`importVerifyKey` then rejects it as
+`unsupported algorithm: rsa`. `importVerifyKey` matches
+its `algorithm` argument case-insensitively, so DKIM's
+`'ed25519'` lands without pre-normalisation. The
+`v=` tag and any additional tags pass through unchecked —
+the package is protocol-agnostic across DKIM-style record
+formats; protocol-specific version validation (matching
+`record.v` against an expected label) belongs with the
+caller.
 
 ### Verifying an Ed25519 signature in WebCrypto
 
-WebCrypto's `Ed25519 verify` is specified to apply RFC 8032 §5.1.7
-strict verification (cofactor handling, signature-malleability
-resistance); confirm your runtime conforms, or fall back to a
-strict-verify library such as `@noble/ed25519`.
+`newVerifier` wraps an Ed25519 public `CryptoKey` in a
+`Verifier` — the verify-side counterpart to `Signer`. It
+gate-checks `algorithm.name` and `usages` at construction
+and delegates each `verify` call to `crypto.subtle.verify`,
+which is specified to apply RFC 8032 §5.1.7 strict
+verification (cofactor handling and signature-malleability
+resistance); confirm your runtime conforms, or fall back to
+a strict-verify library such as `@noble/ed25519`.
 
 ```ts
+import { newVerifier } from '@kagal/ed25519-secret';
+
 // `publicKey` from the previous snippet; `signature` is the bytes
 // you received over the wire (BufferSource)
-const ok = await crypto.subtle.verify(
-  'Ed25519',
-  publicKey,
-  signature,
-  new TextEncoder().encode('payload'),
-);
+const verifier = newVerifier(publicKey);
+const ok = await verifier.verify(signature, 'payload');
+```
+
+`verify` accepts the message as bytes (`BufferSource`) or
+as a string; strings are encoded as UTF-8. Callers needing
+another encoding can pass bytes directly.
+
+The two walkthroughs above take a record apart step by
+step. Two helpers bundle those steps for production use:
+
+- `parseRecordToKey` — the fetch section's
+  `parseKeyRecord` + `importVerifyKey`, returning the
+  verify-only `CryptoKey`.
+- `parseRecordToVerifier` — the above plus the
+  `newVerifier` wrap, returning a ready `Verifier`.
+
+Both carry the surviving tags alongside the key in the
+returned record, so the revoked-key, `k=`-default, and tag
+pass-through rules described above are unchanged:
+
+```ts
+import { parseRecordToVerifier } from '@kagal/ed25519-secret';
+
+// `data` from the DoH fetch above; `signature` from the wire
+const { p: verifier } = await parseRecordToVerifier(data);
+if (verifier === undefined) throw new Error('key has been revoked');
+const ok = await verifier.verify(signature, 'payload');
 ```
 
 ### Validating a DKIM-style selector
@@ -292,12 +365,12 @@ assertValidSelector(value, 'config');
   and brand a seed; accepts a 32-byte `Uint8Array` or
   its base64 encoding.
 - `encodeKey(key, context?)` — export an extractable
-  Ed25519 public `CryptoKey` as standard base64 of its
-  32-byte raw form, ready for out-of-band distribution
-  (e.g. a DNS TXT record). The output round-trips
-  through `decodeBase64` +
+  public `CryptoKey` for a supported algorithm as
+  standard base64 of its raw form, ready for out-of-band
+  distribution (e.g. a DNS TXT record). The output
+  round-trips through `decodeBase64` +
   `crypto.subtle.importKey('raw', ...)`. Throws
-  `TypeError` if the key's algorithm isn't Ed25519, or
+  `TypeError` if the key's algorithm isn't supported, or
   if it isn't a public key, or if WebCrypto refuses to
   export the raw bytes (non-extractable); pass
   `context` to prefix the error message.
@@ -329,15 +402,77 @@ assertValidSelector(value, 'config');
   inputs yield `{ keys: [] }`. Input order is
   preserved.
 
+### Key records
+
+- `KeyRecord<P>` — DKIM-style tag-list record
+  (RFC 6376 §3.2 syntax, §3.6.1 `p=` semantics) with
+  declared `k?`, `p`, `v?` and an index signature for
+  additional tags. `P` tracks `p`'s value type:
+  `Uint8Array` (default; parse direction),
+  `string` (publish direction), `CryptoKey`
+  (verify-only, post-import), or `Verifier`
+  (post-wrap). Consumers needing typed access to a
+  specific tag set extend the interface.
+- `KeyRecordInput` — `{ publicKey?, selector }`; a
+  public `CryptoKey` of a supported algorithm paired
+  with the DKIM selector under which it will be
+  published. Omit `publicKey` to publish a revocation
+  record (empty `p=`, RFC 6376 §3.6.1). `KeyConfig`
+  (and any config carrying a `selector`) satisfies
+  this structurally.
+- `makeKeyRecords(input, template?, context?)` —
+  build `KeyRecord`s ready for publication as
+  `<selector>._keys.<domain>` DNS TXT values.
+  Accepts a single `KeyRecordInput`, an array
+  (including empty), or `undefined`; returns a frozen
+  `{ [selector]: record }` keyed by selector. Input
+  order is preserved; duplicate selectors
+  last-write-wins. `template` supplies `v=` and any
+  additional tags (via its index signature); `k=` (the
+  key's algorithm — lowercase WebCrypto name,
+  `'ed25519'`) and `p` (the base64-encoded public key)
+  are synthesised by the function and override any
+  same-named entries in `template`. An input that omits
+  `publicKey` yields a revocation record (empty `p=`,
+  `k=` omitted, RFC 6376 §3.6.1). `context`
+  (default `'makeKeyRecords'`) prefixes any thrown
+  error; array inputs decorate as
+  `<context>: input N` to disambiguate failures.
+- `parseKeyRecord(input, context?)` — parse a TXT
+  record value (raw string, DoH-JSON-quoted string,
+  or a pre-extracted character-string array) into a
+  `KeyRecord<Uint8Array>`. Strict on tag-list syntax,
+  lenient on semantics (unknown `v=`/`k=` values and
+  extra tags pass through). Empty `p=` yields
+  `p: undefined` per RFC 6376 §3.6.1's revoked-key
+  convention. `context` prefixes any thrown error.
+- `parseRecordToKey(input, context?)` — parse a TXT
+  record value into a `KeyRecord<CryptoKey>`, importing
+  the `p=` bytes into a verify-only `CryptoKey`. The
+  algorithm comes from `k=`, defaulting to `rsa` only
+  when `k=` is absent (RFC 6376 §3.6.1); an unsupported
+  algorithm — the `rsa` default, an empty `k=`, or any
+  non-Ed25519 value — is rejected rather than silently
+  substituted. A revoked record (empty `p=`) carries
+  through as `p: undefined`; other tags pass through.
+  `context` (default `'parseRecordToKey'`) prefixes any
+  thrown error.
+- `parseRecordToVerifier(input, context?)` — like
+  `parseRecordToKey`, but wraps the imported key as a
+  `Verifier`, yielding a `KeyRecord<Verifier>`. Same
+  revocation and tag pass-through behaviour; `context`
+  defaults to `'parseRecordToVerifier'`.
+
 ### Secrets
 
-- `KeyConfig` — extends `KeyContext` with two fields,
-  inheriting `privateKey`, `publicKey`, `signKey`,
-  `publicJWK` from it:
+- `KeyConfig` — extends `KeyContext` with three
+  fields, inheriting `privateKey`, `publicKey`,
+  `signKey`, `publicJWK` from it:
   - `selector: string` — validated against
     `SELECTOR_PATTERN`; also set as
     `publicJWK.kid`.
   - `signer: Signer` — pre-built, backed by `signKey`.
+  - `verifier: Verifier` — pre-built, backed by `publicKey`.
 - `parseSecretToKey(secretString, context?)` — parse
   a `selector:base64` secret into a `KeyConfig`. The
   base64 portion is a 32-byte Ed25519 seed (standard
@@ -357,12 +492,38 @@ assertValidSelector(value, 'config');
 
 ### Signer
 
-- `Signer` — `{ sign: (message: BufferSource) => Promise<ArrayBuffer> }`
+- `Signer` — `{ sign: (message) => Promise<ArrayBuffer> }`
+  where `message: BufferSource | string`
 - `newSigner(key, context?)` — WebCrypto Ed25519
   signer factory. Pass an Ed25519 private `CryptoKey`
   with `'sign'` in `usages`; returns 64-byte raw
-  RFC 8032 signatures. Throws `TypeError` if the key
-  fails either check; `context` prefixes the message.
+  RFC 8032 signatures. Throws `TypeError` on a
+  non-Ed25519 key or missing usage; `context`
+  prefixes the message.
+
+### Verifier
+
+- `Verifier` — `{ verify: (sig, msg) => Promise<boolean> }`
+  where `sig: BufferSource` and
+  `msg: BufferSource | string`
+- `newVerifier(key, context?)` — WebCrypto Ed25519
+  verifier factory. Pass an Ed25519 public `CryptoKey`
+  with `'verify'` in `usages`; delegates each call to
+  `crypto.subtle.verify`, which is specified to apply
+  RFC 8032 §5.1.7 strict verification on conformant
+  runtimes. Throws `TypeError` on a non-Ed25519 key or
+  missing usage; `context` prefixes the message.
+- `importVerifyKey(algorithm, keyData, context?)` —
+  import a raw-encoded public verifying key (e.g. the
+  `p=` bytes from `parseKeyRecord`) into an extractable
+  verify-only `CryptoKey`. `algorithm` matches
+  case-insensitively, so DKIM `k=` values
+  (`'ed25519'` per RFC 6376 §3.6.1) work without
+  pre-normalisation. `keyData` accepts raw bytes or
+  their base64 encoding (standard or URL-safe). Throws
+  `TypeError` for an unsupported algorithm, wrong byte
+  length, or undecodable base64; `context` prefixes the
+  message.
 
 ### Selector validation
 
@@ -401,6 +562,12 @@ assertValidSelector(value, 'config');
   bytes-or-base64 input to a fresh `Uint8Array`. Bytes
   are defensive-copied; strings go through
   `decodeBase64`.
+- `asMessageBytes(message)` — normalise a
+  `BufferSource | string` input to `BufferSource`.
+  Bytes pass through; strings are encoded as UTF-8.
+  Used internally by `Signer.sign` / `Verifier.verify`
+  to accept either shape; differs from `asBytes`,
+  whose string input is base64-decoded.
 - `getRandom(length, context?)` — fresh `Uint8Array`
   of the requested length filled via
   `crypto.getRandomValues`. Throws `TypeError` on

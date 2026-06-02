@@ -17,9 +17,12 @@ the package-local layout and conventions.
 └── src/
     ├── index.ts            # public API surface
     ├── secret.ts           # selector:base64 secret parsing
+    ├── algo.ts             # supported-algorithm metadata
     ├── key.ts              # Ed25519 key construction and public JWK shape
     ├── jwks.ts             # Ed25519 JWK Set assembly
+    ├── key-record.ts       # DKIM-style key-record assembly, parsing, and key import
     ├── signer.ts           # Ed25519 signer interface and factory
+    ├── verifier.ts         # Ed25519 verifier interface and factories
     ├── selector.ts         # DKIM selector pattern and validators
     ├── utils.ts            # byte helpers and list splitters
     └── __tests__/
@@ -34,10 +37,12 @@ one of two shapes:
 - `context?: string` — absent means no prefix. Used by
   `asBytes`, `asEd25519Seed`, `assertValidSelector`,
   `decodeASCII`, `decodeBase64`, `encodeKey`,
-  `getRandom`, and `newSigner`.
+  `getRandom`, `importVerifyKey`, `newSigner`,
+  `newVerifier`, and `parseKeyRecord`.
 - `context: string = '<factory name>'` — used by
   composing factories that thread the context through
-  to their delegates (`newKeys`, `parseSecretToKey`,
-  `parseSecretsToKeys`, and the deprecated `newKeyPair`);
-  absence falls back to the factory name so the error
-  always carries attribution.
+  to their delegates (`makeKeyRecords`, `newKeys`,
+  `parseRecordToKey`, `parseRecordToVerifier`,
+  `parseSecretToKey`, `parseSecretsToKeys`, and the
+  deprecated `newKeyPair`); absence falls back to the
+  factory name so the error always carries attribution.

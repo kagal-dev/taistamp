@@ -5,6 +5,139 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-02
+
+DKIM-style key-record publication and parsing, plus the
+Ed25519 verifier side — in-process verification, raw-key
+import, and record-to-key/verifier parsing.
+
+### Added
+
+- `makeKeyRecords(input, template?, context?)` — build
+  `KeyRecord`s ready for publication as
+  `<selector>._keys.<domain>` DNS TXT values.
+  Accepts a single `KeyRecordInput`, an array
+  (including empty), or `undefined`; returns a frozen
+  `{ [selector]: record }` object keyed by selector
+  (insertion order matches input order; duplicate
+  selectors last-write-wins). `k=` is the public key's
+  algorithm (lowercase WebCrypto name, `'ed25519'`);
+  `p=` is the base64-encoded raw public key via
+  `encodeKey`. An input that omits `publicKey` is a
+  revocation record (empty `p=`, `k=` omitted, RFC 6376
+  §3.6.1). `v=` and additional tags
+  flow from `template` (via its index signature);
+  `context` (default `'makeKeyRecords'`) prefixes any
+  thrown error, with array inputs decorated as
+  `<context>: input N` to disambiguate failures.
+- `parseKeyRecord(input, context?)` — parse a DNS TXT
+  record value into a `KeyRecord<Uint8Array>` per
+  RFC 6376 §3.2 (tag-list grammar) and §3.6.1 (`p=`
+  semantics). Accepts a raw tag-list string, a
+  DoH-JSON-style string of one or more whitespace-
+  separated quoted character-strings (RFC 1035 §3.3
+  and RFC 6376 §3.6.2.2), or an array of pre-extracted
+  character-strings (Node `dns.resolveTxt`, DoH-wire
+  parsers); multi-piece forms are concatenated with no
+  intervening whitespace. Strict on grammar (rejects
+  empty tag-specs, malformed quoting, duplicate tag
+  names, missing `p=`, undecodable base64); lenient on
+  semantics (unknown tags preserved, unknown `v`/`k`
+  values passed through). Empty `p=` yields
+  `p: undefined` per RFC 6376 §3.6.1's revoked-key
+  convention. `context` (optional) prefixes any thrown
+  error.
+- `KeyRecord<P>` — DKIM-style tag-list key record
+  (RFC 6376 §3.2 syntax, §3.6.1 `p=` semantics) with
+  declared `k?`, `p`, `v?` and an index signature for
+  additional tags. `P` tracks `p`'s value type:
+  `Uint8Array` (default; parse direction), `string`
+  (publish direction), `CryptoKey` (verify-only,
+  post-import), or `Verifier` (post-wrap). Consumers
+  needing typed access to a specific tag set extend the
+  interface.
+- `KeyRecordInput` — `{ publicKey?, selector }`; a
+  public `CryptoKey` of a supported algorithm paired
+  with the DKIM selector under which it will be
+  published. Omit
+  `publicKey` to publish a revocation record (empty
+  `p=`, RFC 6376 §3.6.1). `KeyConfig` (and any config
+  carrying a `selector`) satisfies this structurally.
+- `Verifier` — verify-side counterpart to `Signer`;
+  `{ verify: (sig, msg) => Promise<boolean> }` where
+  `sig` is `BufferSource` and `msg` is
+  `BufferSource | string` (strings encoded as UTF-8).
+- `newVerifier(key, context?)` — WebCrypto Ed25519
+  verifier factory. Accepts an Ed25519 public
+  `CryptoKey` with `'verify'` in `usages`; delegates
+  each call to `crypto.subtle.verify`, which is
+  specified to apply RFC 8032 §5.1.7 strict
+  verification on conformant runtimes. Throws
+  `TypeError` on a non-Ed25519 key or missing usage;
+  `context` (optional) prefixes the message.
+- `asMessageBytes(message)` — normalise a
+  `BufferSource | string` input to `BufferSource`,
+  encoding strings as UTF-8. Used internally by
+  `Signer.sign` and `Verifier.verify`; exported for
+  callers that need the same coercion.
+- `KeyConfig.verifier` — `Verifier` backed by
+  `KeyContext.publicKey`, mirroring the existing
+  `KeyConfig.signer`. Pre-built by
+  `parseSecretToKey` / `parseSecretsToKeys` so
+  callers can verify in-process without an extra
+  `newVerifier` step.
+- `importVerifyKey(algorithm, keyData, context?)` —
+  import a raw-encoded public verifying key (e.g. the
+  `p=` bytes from `parseKeyRecord`) into an extractable
+  verify-only `CryptoKey` ready for `newVerifier` or a
+  direct `crypto.subtle.verify` call. `algorithm`
+  matches case-insensitively so DKIM `k=` values
+  (lowercase `'ed25519'` per RFC 6376 §3.6.1) work
+  without pre-normalisation; the canonical form
+  (`'Ed25519'`) is fed to `crypto.subtle.importKey`.
+  `keyData` accepts raw bytes or their base64 encoding
+  (standard or URL-safe). Throws `TypeError` for an
+  unsupported algorithm, wrong byte length, or
+  undecodable base64 (the last via `asBytes`).
+- `parseRecordToKey(input, context?)` — parse a DNS TXT
+  record value into a `KeyRecord<CryptoKey>`, importing
+  the `p=` key bytes into a verify-only `CryptoKey`. The
+  algorithm comes from the record's `k=`, defaulting to
+  `rsa` only when `k=` is absent (RFC 6376 §3.6.1); an
+  unsupported algorithm — the `rsa` default, an empty
+  `k=`, or any non-Ed25519 value — is rejected rather
+  than silently substituted. A revoked record (empty
+  `p=`) carries through as `p: undefined` with no import;
+  `v`, `k`, and unknown tags pass through unchanged.
+  `context` (default `'parseRecordToKey'`) prefixes any
+  thrown error.
+- `parseRecordToVerifier(input, context?)` — parse a DNS
+  TXT record value into a `KeyRecord<Verifier>`, the
+  record's published key wrapped as a ready-to-use
+  `Verifier`. Same revocation and tag pass-through
+  behaviour as `parseRecordToKey`; `context` (default
+  `'parseRecordToVerifier'`) prefixes any thrown error.
+
+### Changed
+
+- `newSigner` and `encodeKey` — algorithm-rejection
+  error wording changed from `expected Ed25519 key,
+  got <X>` to `unsupported algorithm: <X>`.
+- `Signer.sign` — `message` parameter widened from
+  `BufferSource` to `BufferSource | string`; string
+  inputs are encoded as UTF-8 before signing.
+- README — the "Fetching a published public key"
+  walkthrough now uses `parseKeyRecord` instead of
+  ad-hoc quote-stripping and a direct `decodeBase64`;
+  covers multi-string concatenation (RFC 1035 §3.3)
+  and revoked-key handling (RFC 6376 §3.6.1).
+- README — the "Verifying an Ed25519 signature in
+  WebCrypto" walkthrough now uses `newVerifier` in
+  place of bare `crypto.subtle.verify`.
+- README — the "Fetching a published public key"
+  walkthrough now uses `importVerifyKey` in place of
+  a bare `crypto.subtle.importKey('raw', ...)`.
+
 ## [0.2.1] - 2026-05-29
 
 ASCII byte decoding and an empty-context error-prefix fix.
