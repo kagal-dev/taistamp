@@ -14,11 +14,11 @@ import {
   asNonce,
   composeSignaturePayload,
   extractLeapSeconds,
-  fromUTC,
   newEd25519Signer,
   newTaistampHandler,
-  now,
-  TAI64_EPOCH_HI,
+  parseRecordToVerifier,
+  parseSecretsToKeys,
+  parseSecretToKey,
   TAI64N_CONTENT_LENGTH,
   TAI64N_CONTENT_TYPE,
   TAI64N_HEADER_KEY_SELECTOR,
@@ -26,13 +26,19 @@ import {
   TAI64N_HEADER_NONCE,
   TAI64N_HEADER_SIGNATURE,
   TAI64N_PATH,
-  tai64nLabel,
-  tai64nLabelFromUTC,
+  tai64nLabelFromUTC as tai64nLabelFromUTCMain,
   TAI_LEAP_SECONDS,
   TAI_LEAP_SECONDS_MAX,
   TAISTAMP_PATH,
   VERSION,
 } from '../../dist/index.mjs';
+import {
+  fromUTC,
+  now,
+  TAI64_EPOCH_HI,
+  tai64nLabel,
+  tai64nLabelFromUTC,
+} from '../../dist/utils.mjs';
 
 let failures = 0;
 
@@ -87,7 +93,6 @@ checkString('TAISTAMP_PATH', TAISTAMP_PATH, '/.well-known/taistamp');
 checkString('TAI64N_PATH', TAI64N_PATH, '/.well-known/taistamp');
 checkString('TAI64N_CONTENT_TYPE', TAI64N_CONTENT_TYPE, 'application/tai64n');
 checkNumber('TAI64N_CONTENT_LENGTH', TAI64N_CONTENT_LENGTH, 25);
-checkNumber('TAI64_EPOCH_HI', TAI64_EPOCH_HI, 0x40_00_00_00);
 checkNumber('TAI_LEAP_SECONDS', TAI_LEAP_SECONDS, 37);
 checkNumber('TAI_LEAP_SECONDS_MAX', TAI_LEAP_SECONDS_MAX, 0xFF_FF_FF_FF);
 checkString(
@@ -106,10 +111,17 @@ checkString('TAI64N_HEADER_SIGNATURE', TAI64N_HEADER_SIGNATURE, 'TAI-Signature')
 // Functions
 checkFunction('newTaistampHandler', newTaistampHandler);
 checkFunction('newEd25519Signer', newEd25519Signer);
+checkFunction('parseRecordToVerifier', parseRecordToVerifier);
+checkFunction('parseSecretsToKeys', parseSecretsToKeys);
+checkFunction('parseSecretToKey', parseSecretToKey);
 checkFunction('composeSignaturePayload', composeSignaturePayload);
 checkFunction('asLeapSeconds', asLeapSeconds);
 checkFunction('asNonce', asNonce);
 checkFunction('extractLeapSeconds', extractLeapSeconds);
+checkFunction('tai64nLabelFromUTC (main)', tai64nLabelFromUTCMain);
+
+// /utils subpath
+checkNumber('TAI64_EPOCH_HI', TAI64_EPOCH_HI, 0x40_00_00_00);
 checkFunction('fromUTC', fromUTC);
 checkFunction('now', now);
 checkFunction('tai64nLabel', tai64nLabel);

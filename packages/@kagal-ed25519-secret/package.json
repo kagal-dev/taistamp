@@ -49,7 +49,7 @@
     "lint": "eslint --fix .",
     "lint:_pkg-pr-new": "eslint --fix package.json",
     "lint:check": "eslint .",
-    "precommit": "run-s dev:prepare lint type-check build test",
+    "precommit": "run-s dev:prepare lint type-check build test test:compat",
     "prepack": "run-s lint:_pkg-pr-new build lint:check type-check test publint",
     "prepare": "cross-test -s dist/index.mjs || obuild --stub",
     "publint": "publint",

@@ -17,7 +17,7 @@
     "lint:check:_packages": "pnpm -r lint:check",
     "lint:root": "eslint --fix --ignore-pattern 'packages/*' .",
     "lint:root:check": "eslint --ignore-pattern 'packages/*' .",
-    "precommit": "run-s dev:prepare lint type-check build test",
+    "precommit": "run-s dev:prepare lint type-check build test test:compat",
     "prepack": "run-s lint:root:check prepack:_packages",
     "prepack:_packages": "pnpm -r prepack",
     "test": "pnpm -r test",

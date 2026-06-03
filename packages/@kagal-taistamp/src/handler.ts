@@ -16,7 +16,7 @@ import {
 import { buildCORSHeaders } from './cors';
 import { type LeapSeconds, TAI_LEAP_SECONDS } from './leap-seconds';
 import { extractNonce, type Nonce } from './nonce';
-import { tai64nLabel } from './utils';
+import { tai64nLabel } from './time';
 
 const ALLOW_HEADER = 'GET, HEAD, OPTIONS';
 

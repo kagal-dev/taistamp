@@ -15,14 +15,15 @@ the package-local layout and conventions.
 ```text
 .
 ├── src/
-│   ├── index.ts            # public API surface
+│   ├── index.ts            # main export — protocol surface
+│   ├── utils.ts            # /utils subpath — additional related exports
 │   ├── handler.ts          # request handler and signature payload assembly
 │   ├── body.ts             # verifier-side response-body decoding
 │   ├── cors.ts             # CORS headers keyed by response kind
 │   ├── nonce.ts            # nonce branded type and header parsing
 │   ├── leap-seconds.ts     # leap-seconds branded type and header parsing
 │   ├── const.ts            # protocol constants
-│   ├── utils.ts            # TAI64N time helpers
+│   ├── time.ts             # TAI64N time helpers
 │   └── __tests__/          # Vitest suites split across pools (see below)
 └── wrangler.jsonc          # workerd test pool stub
 ```

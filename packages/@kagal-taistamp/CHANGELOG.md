@@ -7,6 +7,33 @@ documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- Re-exports from `@kagal/ed25519-secret` covering both
+  ends of the consumer journey: `parseSecretToKey` /
+  `parseSecretsToKeys` / `KeyConfig` (seed secret →
+  signer for the handler config) and
+  `parseRecordToVerifier` / `KeyRecord` / `Verifier`
+  (DNS TXT record → signature check).
+- API doc model for the new subpath —
+  `dist/utils.api.json` joins `dist/index.api.json` in
+  the published package.
+
+### Changed
+
+- Breaking: the TAI64N time helpers (`now`, `fromUTC`,
+  `tai64nLabel`) moved from the main export to the new
+  `@kagal/taistamp/utils` subpath — update imports to
+  `from '@kagal/taistamp/utils'`. `tai64nLabelFromUTC`
+  stays on the main export too — its plain
+  number-to-label signature serves verifier-side
+  freshness checks — and joins the others on the
+  subpath.
+- Breaking: `TAI64_EPOCH_HI` moved from the main export
+  to `@kagal/taistamp/utils` — the TAI64 epoch constant
+  backs the label encoding and sits with the label
+  helpers, off the protocol-shaped main surface.
+
 ## [0.1.2] - 2026-06-07
 
 API doc model publication and a devDependency refresh.

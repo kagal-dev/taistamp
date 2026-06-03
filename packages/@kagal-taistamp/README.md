@@ -142,6 +142,23 @@ factory are re-exported from
 package and don't need to depend on the underlying
 package directly.
 
+Operators usually hold a `selector:base64` seed
+secret rather than a `CryptoKey`. `parseSecretToKey`
+(also re-exported) parses it into a `KeyConfig` whose
+`selector` and `signer` plug straight into the
+handler config:
+
+```typescript
+import {
+  newTaistampHandler,
+  parseSecretToKey,
+} from '@kagal/taistamp';
+
+const { selector, signer } =
+  await parseSecretToKey(env.TAISTAMP_SECRET);
+const taistamp = newTaistampHandler({ selector, signer });
+```
+
 `signer` and `selector` are co-required: pass both to
 sign, neither for an unsigned handler. Construction
 throws if only one is supplied, or if `selector` does
@@ -241,6 +258,7 @@ import {
   asNonce,
   composeSignaturePayload,
   extractLeapSeconds,
+  parseRecordToVerifier,
   readLabel,
 } from '@kagal/taistamp';
 
@@ -277,10 +295,16 @@ if (nonce === undefined) {
   throw new Error('client nonce is not a valid sf-binary item');
 }
 
-// Look up the public key in DNS at
-// `${selector}._taistamp.${host}` and parse the
-// `p=` tag from the TXT record.
-const publicKey = await loadPublicKey(host, selector);
+// Look up the TXT record in DNS at
+// `${selector}._taistamp.${host}`; `parseRecordToVerifier`
+// parses it and imports the published key into a
+// ready-to-use `Verifier` in `p`. A revoked record
+// (empty `p=`) carries through as `p: undefined`.
+const txtValue = await loadTXT(host, selector);
+const record = await parseRecordToVerifier(txtValue);
+if (record.p === undefined) {
+  throw new Error('key record is revoked');
+}
 
 const payload = composeSignaturePayload(
   label,
@@ -288,9 +312,7 @@ const payload = composeSignaturePayload(
   selector,
   nonce,
 );
-const valid = await crypto.subtle.verify(
-  'Ed25519',
-  publicKey,
+const valid = await record.p.verify(
   sfBinaryDecode(sigSf), // strip leading/trailing ':' then base64-decode
   payload,
 );
@@ -298,8 +320,8 @@ const valid = await crypto.subtle.verify(
 
 `composeSignaturePayload(label, leapSeconds, selector,
 nonce)` reconstructs the exact byte sequence the
-server signed; the verifier supplies only the public
-key and an sf-binary decoder. `leapSeconds` must be a
+server signed; the verifier supplies only the DNS
+lookup and an sf-binary decoder. `leapSeconds` must be a
 branded `LeapSeconds` — obtain one from
 `extractLeapSeconds(headers)` (the verifier path) or
 `asLeapSeconds(number)` (when you already have the
@@ -332,7 +354,7 @@ response's `TAI-Nonce` defends against replay.
   specific origin string, or `false`; `signer` and
   `selector` are co-required.
 
-### Signer
+### Signer and verifier
 
 Re-exported from `@kagal/ed25519-secret`:
 
@@ -341,6 +363,26 @@ Re-exported from `@kagal/ed25519-secret`:
 - `newEd25519Signer(key)` — WebCrypto Ed25519
   signer factory. Pass an Ed25519 private
   `CryptoKey` with `'sign'` in `usages`.
+- `parseSecretToKey(secret, context?)` — parse a
+  `selector:base64` seed secret into a `KeyConfig`;
+  its `selector` and `signer` plug straight into
+  `newTaistampHandler`.
+- `parseSecretsToKeys(secrets, strict?, context?)` —
+  the same for a string carrying several secrets
+  separated by whitespace or punctuation. Strict mode
+  (the default) rejects the whole call on a malformed
+  entry; lenient mode skips it.
+- `KeyConfig` — parsed secret: the `selector`,
+  ready-to-use `signer` / `verifier`, and the
+  underlying key material.
+- `parseRecordToVerifier(record, context?)` — parse a
+  DNS TXT key record into a `KeyRecord` whose `p` is
+  a ready-to-use `Verifier`, or `undefined` for a
+  revoked record (empty `p=`).
+- `KeyRecord` — parsed TXT record: the tag-value
+  pairs with `p` upgraded to the parse target.
+- `Verifier` — `{ verify: (signature, message) =>
+  Promise<boolean> }`.
 
 ### Verification helpers
 
@@ -375,25 +417,37 @@ For verifier-side validation of a signed response
   per [spec §5.4][spec-nonce].
 - `Nonce` — branded sf-binary nonce accepted by
   `composeSignaturePayload`.
+- `tai64nLabelFromUTC(utc)` — the TAI64N label for a
+  UTC millisecond timestamp. Labels are fixed-width
+  hex and order lexicographically, so a received
+  label can be freshness-checked between the labels
+  of `Date.now() - skew` and `Date.now() + skew`
+  without decoding it.
 
 ### TAI64N helpers
 
-The handler uses these primitives internally; they
-are re-exported for callers that need raw TAI64N
-construction:
+Constructing TAI64N timestamps and their labels is
+a core capability of the package — the
+`@kagal/taistamp/utils` subpath exposes it for
+direct use, and the handler builds on the same
+primitives:
+
+```ts
+import { tai64nLabel } from '@kagal/taistamp/utils';
+```
 
 | Export | Description |
 |--------|-------------|
 | `now()` | Current TAI as `{ sec, nano, offset }` |
 | `fromUTC(utc)` | `Date.now()`-shaped milliseconds → TAI timestamp |
 | `tai64nLabel(t?)` | 25-byte label string for a timestamp (or `now()`) |
-| `tai64nLabelFromUTC(utc)` | Shortcut for `tai64nLabel(fromUTC(utc))` |
+| `tai64nLabelFromUTC(utc)` | Shortcut for `tai64nLabel(fromUTC(utc))`; also on the main export |
+| `TAI64_EPOCH_HI` | `0x40000000` — TAI64 epoch high word folded into a label's seconds field |
 
 `fromUTC` applies the constant `TAI_LEAP_SECONDS`
-(currently 37 seconds). Historic UTC timestamps
-spanning a leap-second boundary need caller-side
-adjustment — the constant tracks the present, not
-history.
+(currently 37 seconds). These helpers deal in the
+current time: the offset tracks the present, and
+anything before the unix epoch is out of scope.
 
 ### Constants
 
@@ -408,7 +462,6 @@ history.
 | `TAI64N_HEADER_SIGNATURE` | `TAI-Signature` |
 | `TAI_LEAP_SECONDS` | `37` (current TAI − UTC offset) |
 | `TAI_LEAP_SECONDS_MAX` | `0xFFFFFFFF` (signed-payload u32 cap) |
-| `TAI64_EPOCH_HI` | `0x40000000` |
 
 ## Licence
 
