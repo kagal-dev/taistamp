@@ -4,12 +4,27 @@ import pkg from '../package.json' with { type: 'json' };
 export const VERSION: string = pkg.version;
 
 export {
+  type KeyConfig,
+  type KeyRecord,
   newSigner as newEd25519Signer,
+  parseRecordToVerifier,
+  parseSecretsToKeys,
+  parseSecretToKey,
   type Signer,
+  type Verifier,
 } from '@kagal/ed25519-secret';
 
 export { readASCII, readLabel } from './body';
-export * from './const';
+export {
+  TAI64N_CONTENT_LENGTH,
+  TAI64N_CONTENT_TYPE,
+  TAI64N_HEADER_KEY_SELECTOR,
+  TAI64N_HEADER_LEAP_SECONDS,
+  TAI64N_HEADER_NONCE,
+  TAI64N_HEADER_SIGNATURE,
+  TAI64N_PATH,
+  TAISTAMP_PATH,
+} from './const';
 export {
   composeSignaturePayload,
   newTaistampHandler,
@@ -26,9 +41,4 @@ export {
   asNonce,
   type Nonce,
 } from './nonce';
-export {
-  fromUTC,
-  now,
-  tai64nLabel,
-  tai64nLabelFromUTC,
-} from './utils';
+export { tai64nLabelFromUTC } from './time';

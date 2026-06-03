@@ -5,8 +5,8 @@ import { defineBuildConfig } from 'obuild/config';
 const tsdoc = newOBuildHooks();
 
 /**
- * Emits `dist/index.d.ts` as a byte-identical
- * companion of `dist/index.d.mts`, so legacy
+ * Emits `dist/*.d.ts` as byte-identical companions
+ * of the `dist/*.d.mts` entries, so legacy
  * declaration extractors (e.g. jsDocs.io) that
  * probe for the `.d.ts` extension can find the
  * types.
@@ -17,11 +17,12 @@ const tsdoc = newOBuildHooks();
  */
 function emitLegacyDTS(): void {
   copyFileSync('dist/index.d.mts', 'dist/index.d.ts');
+  copyFileSync('dist/utils.d.mts', 'dist/utils.d.ts');
 }
 
 export default defineBuildConfig({
   entries: [
-    { type: 'bundle', input: ['./src/index.ts'] },
+    { type: 'bundle', input: ['./src/index.ts', './src/utils.ts'] },
   ],
   hooks: {
     rolldownOutput(outConfig) {
