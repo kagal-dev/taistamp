@@ -18,6 +18,15 @@ documented in this file.
 - API doc model for the new subpath —
   `dist/utils.api.json` joins `dist/index.api.json` in
   the published package.
+- sf-binary framing helpers on the `@kagal/taistamp/utils`
+  subpath — `SF_BINARY_PATTERN`, `encodeSFBinary(bytes)`,
+  and `decodeSFBinary(value, context?)` implement the
+  RFC 9651 §3.3.5 item syntax that `TAI-Nonce` and
+  `TAI-Signature` travel in — handling previously
+  internal to nonce validation and the handler.
+  Verifiers no longer hand-roll the `TAI-Signature`
+  decode; the README verify example now uses
+  `decodeSFBinary`.
 
 ### Changed
 

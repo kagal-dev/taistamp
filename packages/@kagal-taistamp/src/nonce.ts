@@ -1,4 +1,5 @@
 import { TAI64N_HEADER_NONCE } from './const';
+import { SF_BINARY_PATTERN } from './sf-binary';
 
 /**
  * Wire-form lower bound on `TAI-Nonce`. Spec §5.4 sets
@@ -6,6 +7,8 @@ import { TAI64N_HEADER_NONCE } from './const';
  * 14 is the smallest wire form (`:` + 12 base64 chars
  * + `:`) that can decode to 7 octets, so the wire
  * check rejects undersize input before base64 decoding.
+ * This also rejects the empty payload (`::`) — a
+ * zero-length nonce is treated as absent per spec §5.4.
  * sf-binary is ASCII-only — the string length equals
  * the octet count.
  */
@@ -20,18 +23,6 @@ export const NONCE_MIN_OCTETS = 14;
  * base64 decoding.
  */
 export const NONCE_MAX_OCTETS = 174;
-
-/**
- * sf-binary item per RFC 9651 §3.3.5: standard base64
- * with `=` padding, wrapped in a leading and trailing
- * colon. The empty payload (`::`) is excluded — a
- * zero-length nonce is treated as absent per spec
- * §5.4. The alphabet contains no `,`, so a duplicated
- * field (joined by the Web `Headers` API with `,`)
- * fails the same check.
- */
-const SF_BINARY_PATTERN =
-  /^:(?:[\d+/A-Za-z]{4})*(?:[\d+/A-Za-z]{4}|[\d+/A-Za-z]{3}=|[\d+/A-Za-z]{2}==):$/;
 
 declare const NonceBrand: unique symbol;
 

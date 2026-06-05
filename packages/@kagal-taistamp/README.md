@@ -261,6 +261,7 @@ import {
   parseRecordToVerifier,
   readLabel,
 } from '@kagal/taistamp';
+import { decodeSFBinary } from '@kagal/taistamp/utils';
 
 const response = await fetch(taistampURL, {
   headers: { 'TAI-Nonce': clientNonce },
@@ -313,7 +314,7 @@ const payload = composeSignaturePayload(
   nonce,
 );
 const valid = await record.p.verify(
-  sfBinaryDecode(sigSf), // strip leading/trailing ':' then base64-decode
+  decodeSFBinary(sigSf, 'TAI-Signature'),
   payload,
 );
 ```
@@ -321,7 +322,9 @@ const valid = await record.p.verify(
 `composeSignaturePayload(label, leapSeconds, selector,
 nonce)` reconstructs the exact byte sequence the
 server signed; the verifier supplies only the DNS
-lookup and an sf-binary decoder. `leapSeconds` must be a
+lookup — `decodeSFBinary` on the `@kagal/taistamp/utils`
+subpath strips the `:base64:` framing of the
+`TAI-Signature` value. `leapSeconds` must be a
 branded `LeapSeconds` — obtain one from
 `extractLeapSeconds(headers)` (the verifier path) or
 `asLeapSeconds(number)` (when you already have the
@@ -424,6 +427,28 @@ For verifier-side validation of a signed response
   of `Date.now() - skew` and `Date.now() + skew`
   without decoding it.
 
+### sf-binary helpers
+
+`TAI-Nonce` and `TAI-Signature` travel as sf-binary
+items ([RFC 9651 §3.3.5][sf-binary]) — standard base64
+wrapped in colons. The `@kagal/taistamp/utils` subpath
+exposes the framing helpers the handler uses:
+
+```ts
+import { decodeSFBinary } from '@kagal/taistamp/utils';
+```
+
+| Export | Description |
+|--------|-------------|
+| `SF_BINARY_PATTERN` | `RegExp` matching the full sf-binary syntax |
+| `encodeSFBinary(bytes)` | Bytes → `:base64:` item |
+| `decodeSFBinary(value, context?)` | `:base64:` item → bytes; throws `TypeError` on invalid syntax; `context` prefixes the message |
+
+`decodeSFBinary` enforces the full syntax — anything
+`SF_BINARY_PATTERN` rejects throws — so decoding a
+wire value needs no separate validation step; the
+pattern stands alone for validating without decoding.
+
 ### TAI64N helpers
 
 Constructing TAI64N timestamps and their labels is
@@ -476,6 +501,7 @@ anything before the unix epoch is out of scope.
 [npm-badge]: https://img.shields.io/npm/v/@kagal/taistamp.svg
 [npm-url]: https://www.npmjs.com/package/@kagal/taistamp
 [rfc-repo]: https://github.com/karasz/rfc-taistamp
+[sf-binary]: https://datatracker.ietf.org/doc/html/rfc9651#section-3.3.5
 [spec-leap]: https://datatracker.ietf.org/doc/html/draft-mery-nagy-taistamp-00#section-5.3
 [spec-nonce]: https://datatracker.ietf.org/doc/html/draft-mery-nagy-taistamp-00#section-5.4
 [spec-verify]: https://datatracker.ietf.org/doc/html/draft-mery-nagy-taistamp-00#section-9
