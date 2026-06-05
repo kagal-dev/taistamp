@@ -1,7 +1,5 @@
 import {
   assertValidSelector,
-  decodeBase64,
-  encodeBase64,
   type Signer,
 } from '@kagal/ed25519-secret';
 
@@ -16,6 +14,7 @@ import {
 import { buildCORSHeaders } from './cors';
 import { type LeapSeconds, TAI_LEAP_SECONDS } from './leap-seconds';
 import { extractNonce, type Nonce } from './nonce';
+import { decodeSFBinary, encodeSFBinary } from './sf-binary';
 import { tai64nLabel } from './time';
 
 const ALLOW_HEADER = 'GET, HEAD, OPTIONS';
@@ -74,7 +73,7 @@ export const composeSignaturePayload = (
 ): ArrayBuffer => {
   const labelBytes = textEncoder.encode(label);
   const selectorBytes = textEncoder.encode(selector);
-  const nonceBytes = decodeBase64(nonce.slice(1, -1));
+  const nonceBytes = decodeSFBinary(nonce, 'composeSignaturePayload');
 
   const buffer = new ArrayBuffer(
     DOMAIN_SEPARATOR.length +
@@ -222,7 +221,7 @@ const fromHandlerConfig = (config: TaistampHandlerConfig) => {
       headers.set(TAI64N_HEADER_KEY_SELECTOR, selector);
       headers.set(
         TAI64N_HEADER_SIGNATURE,
-        `:${encodeBase64(new Uint8Array(signature))}:`,
+        encodeSFBinary(new Uint8Array(signature)),
       );
     } :
     undefined;

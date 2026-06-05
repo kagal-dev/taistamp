@@ -33,8 +33,11 @@ import {
   VERSION,
 } from '../../dist/index.mjs';
 import {
+  decodeSFBinary,
+  encodeSFBinary,
   fromUTC,
   now,
+  SF_BINARY_PATTERN,
   TAI64_EPOCH_HI,
   tai64nLabel,
   tai64nLabelFromUTC,
@@ -69,6 +72,15 @@ function checkString(name, value, expected) {
     return;
   }
   pass(name, `= '${value}'`);
+}
+
+function checkInstance(name, value, ctor) {
+  if (!(value instanceof ctor)) {
+    const got = value?.constructor?.name ?? typeof value;
+    fail(name, `expected ${ctor.name}, got ${got}`);
+    return;
+  }
+  pass(name);
 }
 
 function checkNumber(name, value, expected) {
@@ -122,6 +134,9 @@ checkFunction('tai64nLabelFromUTC (main)', tai64nLabelFromUTCMain);
 
 // /utils subpath
 checkNumber('TAI64_EPOCH_HI', TAI64_EPOCH_HI, 0x40_00_00_00);
+checkInstance('SF_BINARY_PATTERN', SF_BINARY_PATTERN, RegExp);
+checkFunction('encodeSFBinary', encodeSFBinary);
+checkFunction('decodeSFBinary', decodeSFBinary);
 checkFunction('fromUTC', fromUTC);
 checkFunction('now', now);
 checkFunction('tai64nLabel', tai64nLabel);

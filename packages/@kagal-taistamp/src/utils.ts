@@ -7,6 +7,12 @@
 export { TAI64_EPOCH_HI } from './const';
 
 export {
+  decodeSFBinary,
+  encodeSFBinary,
+  SF_BINARY_PATTERN,
+} from './sf-binary';
+
+export {
   fromUTC,
   now,
   tai64nLabel,
