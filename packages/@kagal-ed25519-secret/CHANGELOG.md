@@ -5,6 +5,12 @@ documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- API doc model in the published package —
+  `@kagal/build-tsdoc` extracts the TSDoc surface at
+  build time into `dist/index.api.json`.
+
 ## [0.3.0] - 2026-06-02
 
 DKIM-style key-record publication and parsing, plus the
