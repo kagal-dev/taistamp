@@ -24,14 +24,17 @@ documented in this file.
   RFC 9651 §3.3.5 item syntax that `TAI-Nonce` and
   `TAI-Signature` travel in — handling previously
   internal to nonce validation and the handler.
-  Verifiers no longer hand-roll the `TAI-Signature`
-  decode; the README verify example now uses
-  `decodeSFBinary`.
 - `newNonce(byteLength?, context?)` on the main export —
   mints a client `TAI-Nonce`: random bytes framed as an
   sf-binary item, returned as a branded `Nonce`.
   `byteLength` defaults to 16 and must sit within spec
   §5.4's decoded-length bound of 7..129 octets.
+- `asSignature(value)` and `extractSignature(headers)`
+  on the main export — verify-side readers for
+  `TAI-Signature`: strict sf-binary decode to the raw
+  64-octet Ed25519 signature, with every failure
+  collapsed into `undefined`. The README verify example
+  now reads the signature through `extractSignature`.
 
 ### Changed
 
