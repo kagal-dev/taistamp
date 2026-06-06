@@ -12,9 +12,11 @@
 import {
   asLeapSeconds,
   asNonce,
+  asSignature,
   composeSignaturePayload,
   extractLeapSeconds,
   extractNonce,
+  extractSignature,
   newEd25519Signer,
   newNonce,
   newTaistampHandler,
@@ -132,8 +134,10 @@ checkFunction('composeSignaturePayload', composeSignaturePayload);
 checkFunction('asLeapSeconds', asLeapSeconds);
 checkFunction('asNonce', asNonce);
 checkFunction('newNonce', newNonce);
+checkFunction('asSignature', asSignature);
 checkFunction('extractLeapSeconds', extractLeapSeconds);
 checkFunction('extractNonce', extractNonce);
+checkFunction('extractSignature', extractSignature);
 checkFunction('tai64nLabelFromUTC (main)', tai64nLabelFromUTCMain);
 
 // /utils subpath

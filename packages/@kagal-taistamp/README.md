@@ -258,11 +258,11 @@ import {
   composeSignaturePayload,
   extractLeapSeconds,
   extractNonce,
+  extractSignature,
   newNonce,
   parseRecordToVerifier,
   readLabel,
 } from '@kagal/taistamp';
-import { decodeSFBinary } from '@kagal/taistamp/utils';
 
 // Mint the request nonce. `newNonce` returns a branded
 // `Nonce` — conformant sf-binary by construction — so
@@ -276,8 +276,20 @@ const response = await fetch(taistampURL, {
 // never `response.text()`, which UTF-8-decodes and would
 // mangle a non-ASCII octet instead of surfacing it.
 const label = await readLabel(response);
-const selector = response.headers.get('TAI-Key-Selector')!;
-const sigSf = response.headers.get('TAI-Signature')!;
+const selector = response.headers.get('TAI-Key-Selector');
+if (!selector) {
+  throw new Error('TAI-Key-Selector missing');
+}
+
+// Spec §6: `TAI-Signature` carries the raw 64-octet
+// Ed25519 signature as an sf-binary item.
+// `extractSignature` returns the decoded bytes, or
+// `undefined` whenever the field is missing,
+// duplicated, malformed, or the wrong length.
+const signature = extractSignature(response.headers);
+if (signature === undefined) {
+  throw new Error('TAI-Signature missing or malformed');
+}
 
 // Spec §5.3: a `TAI-Leap-Seconds` value outside the
 // signed-payload u32 range MUST be treated as unsigned.
@@ -325,18 +337,14 @@ const payload = composeSignaturePayload(
   selector,
   nonce,
 );
-const valid = await record.p.verify(
-  decodeSFBinary(sigSf, 'TAI-Signature'),
-  payload,
-);
+const valid = await record.p.verify(signature, payload);
 ```
 
 `composeSignaturePayload(label, leapSeconds, selector,
 nonce)` reconstructs the exact byte sequence the
 server signed; the verifier supplies only the DNS
-lookup — `decodeSFBinary` on the `@kagal/taistamp/utils`
-subpath strips the `:base64:` framing of the
-`TAI-Signature` value. `leapSeconds` must be a
+lookup — `extractSignature` hands the raw signature
+bytes straight to the `Verifier`. `leapSeconds` must be a
 branded `LeapSeconds` — obtain one from
 `extractLeapSeconds(headers)` (the verifier path) or
 `asLeapSeconds(number | undefined)` (when you already have the
@@ -453,6 +461,14 @@ For verifier-side validation of a signed response
   [spec §5.4][spec-nonce]'s 7..129 decoded octets.
 - `Nonce` — branded sf-binary nonce accepted by
   `composeSignaturePayload`.
+- `asSignature(value)` — decode a recorded
+  `TAI-Signature` value ([spec §6][spec-sign]) to the
+  raw 64-octet Ed25519 signature; returns `undefined`
+  for any value that fails sf-binary syntax or does
+  not decode to exactly 64 octets.
+- `extractSignature(headers)` — read `TAI-Signature`
+  from response headers; returns `undefined` if the
+  field is missing or fails `asSignature` validation.
 - `tai64nLabelFromUTC(utc)` — the TAI64N label for a
   UTC millisecond timestamp. Labels are fixed-width
   hex and order lexicographically, so a received
@@ -537,5 +553,6 @@ anything before the unix epoch is out of scope.
 [sf-binary]: https://datatracker.ietf.org/doc/html/rfc9651#section-3.3.5
 [spec-leap]: https://datatracker.ietf.org/doc/html/draft-mery-nagy-taistamp-00#section-5.3
 [spec-nonce]: https://datatracker.ietf.org/doc/html/draft-mery-nagy-taistamp-00#section-5.4
+[spec-sign]: https://datatracker.ietf.org/doc/html/draft-mery-nagy-taistamp-00#section-6
 [spec-verify]: https://datatracker.ietf.org/doc/html/draft-mery-nagy-taistamp-00#section-9
 [tai64n]: https://cr.yp.to/libtai/tai64.html

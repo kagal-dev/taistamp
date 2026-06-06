@@ -43,4 +43,5 @@ export {
   newNonce,
   type Nonce,
 } from './nonce';
+export { asSignature, extractSignature } from './signature';
 export { tai64nLabelFromUTC } from './time';

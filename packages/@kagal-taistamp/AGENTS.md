@@ -23,6 +23,7 @@ the package-local layout and conventions.
 │   ├── nonce.ts            # nonce branded type and header parsing
 │   ├── leap-seconds.ts     # leap-seconds branded type and header parsing
 │   ├── sf-binary.ts        # RFC 9651 sf-binary framing helpers
+│   ├── signature.ts        # TAI-Signature verify-side decoding
 │   ├── const.ts            # protocol constants
 │   ├── time.ts             # TAI64N time helpers
 │   └── __tests__/          # Vitest suites split across pools (see below)
