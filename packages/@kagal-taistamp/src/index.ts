@@ -40,6 +40,7 @@ export {
 export {
   asNonce,
   extractNonce,
+  newNonce,
   type Nonce,
 } from './nonce';
 export { tai64nLabelFromUTC } from './time';

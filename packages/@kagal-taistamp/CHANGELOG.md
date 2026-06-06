@@ -32,6 +32,11 @@ documented in this file.
   `asNonce`; a missing or malformed field collapses to
   `undefined`, matching `extractLeapSeconds`. The handler
   reads the request nonce through the same helper.
+- `newNonce(byteLength?, context?)` on the main export —
+  mints a client `TAI-Nonce`: random bytes framed as an
+  sf-binary item, returned as a branded `Nonce`.
+  `byteLength` defaults to 16 and must sit within spec
+  §5.4's decoded-length bound of 7..129 octets.
 
 ### Changed
 
