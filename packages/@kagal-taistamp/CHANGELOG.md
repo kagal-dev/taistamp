@@ -7,6 +7,12 @@ documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- API doc model in the published package —
+  `@kagal/build-tsdoc` extracts the TSDoc surface at
+  build time into `dist/index.api.json`.
+
 ## [0.1.1] - 2026-05-29
 
 Verifier-side response-body readers.

@@ -216,8 +216,9 @@ options (ESNext, bundler resolution, strict mode).
 - **obuild** for all packages (ESM + DTS).
 - `build.config.ts` defines `bundle` entries with
   sourcemaps enabled.
-- Builds print `TSDoc extraction not run` —
-  placeholder hook, no extraction performed.
+- `@kagal/build-tsdoc` supplies obuild hooks that
+  extract TSDoc doc models to `dist/*.api.json`,
+  one per bundle entry.
 - `prepare` script: `cross-test -s dist/index.mjs ||
   obuild --stub` (conditional stubbing).
 - `dev:prepare`: `obuild --stub` (unconditional).
