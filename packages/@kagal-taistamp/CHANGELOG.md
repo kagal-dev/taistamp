@@ -27,6 +27,11 @@ documented in this file.
   Verifiers no longer hand-roll the `TAI-Signature`
   decode; the README verify example now uses
   `decodeSFBinary`.
+- `newNonce(byteLength?, context?)` on the main export —
+  mints a client `TAI-Nonce`: random bytes framed as an
+  sf-binary item, returned as a branded `Nonce`.
+  `byteLength` defaults to 16 and must sit within spec
+  §5.4's decoded-length bound of 7..129 octets.
 
 ### Changed
 

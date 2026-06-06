@@ -255,16 +255,20 @@ or fall back to a strict-verify library such as
 
 ```typescript
 import {
-  asNonce,
   composeSignaturePayload,
   extractLeapSeconds,
+  newNonce,
   parseRecordToVerifier,
   readLabel,
 } from '@kagal/taistamp';
 import { decodeSFBinary } from '@kagal/taistamp/utils';
 
+// Mint the request nonce. `newNonce` returns a branded
+// `Nonce` — conformant sf-binary by construction — so
+// the same value flows into the signing path below.
+const nonce = newNonce();
 const response = await fetch(taistampURL, {
-  headers: { 'TAI-Nonce': clientNonce },
+  headers: { 'TAI-Nonce': nonce },
 });
 // `application/tai64n` is octet-typed, not text. `readLabel`
 // reads the raw body and decodes the 25-octet ASCII label;
@@ -284,16 +288,6 @@ const sigSf = response.headers.get('TAI-Signature')!;
 const leap = extractLeapSeconds(response.headers);
 if (leap === undefined) {
   throw new Error('TAI-Leap-Seconds out of range; treat as unsigned');
-}
-
-// Brand the recorded nonce so it can flow into the
-// signing path. `asNonce` returns `undefined` for any
-// value that fails sf-binary syntax or the wire
-// length range — the same "treat as absent" verdict
-// the server applied per spec §5.4.
-const nonce = asNonce(clientNonce);
-if (nonce === undefined) {
-  throw new Error('client nonce is not a valid sf-binary item');
 }
 
 // Look up the TXT record in DNS at
@@ -331,7 +325,8 @@ branded `LeapSeconds` — obtain one from
 value). Both return `undefined` for out-of-range
 input, collapsing every "treat as unsigned" case in
 [spec §5.3][spec-leap] into one verdict. `nonce` must be a branded
-`Nonce` — wrap the recorded client nonce with
+`Nonce` — `newNonce()` mints one directly; a nonce
+recorded as a plain string is branded with
 `asNonce(value)`, which returns `undefined` for any
 value that would have been treated as absent on the
 server (missing, empty, malformed sf-binary, or out
@@ -418,6 +413,12 @@ For verifier-side validation of a signed response
   returns `undefined` for any value that fails
   sf-binary syntax or the length range checked
   per [spec §5.4][spec-nonce].
+- `newNonce(byteLength?, context?)` — mint a fresh
+  client nonce: random bytes framed as an sf-binary
+  item, returned already branded — conformant by
+  construction, no `asNonce` round-trip. `byteLength`
+  defaults to 16; throws `TypeError` outside
+  [spec §5.4][spec-nonce]'s 7..129 decoded octets.
 - `Nonce` — branded sf-binary nonce accepted by
   `composeSignaturePayload`.
 - `tai64nLabelFromUTC(utc)` — the TAI64N label for a
