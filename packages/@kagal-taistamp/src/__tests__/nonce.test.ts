@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { asNonce, extractNonce, newNonce, TAI64N_HEADER_NONCE } from '..';
+import { asNonce, extractNonce, newNonce, TAISTAMP_HEADER_NONCE } from '..';
 import { encodeSFBinary, SF_BINARY_PATTERN } from '../utils';
 
 describe('asNonce', () => {
@@ -34,7 +34,7 @@ describe('asNonce', () => {
 describe('extractNonce', () => {
   it('returns the branded nonce from the request headers', () => {
     const nonce = newNonce();
-    const headers = new Headers({ [TAI64N_HEADER_NONCE]: nonce });
+    const headers = new Headers({ [TAISTAMP_HEADER_NONCE]: nonce });
     expect(extractNonce(headers)).toBe(nonce);
   });
 
@@ -43,14 +43,14 @@ describe('extractNonce', () => {
   });
 
   it('returns undefined for a malformed field', () => {
-    const headers = new Headers({ [TAI64N_HEADER_NONCE]: ':QQ==:' });
+    const headers = new Headers({ [TAISTAMP_HEADER_NONCE]: ':QQ==:' });
     expect(extractNonce(headers)).toBeUndefined();
   });
 
   it('returns undefined for a duplicated field', () => {
     const headers = new Headers();
-    headers.append(TAI64N_HEADER_NONCE, ':YWJjZGVmZw==:');
-    headers.append(TAI64N_HEADER_NONCE, ':YWJjZGVmZw==:');
+    headers.append(TAISTAMP_HEADER_NONCE, ':YWJjZGVmZw==:');
+    headers.append(TAISTAMP_HEADER_NONCE, ':YWJjZGVmZw==:');
     expect(extractNonce(headers)).toBeUndefined();
   });
 });

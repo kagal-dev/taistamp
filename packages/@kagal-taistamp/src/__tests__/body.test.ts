@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { readASCII, readLabel, TAI64N_CONTENT_LENGTH } from '..';
+import { readASCII, readLabel } from '..';
+import { TAI64N_LABEL_LENGTH } from '../utils';
 
 const label = '@4000000069f2594108a48640';
 
@@ -36,7 +37,7 @@ describe('readASCII', () => {
 
 describe('readLabel', () => {
   it('returns the label for a well-formed 25-octet body', async () => {
-    expect(label).toHaveLength(TAI64N_CONTENT_LENGTH);
+    expect(label).toHaveLength(TAI64N_LABEL_LENGTH);
     expect(await readLabel(new Response(label))).toBe(label);
   });
 
@@ -51,7 +52,7 @@ describe('readLabel', () => {
   });
 
   it('throws TypeError on a non-ASCII octet in a 25-octet body', async () => {
-    const body = new Uint8Array(TAI64N_CONTENT_LENGTH).fill(0x80);
+    const body = new Uint8Array(TAI64N_LABEL_LENGTH).fill(0x80);
     await expect(readLabel(new Response(body)))
       .rejects.toThrow(/expected 7-bit ASCII, got 0x80/);
   });

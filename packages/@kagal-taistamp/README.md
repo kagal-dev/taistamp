@@ -536,8 +536,10 @@ import { tai64nLabel } from '@kagal/taistamp/utils';
 | `tai64nLabel(t?)` | 25-byte label string for a timestamp (or `now()`) |
 | `tai64nLabelFromUTC(utc)` | Shortcut for `tai64nLabel(fromUTC(utc))`; also on the main export |
 | `tai64nLabelToUTC(label, leapSeconds?)` | Inverse of `tai64nLabelFromUTC` — label → `Date.now()`-shaped ms, or `undefined` if malformed; also on the main export |
-| `TAI64_EPOCH_HI` | `0x40000000` — TAI64 epoch high word folded into a label's seconds field |
 | `TAI64N_LABEL_PATTERN` | `RegExp` matching the TAI64N label wire form (`@` + 24 hex digits) |
+| `TAI64N_LABEL_LENGTH` | `25` — byte length of a TAI64N label |
+| `TAI64N_CONTENT_TYPE` | `application/tai64n` — media type of a label body |
+| `TAI64N_EPOCH_HI` | `0x40000000` — TAI64 epoch high word folded into a label's seconds field |
 
 `fromUTC` applies the constant `TAI_LEAP_SECONDS`
 (currently 37 seconds). These helpers deal in the
@@ -549,12 +551,12 @@ anything before the unix epoch is out of scope.
 | Name | Value |
 | ---- | ----- |
 | `TAISTAMP_PATH` | `/.well-known/taistamp` |
-| `TAI64N_CONTENT_TYPE` | `application/tai64n` |
-| `TAI64N_CONTENT_LENGTH` | `25` |
-| `TAI64N_HEADER_KEY_SELECTOR` | `TAI-Key-Selector` |
-| `TAI64N_HEADER_LEAP_SECONDS` | `TAI-Leap-Seconds` |
-| `TAI64N_HEADER_NONCE` | `TAI-Nonce` |
-| `TAI64N_HEADER_SIGNATURE` | `TAI-Signature` |
+| `TAISTAMP_CONTENT_TYPE` | `application/tai64n` |
+| `TAISTAMP_CONTENT_LENGTH` | `25` |
+| `TAISTAMP_HEADER_KEY_SELECTOR` | `TAI-Key-Selector` |
+| `TAISTAMP_HEADER_LEAP_SECONDS` | `TAI-Leap-Seconds` |
+| `TAISTAMP_HEADER_NONCE` | `TAI-Nonce` |
+| `TAISTAMP_HEADER_SIGNATURE` | `TAI-Signature` |
 | `TAI_LEAP_SECONDS` | `37` (current TAI − UTC offset) |
 | `TAI_LEAP_SECONDS_MAX` | `0xFFFFFFFF` (signed-payload u32 cap) |
 

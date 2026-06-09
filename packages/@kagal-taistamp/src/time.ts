@@ -1,4 +1,4 @@
-import { TAI64_EPOCH_HI, TAI64N_LABEL_PATTERN } from './const';
+import { TAI64N_EPOCH_HI, TAI64N_LABEL_PATTERN } from './const';
 import { type LeapSeconds, TAI_LEAP_SECONDS } from './leap-seconds';
 
 type timestamp = {
@@ -42,7 +42,7 @@ export const now = (): timestamp => {
 export const tai64nLabel = (value?: timestamp): string => {
   const { sec, nano } = value ?? now();
 
-  const secHi = Math.trunc(sec / u32Range) + TAI64_EPOCH_HI;
+  const secHi = Math.trunc(sec / u32Range) + TAI64N_EPOCH_HI;
   const secLo = sec % u32Range;
 
   const secHiHex = secHi.toString(16).padStart(8, '0');
@@ -98,9 +98,9 @@ export const tai64nLabelToUTC = (
   // words: parsing all 16 hex digits at once yields
   // 2^62 + sec ≈ 4.6e18, whose float64 ULP (1024) has
   // already discarded sec's low bits before the epoch
-  // base could be subtracted. Removing TAI64_EPOCH_HI on
+  // base could be subtracted. Removing TAI64N_EPOCH_HI on
   // the high word alone keeps every term exact.
-  const secHi = Number.parseInt(label.slice(1, 9), 16) - TAI64_EPOCH_HI;
+  const secHi = Number.parseInt(label.slice(1, 9), 16) - TAI64N_EPOCH_HI;
   const secLo = Number.parseInt(label.slice(9, 17), 16);
   const nano = Number.parseInt(label.slice(17, 25), 16);
 

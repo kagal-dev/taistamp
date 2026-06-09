@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { asSignature, extractSignature, TAI64N_HEADER_SIGNATURE } from '..';
+import { asSignature, extractSignature, TAISTAMP_HEADER_SIGNATURE } from '..';
 import { encodeSFBinary } from '../utils';
 
 const signature = Uint8Array.from({ length: 64 }, (_, i) => i);
@@ -29,7 +29,7 @@ describe('asSignature', () => {
 
 describe('extractSignature', () => {
   it('returns the decoded signature from response headers', () => {
-    const headers = new Headers({ [TAI64N_HEADER_SIGNATURE]: wire });
+    const headers = new Headers({ [TAISTAMP_HEADER_SIGNATURE]: wire });
     expect(extractSignature(headers)).toEqual(signature);
   });
 
@@ -38,14 +38,14 @@ describe('extractSignature', () => {
   });
 
   it('returns undefined for a malformed field', () => {
-    const headers = new Headers({ [TAI64N_HEADER_SIGNATURE]: '::' });
+    const headers = new Headers({ [TAISTAMP_HEADER_SIGNATURE]: '::' });
     expect(extractSignature(headers)).toBeUndefined();
   });
 
   it('returns undefined for a duplicated field', () => {
     const headers = new Headers();
-    headers.append(TAI64N_HEADER_SIGNATURE, wire);
-    headers.append(TAI64N_HEADER_SIGNATURE, wire);
+    headers.append(TAISTAMP_HEADER_SIGNATURE, wire);
+    headers.append(TAISTAMP_HEADER_SIGNATURE, wire);
     expect(extractSignature(headers)).toBeUndefined();
   });
 });

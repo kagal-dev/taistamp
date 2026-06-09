@@ -4,12 +4,12 @@ import {
 } from '@kagal/ed25519-secret';
 
 import {
-  TAI64N_CONTENT_LENGTH,
-  TAI64N_CONTENT_TYPE,
-  TAI64N_HEADER_KEY_SELECTOR,
-  TAI64N_HEADER_LEAP_SECONDS,
-  TAI64N_HEADER_NONCE,
-  TAI64N_HEADER_SIGNATURE,
+  TAISTAMP_CONTENT_LENGTH,
+  TAISTAMP_CONTENT_TYPE,
+  TAISTAMP_HEADER_KEY_SELECTOR,
+  TAISTAMP_HEADER_LEAP_SECONDS,
+  TAISTAMP_HEADER_NONCE,
+  TAISTAMP_HEADER_SIGNATURE,
 } from './const';
 import { buildCORSHeaders } from './cors';
 import { type LeapSeconds, TAI_LEAP_SECONDS } from './leap-seconds';
@@ -218,9 +218,9 @@ const fromHandlerConfig = (config: TaistampHandlerConfig) => {
         label, TAI_LEAP_SECONDS, selector, nonce,
       );
       const signature = await signer.sign(payload);
-      headers.set(TAI64N_HEADER_KEY_SELECTOR, selector);
+      headers.set(TAISTAMP_HEADER_KEY_SELECTOR, selector);
       headers.set(
-        TAI64N_HEADER_SIGNATURE,
+        TAISTAMP_HEADER_SIGNATURE,
         encodeSFBinary(new Uint8Array(signature)),
       );
     } :
@@ -309,14 +309,14 @@ export const newTaistampHandler = (
 
     const headers = new Headers({
       'cache-control': 'no-store',
-      'content-length': String(TAI64N_CONTENT_LENGTH),
-      'content-type': TAI64N_CONTENT_TYPE,
-      [TAI64N_HEADER_LEAP_SECONDS]: String(TAI_LEAP_SECONDS),
+      'content-length': String(TAISTAMP_CONTENT_LENGTH),
+      'content-type': TAISTAMP_CONTENT_TYPE,
+      [TAISTAMP_HEADER_LEAP_SECONDS]: String(TAI_LEAP_SECONDS),
       ...corsHeaders.response,
     });
 
     if (nonce && request.method === 'GET') {
-      headers.set(TAI64N_HEADER_NONCE, nonce);
+      headers.set(TAISTAMP_HEADER_NONCE, nonce);
       if (addSignature) {
         await addSignature(headers, label, nonce);
       }

@@ -1,6 +1,6 @@
 import { getRandom, isInRange } from '@kagal/ed25519-secret';
 
-import { TAI64N_HEADER_NONCE } from './const';
+import { TAISTAMP_HEADER_NONCE } from './const';
 import { encodeSFBinary, SF_BINARY_PATTERN } from './sf-binary';
 
 /**
@@ -83,7 +83,7 @@ export const asNonce = (value: string): Nonce | undefined => {
  * validation.
  */
 export const extractNonce = (headers: Headers): Nonce | undefined => {
-  const value = headers.get(TAI64N_HEADER_NONCE);
+  const value = headers.get(TAISTAMP_HEADER_NONCE);
   return value === null ? undefined : asNonce(value);
 };
 

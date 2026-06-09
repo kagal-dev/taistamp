@@ -1,6 +1,6 @@
 import { type Bytes } from '@kagal/ed25519-secret';
 
-import { TAI64N_HEADER_SIGNATURE } from './const';
+import { TAISTAMP_HEADER_SIGNATURE } from './const';
 import { decodeSFBinary, SF_BINARY_PATTERN } from './sf-binary';
 
 /**
@@ -34,6 +34,6 @@ export const asSignature = (value: string): Bytes | undefined => {
 export const extractSignature = (
   headers: Headers,
 ): Bytes | undefined => {
-  const value = headers.get(TAI64N_HEADER_SIGNATURE);
+  const value = headers.get(TAISTAMP_HEADER_SIGNATURE);
   return value === null ? undefined : asSignature(value);
 };

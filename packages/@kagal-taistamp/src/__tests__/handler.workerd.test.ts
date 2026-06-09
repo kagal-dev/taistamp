@@ -8,9 +8,9 @@ import {
   extractLeapSeconds,
   newTaistampHandler,
   readLabel,
-  TAI64N_HEADER_KEY_SELECTOR,
-  TAI64N_HEADER_NONCE,
-  TAI64N_HEADER_SIGNATURE,
+  TAISTAMP_HEADER_KEY_SELECTOR,
+  TAISTAMP_HEADER_NONCE,
+  TAISTAMP_HEADER_SIGNATURE,
   TAISTAMP_PATH,
 } from '..';
 
@@ -35,7 +35,7 @@ describe('newTaistampHandler (workerd pool)', () => {
 
     const response = await handler(
       new Request(baseURL, {
-        headers: { [TAI64N_HEADER_NONCE]: nonce },
+        headers: { [TAISTAMP_HEADER_NONCE]: nonce },
       }),
     );
 
@@ -43,9 +43,9 @@ describe('newTaistampHandler (workerd pool)', () => {
     const label = await readLabel(response);
     const leap = extractLeapSeconds(response.headers);
     expect(leap).toBeDefined();
-    expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBe(selector);
+    expect(response.headers.get(TAISTAMP_HEADER_KEY_SELECTOR)).toBe(selector);
 
-    const sigHeader = response.headers.get(TAI64N_HEADER_SIGNATURE);
+    const sigHeader = response.headers.get(TAISTAMP_HEADER_SIGNATURE);
     expect(sigHeader).not.toBeNull();
     const signature = decodeBase64(sigHeader!.slice(1, -1));
 

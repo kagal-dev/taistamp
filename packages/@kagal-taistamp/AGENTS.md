@@ -24,7 +24,7 @@ the package-local layout and conventions.
 │   ├── leap-seconds.ts     # leap-seconds branded type and header parsing
 │   ├── sf-binary.ts        # RFC 9651 sf-binary framing helpers
 │   ├── signature.ts        # TAI-Signature verify-side decoding
-│   ├── const.ts            # protocol constants
+│   ├── const.ts            # protocol and label-format constants
 │   ├── time.ts             # TAI64N time helpers
 │   └── __tests__/          # Vitest suites split across pools (see below)
 └── wrangler.jsonc          # workerd test pool stub

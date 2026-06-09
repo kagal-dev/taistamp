@@ -1,6 +1,6 @@
 import { decodeASCII } from '@kagal/ed25519-secret';
 
-import { TAI64N_CONTENT_LENGTH } from './const';
+import { TAI64N_LABEL_LENGTH } from './const';
 
 /**
  * Read a response body as a 7-bit ASCII string.
@@ -31,7 +31,7 @@ export const readASCII = async (
  *
  * Builds on {@link readASCII}, adding the structural
  * invariant every label satisfies: the body is exactly
- * `TAI64N_CONTENT_LENGTH` octets. Throws `TypeError` if the
+ * `TAI64N_LABEL_LENGTH` octets. Throws `TypeError` if the
  * length differs or the body carries a non-ASCII octet;
  * pass `context` to prefix that error message. Consumes the
  * response body.
@@ -43,10 +43,10 @@ export const readLabel = async (
   const label = await readASCII(response, context);
   // readASCII admitted only 7-bit bytes, so the string has
   // one code unit per octet — its length is the octet count.
-  if (label.length !== TAI64N_CONTENT_LENGTH) {
+  if (label.length !== TAI64N_LABEL_LENGTH) {
     const prefix = context ? `${context}: ` : '';
     throw new TypeError(
-      `${prefix}expected ${TAI64N_CONTENT_LENGTH}-octet ` +
+      `${prefix}expected ${TAI64N_LABEL_LENGTH}-octet ` +
       `TAI64N label, got ${label.length}`,
     );
   }
