@@ -5,6 +5,17 @@ documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- `newSecret(selector, context?)` — mint a fresh
+  `selector:base64` secret: validates the selector
+  against `SELECTOR_PATTERN`, then encodes a freshly
+  generated 32-byte Ed25519 seed from
+  `crypto.getRandomValues`. The mint counterpart to
+  `parseSecretToKey`, completing the
+  `newSecret` → `parseSecretToKey` → `makeKeyRecords`
+  provisioning journey in one package.
+
 ## [0.3.1] - 2026-06-07
 
 API doc model publication and a devDependency refresh.

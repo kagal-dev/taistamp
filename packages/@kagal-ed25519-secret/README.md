@@ -473,6 +473,14 @@ assertValidSelector(value, 'config');
     `publicJWK.kid`.
   - `signer: Signer` — pre-built, backed by `signKey`.
   - `verifier: Verifier` — pre-built, backed by `publicKey`.
+- `newSecret(selector, context?)` — mint a fresh
+  `selector:base64` secret. Validates `selector`
+  against `SELECTOR_PATTERN`, then encodes a freshly
+  generated 32-byte Ed25519 seed
+  (`crypto.getRandomValues`) as standard base64. No
+  selector default — the caller supplies it. `context`
+  prefixes any thrown error and defaults to
+  `'newSecret'`.
 - `parseSecretToKey(secretString, context?)` — parse
   a `selector:base64` secret into a `KeyConfig`. The
   base64 portion is a 32-byte Ed25519 seed (standard

@@ -22,6 +22,7 @@ import {
   makeKeyRecords,
   newKeyPair,
   newKeys,
+  newSecret,
   newSigner,
   parseSecretsToKeys,
   parseSecretToKey,
@@ -80,6 +81,7 @@ checkFunction('newKeys', newKeys);
 checkFunction('makeJWKS', makeJWKS);
 checkFunction('makeKeyRecords', makeKeyRecords);
 checkFunction('asEd25519Seed', asEd25519Seed);
+checkFunction('newSecret', newSecret);
 checkFunction('parseSecretToKey', parseSecretToKey);
 checkFunction('parseSecretsToKeys', parseSecretsToKeys);
 checkFunction('newSigner', newSigner);

@@ -26,6 +26,7 @@ export {
 } from './key-record';
 export {
   type KeyConfig,
+  newSecret,
   parseSecretsToKeys,
   parseSecretToKey,
 } from './secret';

@@ -1,7 +1,38 @@
+import { ED25519_KEY_BYTES } from './algo';
 import { asEd25519Seed, type KeyContext, newKeys } from './key';
 import { assertValidSelector } from './selector';
 import { newSigner, type Signer } from './signer';
+import { encodeBase64, getRandom } from './utils';
 import { newVerifier, type Verifier } from './verifier';
+
+/**
+ * Mint a fresh `selector:base64` secret — the wire form
+ * {@link parseSecretToKey} consumes. The base64 portion is
+ * a freshly-generated 32-byte Ed25519 private seed
+ * (RFC 8032) from `crypto.getRandomValues`, encoded as
+ * standard base64 (RFC 4648 §4); the selector is validated
+ * against {@link SELECTOR_PATTERN}.
+ *
+ * The caller supplies the selector — there is no default
+ * here. Surface any usability fallback (e.g. `'default'`)
+ * at the call site.
+ *
+ * @param selector - single-label selector, validated
+ *   against {@link SELECTOR_PATTERN}
+ * @param context - prefix prepended to the thrown error
+ *   message; defaults to `'newSecret'`
+ * @returns a `selector:base64` secret, ready to persist or
+ *   to feed back into {@link parseSecretToKey}
+ * @throws TypeError if the selector fails
+ *   {@link SELECTOR_PATTERN}
+ */
+export const newSecret = (
+  selector: string,
+  context: string = 'newSecret',
+): string => {
+  assertValidSelector(selector, context);
+  return `${selector}:${encodeBase64(getRandom(ED25519_KEY_BYTES, context))}`;
+};
 
 /**
  * Parsed `selector:base64` secret. Extends
