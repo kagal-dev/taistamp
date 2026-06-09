@@ -5,6 +5,11 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-19
+
+Mint-side `selector:base64` secret generation, plus the
+`atLeast` and `isInRange` numeric helpers.
+
 ### Added
 
 - `newSecret(selector, context?)` — mint a fresh
