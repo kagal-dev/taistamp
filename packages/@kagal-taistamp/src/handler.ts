@@ -119,11 +119,11 @@ export interface TaistampHandlerConfig {
    * Verifiers look up the public key at
    * `<selector>._taistamp.<host>` in DNS.
    *
-   * Must match `[A-Za-z][A-Za-z0-9_-]{0,62}` (a single
-   * DNS label starting with a letter, using
-   * DKIM-compatible characters and a valid sf-token);
-   * rotate by changing the selector and publishing a
-   * new TXT record.
+   * Must match `[A-Za-z]([A-Za-z0-9_-]{0,61}[A-Za-z0-9])?` —
+   * a single DNS-safe label that starts with a letter,
+   * ends with a letter or digit, and is also a valid
+   * Structured Field token; rotate by changing the
+   * selector and publishing a new TXT record.
    */
   selector?: string
 
@@ -166,7 +166,7 @@ export interface TaistampHandlerConfig {
  *
  * @throws TypeError if `signer` and `selector` are not
  *   both set or both unset, or if `selector` does not
- *   match `[A-Za-z][A-Za-z0-9_-]{0,62}`.
+ *   match `[A-Za-z]([A-Za-z0-9_-]{0,61}[A-Za-z0-9])?`.
  */
 const validateHandlerConfig = (
   config: TaistampHandlerConfig,
@@ -239,7 +239,7 @@ const fromHandlerConfig = (config: TaistampHandlerConfig) => {
  *
  * @throws TypeError if `signer` and `selector` are not
  *   both set or both unset, or if `selector` does not
- *   match `[A-Za-z][A-Za-z0-9_-]{0,62}`.
+ *   match `[A-Za-z]([A-Za-z0-9_-]{0,61}[A-Za-z0-9])?`.
  *
  * @remarks
  * Behaviour:

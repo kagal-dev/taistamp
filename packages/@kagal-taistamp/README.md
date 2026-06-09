@@ -163,7 +163,7 @@ const taistamp = newTaistampHandler({ selector, signer });
 `signer` and `selector` are co-required: pass both to
 sign, neither for an unsigned handler. Construction
 throws if only one is supplied, or if `selector` does
-not match `/^[A-Za-z](?:[\dA-Za-z_-]{0,61}[\dA-Za-z])?$/`
+not match `[A-Za-z]([A-Za-z0-9_-]{0,61}[A-Za-z0-9])?`
 (a single DNS-safe label that starts with a letter,
 ends with a letter or digit, and is also a valid
 Structured Field token).

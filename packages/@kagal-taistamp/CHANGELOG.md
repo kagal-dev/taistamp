@@ -102,6 +102,16 @@ documented in this file.
   the `TAI64N_` format space. Both stay on `/utils`, so the
   alias keeps existing imports working.
 
+### Fixed
+
+- Selector-pattern prose in the handler's `selector` field
+  doc and construction `@throws` clauses — shown as
+  `[A-Za-z][A-Za-z0-9_-]{0,62}`, which admits a trailing
+  `_`/`-` that `SELECTOR_PATTERN` rejects. Now shown as
+  `[A-Za-z]([A-Za-z0-9_-]{0,61}[A-Za-z0-9])?`, ending in a
+  letter or digit; the runtime validation was always
+  correct.
+
 ## [0.1.2] - 2026-06-07
 
 API doc model publication and a devDependency refresh.
