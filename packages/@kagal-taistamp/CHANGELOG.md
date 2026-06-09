@@ -63,6 +63,10 @@ documented in this file.
   `Content-Disposition: inline`, so a browser opening
   `/.well-known/taistamp` renders the TAI64N label in place
   rather than offering it as a download.
+- `corsMaxAge` handler option — sets the pre-flight
+  `Access-Control-Max-Age` in seconds (default `600`). A
+  value below the spec §5.2 floor of 600 clamps up to it;
+  a non-integer or negative value throws at construction.
 
 ### Changed
 

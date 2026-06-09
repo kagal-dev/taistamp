@@ -95,13 +95,19 @@ entirely.
 newTaistampHandler();                                // cors: '*' (default)
 newTaistampHandler({ cors: 'https://example.com' }); // scoped origin
 newTaistampHandler({ cors: false });                 // CORS-specific headers off
+newTaistampHandler({ corsMaxAge: 86400 });           // pre-flight cache 24h
 ```
+
+`corsMaxAge` (seconds, default `600`) sets the pre-flight
+`Access-Control-Max-Age`. The spec §5.2 floor is 600, so a
+smaller value clamps up to it; the field is ignored when
+`cors` is `false`.
 
 When CORS is enabled, responses carry:
 
 | Response | CORS headers added | `Vary: Origin` (scoped origin only) |
 | -------- | ------------------ | ----------------------------------- |
-| `OPTIONS` 200 | `Access-Control-Allow-Origin`, `Access-Control-Allow-Methods: GET, HEAD`, `Access-Control-Allow-Headers: TAI-Nonce`, `Access-Control-Expose-Headers: TAI-Leap-Seconds, TAI-Nonce, TAI-Key-Selector, TAI-Signature`, `Access-Control-Max-Age: 600` | yes |
+| `OPTIONS` 200 | `Access-Control-Allow-Origin`, `Access-Control-Allow-Methods: GET, HEAD`, `Access-Control-Allow-Headers: TAI-Nonce`, `Access-Control-Expose-Headers: TAI-Leap-Seconds, TAI-Nonce, TAI-Key-Selector, TAI-Signature`, `Access-Control-Max-Age` (default `600`, see `corsMaxAge`) | yes |
 | `GET` / `HEAD` 200 | `Access-Control-Allow-Origin`, `Access-Control-Expose-Headers` (so browser JS can read the `TAI-*` headers) | yes |
 | `405` | `Access-Control-Allow-Origin` | yes |
 
@@ -393,10 +399,12 @@ rejected.
   [Signing the response](#signing-the-response) for
   signed responses, and
   [CORS](#cors) for cross-origin policy.
-- `TaistampHandlerConfig` — `{ cors?, selector?,
-  signer? }`. `cors` accepts `'*'` (default), a
-  specific origin string, or `false`; `signer` and
-  `selector` are co-required.
+- `TaistampHandlerConfig` — `{ cors?, corsMaxAge?,
+  selector?, signer? }`. `cors` accepts `'*'`
+  (default), a specific origin string, or `false`;
+  `corsMaxAge` is the pre-flight `Access-Control-Max-Age`
+  in seconds (default `600`, clamped up to a 600 floor);
+  `signer` and `selector` are co-required.
 
 ### Signer and verifier
 

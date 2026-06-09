@@ -427,6 +427,24 @@ describe('newTaistampHandler', () => {
         cors: 1 as unknown as string,
       })).toThrow(/cors must be false or a string origin/);
     });
+
+    it('throws on a non-integer corsMaxAge', () => {
+      expect(() => newTaistampHandler({
+        corsMaxAge: 599.5,
+      })).toThrow(/corsMaxAge must be a non-negative integer/);
+    });
+
+    it('throws on a negative corsMaxAge', () => {
+      expect(() => newTaistampHandler({
+        corsMaxAge: -1,
+      })).toThrow(/corsMaxAge must be a non-negative integer/);
+    });
+
+    it('throws on a NaN corsMaxAge', () => {
+      expect(() => newTaistampHandler({
+        corsMaxAge: Number.NaN,
+      })).toThrow(/corsMaxAge must be a non-negative integer/);
+    });
   });
 });
 

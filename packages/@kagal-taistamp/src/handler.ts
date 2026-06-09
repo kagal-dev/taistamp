@@ -1,5 +1,6 @@
 import {
   assertValidSelector,
+  isInRange,
   type Signer,
 } from '@kagal/ed25519-secret';
 
@@ -144,7 +145,8 @@ export interface TaistampHandlerConfig {
    * gains `Access-Control-Allow-Origin`; pre-flight
    * `OPTIONS` also carries `-Allow-Methods`,
    * `-Allow-Headers`, `-Expose-Headers`, and
-   * `-Max-Age: 600` per spec §5.2; success
+   * `-Max-Age` (default 600s, see {@link corsMaxAge})
+   * per spec §5.2; success
    * `GET` / `HEAD` carry `-Expose-Headers` so browser
    * JS can read the `TAI-*` response headers. A
    * non-`'*'` value adds `Vary: Origin` so caches can
@@ -155,6 +157,16 @@ export interface TaistampHandlerConfig {
    * `Allow: GET, HEAD, OPTIONS` per RFC 9110 §9.3.7.
    */
   cors?: false | string
+
+  /**
+   * `Access-Control-Max-Age` for pre-flight `OPTIONS`
+   * responses, in seconds. Defaults to 600 (10 minutes,
+   * the spec §5.2 floor); a value below 600 clamps up to
+   * it so the pre-flight stays spec-compliant. Ignored
+   * when `cors` is `false`. Must be a non-negative
+   * integer.
+   */
+  corsMaxAge?: number
 }
 
 /**
@@ -165,13 +177,14 @@ export interface TaistampHandlerConfig {
  * first request.
  *
  * @throws TypeError if `signer` and `selector` are not
- *   both set or both unset, or if `selector` does not
- *   match `[A-Za-z]([A-Za-z0-9_-]{0,61}[A-Za-z0-9])?`.
+ *   both set or both unset, if `selector` does not match
+ *   `[A-Za-z]([A-Za-z0-9_-]{0,61}[A-Za-z0-9])?`, or if
+ *   `corsMaxAge` is not a non-negative integer.
  */
 const validateHandlerConfig = (
   config: TaistampHandlerConfig,
 ): TaistampHandlerConfig => {
-  const { cors, selector, signer } = config;
+  const { cors, corsMaxAge, selector, signer } = config;
 
   if ((signer === undefined) !== (selector === undefined)) {
     throw new TypeError(
@@ -181,6 +194,11 @@ const validateHandlerConfig = (
   if (cors !== undefined && cors !== false && typeof cors !== 'string') {
     throw new TypeError(
       'newTaistampHandler: cors must be false or a string origin',
+    );
+  }
+  if (corsMaxAge !== undefined && !isInRange(corsMaxAge, 0)) {
+    throw new TypeError(
+      'newTaistampHandler: corsMaxAge must be a non-negative integer',
     );
   }
   if (selector !== undefined) {
@@ -204,9 +222,9 @@ const validateHandlerConfig = (
  * @throws TypeError per {@link validateHandlerConfig}.
  */
 const fromHandlerConfig = (config: TaistampHandlerConfig) => {
-  const { cors, selector, signer } = validateHandlerConfig(config);
+  const { cors, corsMaxAge, selector, signer } = validateHandlerConfig(config);
 
-  const corsHeaders = buildCORSHeaders(cors);
+  const corsHeaders = buildCORSHeaders(cors, corsMaxAge);
 
   const addSignature = selector !== undefined && signer !== undefined ?
     async (
@@ -238,8 +256,9 @@ const fromHandlerConfig = (config: TaistampHandlerConfig) => {
  *   route handler.
  *
  * @throws TypeError if `signer` and `selector` are not
- *   both set or both unset, or if `selector` does not
- *   match `[A-Za-z]([A-Za-z0-9_-]{0,61}[A-Za-z0-9])?`.
+ *   both set or both unset, if `selector` does not match
+ *   `[A-Za-z]([A-Za-z0-9_-]{0,61}[A-Za-z0-9])?`, or if
+ *   `corsMaxAge` is not a non-negative integer.
  *
  * @remarks
  * Behaviour:

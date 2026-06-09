@@ -30,6 +30,42 @@ describe('CORS', () => {
     expect(response.headers.get('vary')).toBeNull();
   });
 
+  it('uses a corsMaxAge above the 600 floor verbatim', async () => {
+    const handler = newTaistampHandler({ corsMaxAge: 7200 });
+    const response = await handler(
+      new Request(baseURL, { method: 'OPTIONS' }),
+    );
+
+    expect(response.headers.get('access-control-max-age')).toBe('7200');
+  });
+
+  it('clamps a corsMaxAge just below the floor up to 600', async () => {
+    const handler = newTaistampHandler({ corsMaxAge: 599 });
+    const response = await handler(
+      new Request(baseURL, { method: 'OPTIONS' }),
+    );
+
+    expect(response.headers.get('access-control-max-age')).toBe('600');
+  });
+
+  it('clamps a zero corsMaxAge up to the 600 floor', async () => {
+    const handler = newTaistampHandler({ corsMaxAge: 0 });
+    const response = await handler(
+      new Request(baseURL, { method: 'OPTIONS' }),
+    );
+
+    expect(response.headers.get('access-control-max-age')).toBe('600');
+  });
+
+  it('ignores corsMaxAge when cors=false', async () => {
+    const handler = newTaistampHandler({ cors: false, corsMaxAge: 7200 });
+    const response = await handler(
+      new Request(baseURL, { method: 'OPTIONS' }),
+    );
+
+    expect(response.headers.get('access-control-max-age')).toBeNull();
+  });
+
   it('honours a specific origin and adds Vary: Origin', async () => {
     const origin = 'https://example.com';
     const handler = newTaistampHandler({ cors: origin });
