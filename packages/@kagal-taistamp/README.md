@@ -262,6 +262,7 @@ import {
   newNonce,
   parseRecordToVerifier,
   readLabel,
+  tai64nLabelToUTC,
 } from '@kagal/taistamp';
 
 // Mint the request nonce. `newNonce` returns a branded
@@ -338,6 +339,18 @@ const payload = composeSignaturePayload(
   nonce,
 );
 const valid = await record.p.verify(signature, payload);
+if (!valid) {
+  throw new Error('signature does not verify');
+}
+
+// The signature checks out, so the label is trustworthy.
+// `tai64nLabelToUTC` decodes it to `Date.now()`-shaped
+// milliseconds — the server's signed time — honouring the
+// leap count the response declared.
+const verifiedAt = tai64nLabelToUTC(label, leap);
+if (verifiedAt === undefined) {
+  throw new Error('TAI64N label malformed');
+}
 ```
 
 `composeSignaturePayload(label, leapSeconds, selector,
@@ -475,6 +488,12 @@ For verifier-side validation of a signed response
   label can be freshness-checked between the labels
   of `Date.now() - skew` and `Date.now() + skew`
   without decoding it.
+- `tai64nLabelToUTC(label, leapSeconds?)` — the
+  inverse: recover the `Date.now()`-shaped UTC
+  milliseconds behind a verified label, so a checked
+  response yields a usable time. Returns `undefined`
+  for a malformed label; `leapSeconds` defaults to the
+  current `TAI_LEAP_SECONDS`.
 
 ### sf-binary helpers
 
@@ -516,7 +535,9 @@ import { tai64nLabel } from '@kagal/taistamp/utils';
 | `fromUTC(utc)` | `Date.now()`-shaped milliseconds → TAI timestamp |
 | `tai64nLabel(t?)` | 25-byte label string for a timestamp (or `now()`) |
 | `tai64nLabelFromUTC(utc)` | Shortcut for `tai64nLabel(fromUTC(utc))`; also on the main export |
+| `tai64nLabelToUTC(label, leapSeconds?)` | Inverse of `tai64nLabelFromUTC` — label → `Date.now()`-shaped ms, or `undefined` if malformed; also on the main export |
 | `TAI64_EPOCH_HI` | `0x40000000` — TAI64 epoch high word folded into a label's seconds field |
+| `TAI64N_LABEL_PATTERN` | `RegExp` matching the TAI64N label wire form (`@` + 24 hex digits) |
 
 `fromUTC` applies the constant `TAI_LEAP_SECONDS`
 (currently 37 seconds). These helpers deal in the

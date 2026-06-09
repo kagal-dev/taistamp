@@ -6,6 +6,9 @@ export const TAI64N_PATH = TAISTAMP_PATH;
 export const TAI64N_CONTENT_TYPE = 'application/tai64n';
 export const TAI64N_CONTENT_LENGTH = 1 + 16 + 8; // '@' + sec (16 hex chars) + nano (8 hex chars)
 
+/** `@` followed by 24 hex digits — the TAI64N label wire form. */
+export const TAI64N_LABEL_PATTERN = /^@[\da-fA-F]{24}$/;
+
 export const TAI64N_HEADER_KEY_SELECTOR = 'TAI-Key-Selector';
 export const TAI64N_HEADER_LEAP_SECONDS = 'TAI-Leap-Seconds';
 export const TAI64N_HEADER_NONCE = 'TAI-Nonce';

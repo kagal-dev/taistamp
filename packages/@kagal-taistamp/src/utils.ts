@@ -4,7 +4,7 @@
  * protocol-shaped main surface.
  */
 
-export { TAI64_EPOCH_HI } from './const';
+export { TAI64_EPOCH_HI, TAI64N_LABEL_PATTERN } from './const';
 
 export {
   decodeSFBinary,
@@ -17,4 +17,5 @@ export {
   now,
   tai64nLabel,
   tai64nLabelFromUTC,
+  tai64nLabelToUTC,
 } from './time';
