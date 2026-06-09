@@ -58,23 +58,23 @@ export const buildCORSHeaders = (
   }
   const origin = cors || '*';
   const vary: Record<string, string> =
-    origin === '*' ? {} : { vary: 'Origin' };
+    origin === '*' ? {} : { Vary: 'Origin' };
   return {
     error: {
-      'access-control-allow-origin': origin,
+      'Access-Control-Allow-Origin': origin,
       ...vary,
     },
     preflight: {
-      'access-control-allow-origin': origin,
-      'access-control-allow-methods': CORS_ALLOW_METHODS,
-      'access-control-allow-headers': CORS_ALLOW_HEADERS,
-      'access-control-expose-headers': CORS_EXPOSE_HEADERS,
-      'access-control-max-age': CORS_MAX_AGE,
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Methods': CORS_ALLOW_METHODS,
+      'Access-Control-Allow-Headers': CORS_ALLOW_HEADERS,
+      'Access-Control-Expose-Headers': CORS_EXPOSE_HEADERS,
+      'Access-Control-Max-Age': CORS_MAX_AGE,
       ...vary,
     },
     response: {
-      'access-control-allow-origin': origin,
-      'access-control-expose-headers': CORS_EXPOSE_HEADERS,
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Expose-Headers': CORS_EXPOSE_HEADERS,
       ...vary,
     },
   };

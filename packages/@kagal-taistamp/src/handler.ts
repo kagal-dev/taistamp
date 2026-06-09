@@ -293,14 +293,14 @@ export const newTaistampHandler = (
     if (request.method === 'OPTIONS') {
       return new Response(undefined, {
         status: 200,
-        headers: { allow: ALLOW_HEADER, ...corsHeaders.preflight },
+        headers: { Allow: ALLOW_HEADER, ...corsHeaders.preflight },
       });
     }
 
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response(undefined, {
         status: 405,
-        headers: { allow: ALLOW_HEADER, ...corsHeaders.error },
+        headers: { Allow: ALLOW_HEADER, ...corsHeaders.error },
       });
     }
 
@@ -308,9 +308,9 @@ export const newTaistampHandler = (
     const label = tai64nLabel();
 
     const headers = new Headers({
-      'cache-control': 'no-store',
-      'content-length': String(TAISTAMP_CONTENT_LENGTH),
-      'content-type': TAISTAMP_CONTENT_TYPE,
+      'Cache-Control': 'no-store',
+      'Content-Length': String(TAISTAMP_CONTENT_LENGTH),
+      'Content-Type': TAISTAMP_CONTENT_TYPE,
       [TAISTAMP_HEADER_LEAP_SECONDS]: String(TAI_LEAP_SECONDS),
       ...corsHeaders.response,
     });
