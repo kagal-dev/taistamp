@@ -7,6 +7,12 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-19
+
+Verify-side readers, sf-binary framing, and a breaking
+`@kagal/taistamp/utils` reorganisation of the time helpers
+and constants.
+
 ### Added
 
 - Re-exports from `@kagal/ed25519-secret` covering both
@@ -90,6 +96,8 @@ documented in this file.
   existing non-integer, negative, and out-of-range cases.
   A caller holding a possibly-absent count can brand it
   without a preceding undefined guard.
+- `@kagal/ed25519-secret` workspace dependency re-resolves
+  to `^0.3.2` at publish time.
 
 ### Deprecated
 
