@@ -30,6 +30,7 @@ import {
   TAI64N_HEADER_SIGNATURE,
   TAI64N_PATH,
   tai64nLabelFromUTC as tai64nLabelFromUTCMain,
+  tai64nLabelToUTC as tai64nLabelToUTCMain,
   TAI_LEAP_SECONDS,
   TAI_LEAP_SECONDS_MAX,
   TAISTAMP_PATH,
@@ -42,8 +43,10 @@ import {
   now,
   SF_BINARY_PATTERN,
   TAI64_EPOCH_HI,
+  TAI64N_LABEL_PATTERN,
   tai64nLabel,
   tai64nLabelFromUTC,
+  tai64nLabelToUTC,
 } from '../../dist/utils.mjs';
 
 let failures = 0;
@@ -137,16 +140,19 @@ checkFunction('asSignature', asSignature);
 checkFunction('extractLeapSeconds', extractLeapSeconds);
 checkFunction('extractSignature', extractSignature);
 checkFunction('tai64nLabelFromUTC (main)', tai64nLabelFromUTCMain);
+checkFunction('tai64nLabelToUTC (main)', tai64nLabelToUTCMain);
 
 // /utils subpath
 checkNumber('TAI64_EPOCH_HI', TAI64_EPOCH_HI, 0x40_00_00_00);
 checkInstance('SF_BINARY_PATTERN', SF_BINARY_PATTERN, RegExp);
+checkInstance('TAI64N_LABEL_PATTERN', TAI64N_LABEL_PATTERN, RegExp);
 checkFunction('encodeSFBinary', encodeSFBinary);
 checkFunction('decodeSFBinary', decodeSFBinary);
 checkFunction('fromUTC', fromUTC);
 checkFunction('now', now);
 checkFunction('tai64nLabel', tai64nLabel);
 checkFunction('tai64nLabelFromUTC', tai64nLabelFromUTC);
+checkFunction('tai64nLabelToUTC', tai64nLabelToUTC);
 
 if (failures > 0) {
   console.error(`\n${failures} failure(s)`);

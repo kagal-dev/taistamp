@@ -1,5 +1,5 @@
-import { TAI64_EPOCH_HI } from './const';
-import { TAI_LEAP_SECONDS } from './leap-seconds';
+import { TAI64_EPOCH_HI, TAI64N_LABEL_PATTERN } from './const';
+import { type LeapSeconds, TAI_LEAP_SECONDS } from './leap-seconds';
 
 type timestamp = {
   nano: number
@@ -65,5 +65,47 @@ export const tai64nLabel = (value?: timestamp): string => {
  */
 export const tai64nLabelFromUTC = (utc: number): string =>
   tai64nLabel(fromUTC(utc));
+
+/**
+ * Recover a UTC timestamp in milliseconds (the
+ * `Date.now()` shape) from a TAI64N label — the inverse
+ * of {@link tai64nLabelFromUTC}. A label minted from a
+ * millisecond value round-trips back to it exactly; a
+ * `Date` is one `new Date(ms)` away.
+ *
+ * Returns `undefined` for any value that is not `@`
+ * followed by 24 hex digits (either case) — the
+ * verify-side "malformed is absent" collapse shared with
+ * `asSignature` and `asNonce`, so it drops straight into
+ * a gate pipeline.
+ *
+ * `leapSeconds` is the TAI − UTC offset removed when
+ * mapping TAI back to UTC; it defaults to the current
+ * {@link TAI_LEAP_SECONDS}, mirroring {@link fromUTC}.
+ * Pass a response's `extractLeapSeconds(headers)` to
+ * honour a server that declared a different count — an
+ * absent or malformed header yields `undefined` there
+ * and falls through to the default, while a genuine `0`
+ * is honoured.
+ */
+export const tai64nLabelToUTC = (
+  label: string,
+  leapSeconds: LeapSeconds = TAI_LEAP_SECONDS,
+): number | undefined => {
+  if (!TAI64N_LABEL_PATTERN.test(label)) return undefined;
+
+  // The 64-bit seconds field must be read as two 32-bit
+  // words: parsing all 16 hex digits at once yields
+  // 2^62 + sec ≈ 4.6e18, whose float64 ULP (1024) has
+  // already discarded sec's low bits before the epoch
+  // base could be subtracted. Removing TAI64_EPOCH_HI on
+  // the high word alone keeps every term exact.
+  const secHi = Number.parseInt(label.slice(1, 9), 16) - TAI64_EPOCH_HI;
+  const secLo = Number.parseInt(label.slice(9, 17), 16);
+  const nano = Number.parseInt(label.slice(17, 25), 16);
+
+  const sec = secHi * u32Range + secLo;
+  return (sec - leapSeconds) * 1000 + nano / 1e6;
+};
 
 const u32Range = 0x1_00_00_00_00;

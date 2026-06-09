@@ -484,7 +484,9 @@ import { tai64nLabel } from '@kagal/taistamp/utils';
 | `fromUTC(utc)` | `Date.now()`-shaped milliseconds → TAI timestamp |
 | `tai64nLabel(t?)` | 25-byte label string for a timestamp (or `now()`) |
 | `tai64nLabelFromUTC(utc)` | Shortcut for `tai64nLabel(fromUTC(utc))`; also on the main export |
+| `tai64nLabelToUTC(label, leapSeconds?)` | Inverse of `tai64nLabelFromUTC` — label → `Date.now()`-shaped ms, or `undefined` if malformed; also on the main export |
 | `TAI64_EPOCH_HI` | `0x40000000` — TAI64 epoch high word folded into a label's seconds field |
+| `TAI64N_LABEL_PATTERN` | `RegExp` matching the TAI64N label wire form (`@` + 24 hex digits) |
 
 `fromUTC` applies the constant `TAI_LEAP_SECONDS`
 (currently 37 seconds). These helpers deal in the

@@ -35,6 +35,17 @@ documented in this file.
   64-octet Ed25519 signature, with every failure
   collapsed into `undefined`. The README verify example
   now reads the signature through `extractSignature`.
+- `tai64nLabelToUTC(label, leapSeconds?)` on the main
+  export and the `@kagal/taistamp/utils` subpath — the
+  inverse of `tai64nLabelFromUTC`, recovering the UTC
+  millisecond value behind a TAI64N label so a verified
+  response yields a usable time. Malformed labels collapse
+  to `undefined`; `leapSeconds` overrides the offset and
+  defaults to the current `TAI_LEAP_SECONDS`.
+- `TAI64N_LABEL_PATTERN` on the `@kagal/taistamp/utils`
+  subpath — the `RegExp` for the TAI64N label wire form
+  (`@` + 24 hex digits), the label-side counterpart to
+  `SF_BINARY_PATTERN`; `tai64nLabelToUTC` gates on it.
 
 ### Changed
 
