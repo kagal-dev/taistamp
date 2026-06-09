@@ -59,6 +59,10 @@ documented in this file.
   `@kagal/taistamp/utils` subpath — the TAI64N label's
   byte length and the TAI64 epoch high word, named in the
   `TAI64N_` format space.
+- The handler's `GET` / `HEAD` success response now sets
+  `Content-Disposition: inline`, so a browser opening
+  `/.well-known/taistamp` renders the TAI64N label in place
+  rather than offering it as a download.
 
 ### Changed
 

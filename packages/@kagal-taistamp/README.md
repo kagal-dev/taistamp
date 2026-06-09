@@ -72,6 +72,7 @@ Response headers on success:
 | ------ | ----- |
 | `Content-Type` | `application/tai64n` |
 | `Content-Length` | `25` |
+| `Content-Disposition` | `inline` — browsers render the label in place rather than download it |
 | `Cache-Control` | `no-store` |
 | `TAI-Leap-Seconds` | decimal count (e.g. `37`), always present |
 

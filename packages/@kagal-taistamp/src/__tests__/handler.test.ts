@@ -40,6 +40,7 @@ describe('newTaistampHandler', () => {
       expect(response.headers.get('content-length'))
         .toBe(String(TAISTAMP_CONTENT_LENGTH));
       expect(response.headers.get('cache-control')).toBe('no-store');
+      expect(response.headers.get('content-disposition')).toBe('inline');
       expect(response.headers.get(TAISTAMP_HEADER_LEAP_SECONDS))
         .toBe(String(TAI_LEAP_SECONDS));
 
@@ -59,6 +60,7 @@ describe('newTaistampHandler', () => {
       expect(response.headers.get('content-length'))
         .toBe(String(TAISTAMP_CONTENT_LENGTH));
       expect(response.headers.get('content-type')).toBe(TAISTAMP_CONTENT_TYPE);
+      expect(response.headers.get('content-disposition')).toBe('inline');
       expect(await readASCII(response)).toBe('');
     });
 
@@ -95,6 +97,7 @@ describe('newTaistampHandler', () => {
         const response = await handler(new Request(baseURL, { method }));
         expect(response.status).toBe(405);
         expect(response.headers.get('allow')).toBe('GET, HEAD, OPTIONS');
+        expect(response.headers.get('content-disposition')).toBeNull();
       }
     });
 
@@ -105,6 +108,7 @@ describe('newTaistampHandler', () => {
 
       expect(response.status).toBe(200);
       expect(response.headers.get('allow')).toBe('GET, HEAD, OPTIONS');
+      expect(response.headers.get('content-disposition')).toBeNull();
       expect(response.headers.get(TAISTAMP_HEADER_KEY_SELECTOR)).toBeNull();
       expect(response.headers.get(TAISTAMP_HEADER_SIGNATURE)).toBeNull();
     });

@@ -246,7 +246,9 @@ const fromHandlerConfig = (config: TaistampHandlerConfig) => {
  *
  * - `GET` / `HEAD` — body is a fresh 25-byte TAI64N
  *   label (`HEAD` omits the body). Response headers:
- *   Content-Type `application/tai64n`, Content-Length
+ *   Content-Type `application/tai64n`, Content-Disposition
+ *   `inline` (so a browser renders the label in place
+ *   rather than offering it as a download), Content-Length
  *   `25`, Cache-Control `no-store`, plus
  *   `TAI-Leap-Seconds` carrying the current count.
  * - `OPTIONS` — `200` with `Allow: GET, HEAD, OPTIONS`.
@@ -309,6 +311,7 @@ export const newTaistampHandler = (
 
     const headers = new Headers({
       'Cache-Control': 'no-store',
+      'Content-Disposition': 'inline',
       'Content-Length': String(TAISTAMP_CONTENT_LENGTH),
       'Content-Type': TAISTAMP_CONTENT_TYPE,
       [TAISTAMP_HEADER_LEAP_SECONDS]: String(TAI_LEAP_SECONDS),
