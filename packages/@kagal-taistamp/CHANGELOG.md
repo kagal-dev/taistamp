@@ -7,6 +7,23 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-07
+
+API doc model publication and a devDependency refresh.
+
+### Added
+
+- API doc model in the published package —
+  `@kagal/build-tsdoc` extracts the TSDoc surface at
+  build time into `dist/index.api.json`.
+
+### Changed
+
+- DevDependencies refreshed — `@poupe/eslint-config`,
+  `@vitest/coverage-istanbul`, `obuild`, `vitest`.
+- `@kagal/ed25519-secret` workspace dependency
+  re-resolves to `^0.3.1` at publish time.
+
 ## [0.1.1] - 2026-05-29
 
 Verifier-side response-body readers.

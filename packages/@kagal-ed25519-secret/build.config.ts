@@ -1,14 +1,8 @@
+import { newOBuildHooks } from '@kagal/build-tsdoc';
 import { copyFileSync } from 'node:fs';
-import { type BuildConfig, defineBuildConfig } from 'obuild/config';
+import { defineBuildConfig } from 'obuild/config';
 
-type BuildContext = Parameters<
-  NonNullable<NonNullable<BuildConfig['hooks']>['end']>
->[0];
-
-function extractDocumentation(context: BuildContext): void {
-  // TODO: replace with a real TSDoc extractor.
-  console.warn(`[${context.pkg.name}] TSDoc extraction not run`);
-}
+const tsdoc = newOBuildHooks();
 
 /**
  * Emits `dist/index.d.ts` as a byte-identical
@@ -33,8 +27,9 @@ export default defineBuildConfig({
     rolldownOutput(outConfig) {
       outConfig.sourcemap = true;
     },
+    entries: tsdoc.entries,
     end(context) {
-      extractDocumentation(context);
+      tsdoc.end(context);
       emitLegacyDTS();
     },
   },

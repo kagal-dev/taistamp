@@ -5,6 +5,21 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-07
+
+API doc model publication and a devDependency refresh.
+
+### Added
+
+- API doc model in the published package —
+  `@kagal/build-tsdoc` extracts the TSDoc surface at
+  build time into `dist/index.api.json`.
+
+### Changed
+
+- DevDependencies refreshed — `@poupe/eslint-config`,
+  `@vitest/coverage-istanbul`, `vitest`.
+
 ## [0.3.0] - 2026-06-02
 
 DKIM-style key-record publication and parsing, plus the

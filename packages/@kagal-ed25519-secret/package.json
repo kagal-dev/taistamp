@@ -1,6 +1,6 @@
 {
   "name": "@kagal/ed25519-secret",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "type": "module",
   "description": "Ed25519 signer with DKIM-style selector validation",
   "author": "Apptly Software Ltd <oss@apptly.co>",
@@ -64,9 +64,10 @@
     "type-check:tools": "tsc --noEmit -p tsconfig.tools.json"
   },
   "devDependencies": {
+    "@kagal/build-tsdoc": "^0.2.0",
     "@kagal/cross-test": "^0.1.3",
     "@noble/ed25519": "^3.1.0",
-    "@poupe/eslint-config": "^0.9.1",
+    "@poupe/eslint-config": "^0.9.3",
     "@types/node": "^20.19.41",
     "@vitest/coverage-istanbul": "^4.1.8",
     "eslint": "^9.39.4",
