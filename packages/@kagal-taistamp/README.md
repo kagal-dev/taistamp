@@ -69,7 +69,7 @@ absent (no echo, no signature) per [spec §5.4][spec-nonce].
 Response headers on success:
 
 | Header | Value |
-|--------|-------|
+| ------ | ----- |
 | `Content-Type` | `application/tai64n` |
 | `Content-Length` | `25` |
 | `Cache-Control` | `no-store` |
@@ -99,7 +99,7 @@ newTaistampHandler({ cors: false });                 // CORS-specific headers of
 When CORS is enabled, responses carry:
 
 | Response | CORS headers added | `Vary: Origin` (scoped origin only) |
-|----------|--------------------|------|
+| -------- | ------------------ | ----------------------------------- |
 | `OPTIONS` 200 | `Access-Control-Allow-Origin`, `Access-Control-Allow-Methods: GET, HEAD`, `Access-Control-Allow-Headers: TAI-Nonce`, `Access-Control-Expose-Headers: TAI-Leap-Seconds, TAI-Nonce, TAI-Key-Selector, TAI-Signature`, `Access-Control-Max-Age: 600` | yes |
 | `GET` / `HEAD` 200 | `Access-Control-Allow-Origin`, `Access-Control-Expose-Headers` (so browser JS can read the `TAI-*` headers) | yes |
 | `405` | `Access-Control-Allow-Origin` | yes |
@@ -215,7 +215,7 @@ v=tai1; k=ed25519; p=<base64-of-32-raw-pubkey-bytes>
 ```
 
 | Tag | Value |
-|-----|-------|
+| --- | ----- |
 | `v` | Protocol version. `tai1` for the framing in this README. |
 | `k` | Key algorithm. `ed25519` for the only algorithm currently defined. |
 | `p` | Public key, standard base64. For Ed25519: 32 raw bytes → 43-44 chars. |
@@ -383,7 +383,7 @@ are re-exported for callers that need raw TAI64N
 construction:
 
 | Export | Description |
-|--------|-------------|
+| ------ | ----------- |
 | `now()` | Current TAI as `{ sec, nano, offset }` |
 | `fromUTC(utc)` | `Date.now()`-shaped milliseconds → TAI timestamp |
 | `tai64nLabel(t?)` | 25-byte label string for a timestamp (or `now()`) |
@@ -398,7 +398,7 @@ history.
 ### Constants
 
 | Name | Value |
-|------|-------|
+| ---- | ----- |
 | `TAISTAMP_PATH` | `/.well-known/taistamp` |
 | `TAI64N_CONTENT_TYPE` | `application/tai64n` |
 | `TAI64N_CONTENT_LENGTH` | `25` |
