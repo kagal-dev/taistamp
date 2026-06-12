@@ -39,6 +39,7 @@ export {
 } from './leap-seconds';
 export {
   asNonce,
+  extractNonce,
   type Nonce,
 } from './nonce';
 export { tai64nLabelFromUTC } from './time';

@@ -27,6 +27,11 @@ documented in this file.
   Verifiers no longer hand-roll the `TAI-Signature`
   decode; the README verify example now uses
   `decodeSFBinary`.
+- `extractNonce(headers)` on the main export — reads the
+  `TAI-Nonce` echo from response headers and brands it via
+  `asNonce`; a missing or malformed field collapses to
+  `undefined`, matching `extractLeapSeconds`. The handler
+  reads the request nonce through the same helper.
 
 ### Changed
 

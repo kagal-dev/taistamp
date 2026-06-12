@@ -14,6 +14,7 @@ import {
   asNonce,
   composeSignaturePayload,
   extractLeapSeconds,
+  extractNonce,
   newEd25519Signer,
   newTaistampHandler,
   parseRecordToVerifier,
@@ -130,6 +131,7 @@ checkFunction('composeSignaturePayload', composeSignaturePayload);
 checkFunction('asLeapSeconds', asLeapSeconds);
 checkFunction('asNonce', asNonce);
 checkFunction('extractLeapSeconds', extractLeapSeconds);
+checkFunction('extractNonce', extractNonce);
 checkFunction('tai64nLabelFromUTC (main)', tai64nLabelFromUTCMain);
 
 // /utils subpath

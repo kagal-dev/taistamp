@@ -60,9 +60,11 @@ export const asNonce = (value: string): Nonce | undefined => {
 };
 
 /**
- * Extract a usable `TAI-Nonce` from request headers.
- * Returns `undefined` when the field is missing or
- * fails {@link asNonce} validation.
+ * Extract a usable `TAI-Nonce` from headers — the
+ * request on the serving side, the response's nonce
+ * echo on the verifying side. Returns `undefined` when
+ * the field is missing or fails {@link asNonce}
+ * validation.
  */
 export const extractNonce = (headers: Headers): Nonce | undefined => {
   const value = headers.get(TAI64N_HEADER_NONCE);

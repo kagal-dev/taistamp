@@ -258,6 +258,7 @@ import {
   asNonce,
   composeSignaturePayload,
   extractLeapSeconds,
+  extractNonce,
   parseRecordToVerifier,
   readLabel,
 } from '@kagal/taistamp';
@@ -294,6 +295,23 @@ if (leap === undefined) {
 const nonce = asNonce(clientNonce);
 if (nonce === undefined) {
   throw new Error('client nonce is not a valid sf-binary item');
+}
+
+// The response must echo `TAI-Nonce`. With no echo there
+// is no proof of freshness — the response may be a replay
+// of an earlier exchange (Plain, trust level 0, spec §8),
+// and any signature present MUST be ignored. This is
+// strictly worse than a fresh-but-unsigned response, not
+// equivalent to it.
+const echo = extractNonce(response.headers);
+if (echo === undefined) {
+  throw new Error('no TAI-Nonce echo: response is unverifiable');
+}
+// A present echo that differs from what we sent binds the
+// response to a different exchange (Inconsistent, level
+// -1) and MUST be rejected.
+if (echo !== nonce) {
+  throw new Error('TAI-Nonce echo does not match the nonce sent');
 }
 
 // Look up the TXT record in DNS at
@@ -336,8 +354,14 @@ input, collapsing every "treat as unsigned" case in
 value that would have been treated as absent on the
 server (missing, empty, malformed sf-binary, or out
 of length range — see [spec §5.4][spec-nonce]).
-Comparing the verifier's recorded nonce against the
-response's `TAI-Nonce` defends against replay.
+`extractNonce(response.headers)` reads the echoed
+`TAI-Nonce`. With no echo the response carries no proof
+of freshness — it may be a replay of an earlier exchange,
+so any signature MUST be ignored; this is weaker than a
+fresh-but-unsigned response, not equivalent to it. A
+present echo that differs from your recorded nonce binds
+the response to a different exchange and MUST be
+rejected.
 
 ## API
 
@@ -418,6 +442,14 @@ For verifier-side validation of a signed response
   returns `undefined` for any value that fails
   sf-binary syntax or the length range checked
   per [spec §5.4][spec-nonce].
+- `extractNonce(headers)` — read and brand the
+  `TAI-Nonce` echo from a response (or the request,
+  server-side); returns `undefined` when the field is
+  missing or fails `asNonce`. On the verifying side
+  `undefined` means no proof of freshness — the response
+  may be a replay and any signature MUST be ignored,
+  weaker than a fresh-but-unsigned response; a present
+  echo must match the nonce you sent.
 - `Nonce` — branded sf-binary nonce accepted by
   `composeSignaturePayload`.
 - `tai64nLabelFromUTC(utc)` — the TAI64N label for a
