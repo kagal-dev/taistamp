@@ -23,6 +23,8 @@ import {
   parseRecordToVerifier,
   parseSecretsToKeys,
   parseSecretToKey,
+  readASCII,
+  readLabel,
   TAI64N_CONTENT_LENGTH,
   TAI64N_CONTENT_TYPE,
   TAI64N_HEADER_KEY_SELECTOR,
@@ -133,6 +135,8 @@ checkFunction('newEd25519Signer', newEd25519Signer);
 checkFunction('parseRecordToVerifier', parseRecordToVerifier);
 checkFunction('parseSecretsToKeys', parseSecretsToKeys);
 checkFunction('parseSecretToKey', parseSecretToKey);
+checkFunction('readLabel', readLabel);
+checkFunction('readASCII', readASCII);
 checkFunction('composeSignaturePayload', composeSignaturePayload);
 checkFunction('asLeapSeconds', asLeapSeconds);
 checkFunction('asNonce', asNonce);
