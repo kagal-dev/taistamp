@@ -132,14 +132,16 @@ export const encodeKey = async (
  * Whether `value` is an integer within the inclusive
  * range `[min, max]`. `max` defaults to
  * `Number.MAX_SAFE_INTEGER`, so the two-argument form
- * tests for an integer ≥ `min`. A fractional, `NaN`,
- * infinite, or out-of-range `value` is `false`.
+ * tests for an integer ≥ `min`. An `undefined`,
+ * fractional, `NaN`, infinite, or out-of-range `value`
+ * is `false`.
  */
 export const isInRange = (
-  value: number,
+  value: number | undefined,
   min: number,
   max: number = Number.MAX_SAFE_INTEGER,
 ): boolean =>
+  value !== undefined &&
   Number.isInteger(value) && value >= min && value <= max;
 
 /**

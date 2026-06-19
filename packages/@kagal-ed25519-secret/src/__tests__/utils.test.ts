@@ -464,4 +464,9 @@ describe('isInRange', () => {
     expect(isInRange(Number.POSITIVE_INFINITY, 0)).toBe(false);
     expect(isInRange(Number.NEGATIVE_INFINITY, 0)).toBe(false);
   });
+
+  it('rejects undefined', () => {
+    expect(isInRange(undefined, 0, 10)).toBe(false);
+    expect(isInRange(undefined, 0)).toBe(false);
+  });
 });
