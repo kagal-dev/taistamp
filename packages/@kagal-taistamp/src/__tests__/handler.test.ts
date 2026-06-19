@@ -9,13 +9,13 @@ import {
   newTaistampHandler,
   readASCII,
   readLabel,
-  TAI64N_CONTENT_LENGTH,
-  TAI64N_CONTENT_TYPE,
-  TAI64N_HEADER_KEY_SELECTOR,
-  TAI64N_HEADER_LEAP_SECONDS,
-  TAI64N_HEADER_NONCE,
-  TAI64N_HEADER_SIGNATURE,
   TAI_LEAP_SECONDS,
+  TAISTAMP_CONTENT_LENGTH,
+  TAISTAMP_CONTENT_TYPE,
+  TAISTAMP_HEADER_KEY_SELECTOR,
+  TAISTAMP_HEADER_LEAP_SECONDS,
+  TAISTAMP_HEADER_NONCE,
+  TAISTAMP_HEADER_SIGNATURE,
   TAISTAMP_PATH,
 } from '..';
 
@@ -36,18 +36,19 @@ describe('newTaistampHandler', () => {
       const response = await handler(new Request(baseURL));
 
       expect(response.status).toBe(200);
-      expect(response.headers.get('content-type')).toBe(TAI64N_CONTENT_TYPE);
+      expect(response.headers.get('content-type')).toBe(TAISTAMP_CONTENT_TYPE);
       expect(response.headers.get('content-length'))
-        .toBe(String(TAI64N_CONTENT_LENGTH));
+        .toBe(String(TAISTAMP_CONTENT_LENGTH));
       expect(response.headers.get('cache-control')).toBe('no-store');
-      expect(response.headers.get(TAI64N_HEADER_LEAP_SECONDS))
+      expect(response.headers.get('content-disposition')).toBe('inline');
+      expect(response.headers.get(TAISTAMP_HEADER_LEAP_SECONDS))
         .toBe(String(TAI_LEAP_SECONDS));
 
       // readASCII, not readLabel, so the 25-octet length is
       // asserted here rather than hidden inside the reader.
       const body = await readASCII(response);
       expect(body).toMatch(/^@[0-9a-f]{24}$/);
-      expect(body).toHaveLength(TAI64N_CONTENT_LENGTH);
+      expect(body).toHaveLength(TAISTAMP_CONTENT_LENGTH);
     });
 
     it('omits the body on HEAD but keeps the headers', async () => {
@@ -57,37 +58,38 @@ describe('newTaistampHandler', () => {
 
       expect(response.status).toBe(200);
       expect(response.headers.get('content-length'))
-        .toBe(String(TAI64N_CONTENT_LENGTH));
-      expect(response.headers.get('content-type')).toBe(TAI64N_CONTENT_TYPE);
+        .toBe(String(TAISTAMP_CONTENT_LENGTH));
+      expect(response.headers.get('content-type')).toBe(TAISTAMP_CONTENT_TYPE);
+      expect(response.headers.get('content-disposition')).toBe('inline');
       expect(await readASCII(response)).toBe('');
     });
 
     it('echoes a TAI-Nonce header when present', async () => {
       const nonce = ':b3BhcXVlLW5vbmNlLXZhbHVlLXg=:';
       const response = await handler(new Request(baseURL, {
-        headers: { [TAI64N_HEADER_NONCE]: nonce },
+        headers: { [TAISTAMP_HEADER_NONCE]: nonce },
       }));
 
-      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBe(nonce);
-      expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_NONCE)).toBe(nonce);
+      expect(response.headers.get(TAISTAMP_HEADER_SIGNATURE)).toBeNull();
     });
 
     it('omits TAI-Nonce on HEAD even when the client sent one', async () => {
       const nonce = ':aGVhZC1ub25jZS12YWx1ZQ==:';
       const response = await handler(new Request(baseURL, {
         method: 'HEAD',
-        headers: { [TAI64N_HEADER_NONCE]: nonce },
+        headers: { [TAISTAMP_HEADER_NONCE]: nonce },
       }));
 
       expect(response.status).toBe(200);
-      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_NONCE)).toBeNull();
     });
 
     it('omits TAI-Nonce when the request did not send one', async () => {
       const response = await handler(new Request(baseURL));
 
-      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
-      expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_NONCE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_SIGNATURE)).toBeNull();
     });
 
     it('returns 405 for non-GET/HEAD methods', async () => {
@@ -95,6 +97,7 @@ describe('newTaistampHandler', () => {
         const response = await handler(new Request(baseURL, { method }));
         expect(response.status).toBe(405);
         expect(response.headers.get('allow')).toBe('GET, HEAD, OPTIONS');
+        expect(response.headers.get('content-disposition')).toBeNull();
       }
     });
 
@@ -105,31 +108,32 @@ describe('newTaistampHandler', () => {
 
       expect(response.status).toBe(200);
       expect(response.headers.get('allow')).toBe('GET, HEAD, OPTIONS');
-      expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBeNull();
-      expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
+      expect(response.headers.get('content-disposition')).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_KEY_SELECTOR)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_SIGNATURE)).toBeNull();
     });
 
     it('treats a duplicated TAI-Nonce as absent', async () => {
       const response = await handler(new Request(baseURL, {
         headers: [
-          [TAI64N_HEADER_NONCE, ':b3BhcXVlLW5vbmNlLXZhbHVlLXg=:'],
-          [TAI64N_HEADER_NONCE, ':ZnJlc2gtY2xpZW50LW5vbmNl:'],
+          [TAISTAMP_HEADER_NONCE, ':b3BhcXVlLW5vbmNlLXZhbHVlLXg=:'],
+          [TAISTAMP_HEADER_NONCE, ':ZnJlc2gtY2xpZW50LW5vbmNl:'],
         ],
       }));
 
       expect(response.status).toBe(200);
-      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
-      expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_NONCE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_SIGNATURE)).toBeNull();
     });
 
     it('treats an empty TAI-Nonce as absent', async () => {
       const response = await handler(new Request(baseURL, {
-        headers: { [TAI64N_HEADER_NONCE]: '' },
+        headers: { [TAISTAMP_HEADER_NONCE]: '' },
       }));
 
       expect(response.status).toBe(200);
-      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
-      expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_NONCE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_SIGNATURE)).toBeNull();
     });
 
     it('treats a malformed sf-binary TAI-Nonce as absent', async () => {
@@ -142,12 +146,12 @@ describe('newTaistampHandler', () => {
         ':AB=:',
       ]) {
         const response = await handler(new Request(baseURL, {
-          headers: { [TAI64N_HEADER_NONCE]: malformed },
+          headers: { [TAISTAMP_HEADER_NONCE]: malformed },
         }));
 
         expect(response.status).toBe(200);
-        expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
-        expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
+        expect(response.headers.get(TAISTAMP_HEADER_NONCE)).toBeNull();
+        expect(response.headers.get(TAISTAMP_HEADER_SIGNATURE)).toBeNull();
       }
     });
   });
@@ -164,15 +168,15 @@ describe('newTaistampHandler', () => {
       const nonce = ':ZnJlc2gtY2xpZW50LW5vbmNl:';
 
       const response = await handler(new Request(baseURL, {
-        headers: { [TAI64N_HEADER_NONCE]: nonce },
+        headers: { [TAISTAMP_HEADER_NONCE]: nonce },
       }));
 
       const label = await readLabel(response);
-      const signature = response.headers.get(TAI64N_HEADER_SIGNATURE);
+      const signature = response.headers.get(TAISTAMP_HEADER_SIGNATURE);
       expect(signature).not.toBeNull();
       expect(signature).toMatch(/^:[A-Za-z0-9+/]+={0,2}:$/);
-      expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBe(selector);
-      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBe(nonce);
+      expect(response.headers.get(TAISTAMP_HEADER_KEY_SELECTOR)).toBe(selector);
+      expect(response.headers.get(TAISTAMP_HEADER_NONCE)).toBe(nonce);
 
       const leapSeconds = extractLeapSeconds(response.headers);
       expect(leapSeconds).toBeDefined();
@@ -200,9 +204,9 @@ describe('newTaistampHandler', () => {
 
       const response = await handler(new Request(baseURL));
 
-      expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
-      expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBeNull();
-      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_SIGNATURE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_KEY_SELECTOR)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_NONCE)).toBeNull();
     });
 
     it('omits TAI-Nonce, TAI-Signature, and TAI-Key-Selector on HEAD even with a nonce', async () => {
@@ -215,13 +219,13 @@ describe('newTaistampHandler', () => {
 
       const response = await handler(new Request(baseURL, {
         method: 'HEAD',
-        headers: { [TAI64N_HEADER_NONCE]: nonce },
+        headers: { [TAISTAMP_HEADER_NONCE]: nonce },
       }));
 
       expect(response.status).toBe(200);
-      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
-      expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
-      expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_NONCE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_SIGNATURE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_KEY_SELECTOR)).toBeNull();
     });
 
     it('does not sign OPTIONS responses even with a nonce', async () => {
@@ -234,11 +238,11 @@ describe('newTaistampHandler', () => {
 
       const response = await handler(new Request(baseURL, {
         method: 'OPTIONS',
-        headers: { [TAI64N_HEADER_NONCE]: nonce },
+        headers: { [TAISTAMP_HEADER_NONCE]: nonce },
       }));
 
-      expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBeNull();
-      expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_KEY_SELECTOR)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_SIGNATURE)).toBeNull();
     });
 
     it('treats a nonce shorter than 14 octets as absent', async () => {
@@ -250,12 +254,12 @@ describe('newTaistampHandler', () => {
       const shortNonce = ':YWJjZA==:'; // 10 octets
 
       const response = await handler(new Request(baseURL, {
-        headers: { [TAI64N_HEADER_NONCE]: shortNonce },
+        headers: { [TAISTAMP_HEADER_NONCE]: shortNonce },
       }));
 
-      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
-      expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
-      expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_NONCE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_SIGNATURE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_KEY_SELECTOR)).toBeNull();
     });
 
     it('treats a nonce longer than 174 octets as absent', async () => {
@@ -267,12 +271,12 @@ describe('newTaistampHandler', () => {
       const longNonce = `:${'A'.repeat(176)}:`; // 178 octets
 
       const response = await handler(new Request(baseURL, {
-        headers: { [TAI64N_HEADER_NONCE]: longNonce },
+        headers: { [TAISTAMP_HEADER_NONCE]: longNonce },
       }));
 
-      expect(response.headers.get(TAI64N_HEADER_NONCE)).toBeNull();
-      expect(response.headers.get(TAI64N_HEADER_SIGNATURE)).toBeNull();
-      expect(response.headers.get(TAI64N_HEADER_KEY_SELECTOR)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_NONCE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_SIGNATURE)).toBeNull();
+      expect(response.headers.get(TAISTAMP_HEADER_KEY_SELECTOR)).toBeNull();
     });
 
     it('signature does not verify against a tampered nonce', async () => {
@@ -284,11 +288,11 @@ describe('newTaistampHandler', () => {
       const nonce = ':cmVhbC1ub25jZS12YWx1ZQ==:';
 
       const response = await handler(new Request(baseURL, {
-        headers: { [TAI64N_HEADER_NONCE]: nonce },
+        headers: { [TAISTAMP_HEADER_NONCE]: nonce },
       }));
 
       const label = await readLabel(response);
-      const signature = response.headers.get(TAI64N_HEADER_SIGNATURE)!;
+      const signature = response.headers.get(TAISTAMP_HEADER_SIGNATURE)!;
       const tampered = composeSignaturePayload(
         label,
         TAI_LEAP_SECONDS,
@@ -314,11 +318,11 @@ describe('newTaistampHandler', () => {
       const nonce = ':bm9uY2UtcGFkZGluZy14:';
 
       const response = await handler(new Request(baseURL, {
-        headers: { [TAI64N_HEADER_NONCE]: nonce },
+        headers: { [TAISTAMP_HEADER_NONCE]: nonce },
       }));
 
       const label = await readLabel(response);
-      const signature = response.headers.get(TAI64N_HEADER_SIGNATURE)!;
+      const signature = response.headers.get(TAISTAMP_HEADER_SIGNATURE)!;
       const tampered = composeSignaturePayload(
         label,
         asLeapSeconds(TAI_LEAP_SECONDS + 1)!,
@@ -344,11 +348,11 @@ describe('newTaistampHandler', () => {
       const nonce = ':bm9uY2UtcGFkZGluZy14:';
 
       const response = await handler(new Request(baseURL, {
-        headers: { [TAI64N_HEADER_NONCE]: nonce },
+        headers: { [TAISTAMP_HEADER_NONCE]: nonce },
       }));
 
       const label = await readLabel(response);
-      const signature = response.headers.get(TAI64N_HEADER_SIGNATURE)!;
+      const signature = response.headers.get(TAISTAMP_HEADER_SIGNATURE)!;
       const tampered = composeSignaturePayload(
         label,
         TAI_LEAP_SECONDS,
@@ -422,6 +426,24 @@ describe('newTaistampHandler', () => {
       expect(() => newTaistampHandler({
         cors: 1 as unknown as string,
       })).toThrow(/cors must be false or a string origin/);
+    });
+
+    it('throws on a non-integer corsMaxAge', () => {
+      expect(() => newTaistampHandler({
+        corsMaxAge: 599.5,
+      })).toThrow(/corsMaxAge must be a non-negative integer/);
+    });
+
+    it('throws on a negative corsMaxAge', () => {
+      expect(() => newTaistampHandler({
+        corsMaxAge: -1,
+      })).toThrow(/corsMaxAge must be a non-negative integer/);
+    });
+
+    it('throws on a NaN corsMaxAge', () => {
+      expect(() => newTaistampHandler({
+        corsMaxAge: Number.NaN,
+      })).toThrow(/corsMaxAge must be a non-negative integer/);
     });
   });
 });
@@ -501,7 +523,7 @@ describe('asLeapSeconds', () => {
 });
 
 const leapSecondsHeaders = (value: string): Headers =>
-  new Headers({ [TAI64N_HEADER_LEAP_SECONDS]: value });
+  new Headers({ [TAISTAMP_HEADER_LEAP_SECONDS]: value });
 
 describe('extractLeapSeconds', () => {
   it('returns 0 branded for the minimum', () => {

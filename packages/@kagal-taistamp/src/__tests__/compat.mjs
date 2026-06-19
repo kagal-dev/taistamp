@@ -12,27 +12,53 @@
 import {
   asLeapSeconds,
   asNonce,
+  asSignature,
   composeSignaturePayload,
   extractLeapSeconds,
-  fromUTC,
+  extractNonce,
+  extractSignature,
   newEd25519Signer,
+  newNonce,
   newTaistampHandler,
+  parseRecordToVerifier,
+  parseSecretsToKeys,
+  parseSecretToKey,
+  readASCII,
+  readLabel,
+  tai64nLabelFromUTC as tai64nLabelFromUTCMain,
+  tai64nLabelToUTC as tai64nLabelToUTCMain,
+  TAI_LEAP_SECONDS,
+  TAI_LEAP_SECONDS_MAX,
+  TAISTAMP_CONTENT_LENGTH,
+  TAISTAMP_CONTENT_TYPE,
+  TAISTAMP_HEADER_KEY_SELECTOR,
+  TAISTAMP_HEADER_LEAP_SECONDS,
+  TAISTAMP_HEADER_NONCE,
+  TAISTAMP_HEADER_SIGNATURE,
+  TAISTAMP_PATH,
+  VERSION,
+} from '../../dist/index.mjs';
+import {
+  decodeSFBinary,
+  encodeSFBinary,
+  fromUTC,
   now,
+  SF_BINARY_PATTERN,
   TAI64_EPOCH_HI,
   TAI64N_CONTENT_LENGTH,
   TAI64N_CONTENT_TYPE,
+  TAI64N_EPOCH_HI,
   TAI64N_HEADER_KEY_SELECTOR,
   TAI64N_HEADER_LEAP_SECONDS,
   TAI64N_HEADER_NONCE,
   TAI64N_HEADER_SIGNATURE,
+  TAI64N_LABEL_LENGTH,
+  TAI64N_LABEL_PATTERN,
   TAI64N_PATH,
   tai64nLabel,
   tai64nLabelFromUTC,
-  TAI_LEAP_SECONDS,
-  TAI_LEAP_SECONDS_MAX,
-  TAISTAMP_PATH,
-  VERSION,
-} from '../../dist/index.mjs';
+  tai64nLabelToUTC,
+} from '../../dist/utils.mjs';
 
 let failures = 0;
 
@@ -65,6 +91,15 @@ function checkString(name, value, expected) {
   pass(name, `= '${value}'`);
 }
 
+function checkInstance(name, value, ctor) {
+  if (!(value instanceof ctor)) {
+    const got = value?.constructor?.name ?? typeof value;
+    fail(name, `expected ${ctor.name}, got ${got}`);
+    return;
+  }
+  pass(name);
+}
+
 function checkNumber(name, value, expected) {
   if (typeof value !== 'number') {
     fail(name, `expected number, got ${typeof value}`);
@@ -82,14 +117,62 @@ console.log(`@kagal/taistamp v${VERSION}`);
 
 checkString('VERSION', VERSION);
 
-// Constants
+// Constants — taistamp protocol (main entry)
 checkString('TAISTAMP_PATH', TAISTAMP_PATH, '/.well-known/taistamp');
-checkString('TAI64N_PATH', TAI64N_PATH, '/.well-known/taistamp');
-checkString('TAI64N_CONTENT_TYPE', TAI64N_CONTENT_TYPE, 'application/tai64n');
-checkNumber('TAI64N_CONTENT_LENGTH', TAI64N_CONTENT_LENGTH, 25);
-checkNumber('TAI64_EPOCH_HI', TAI64_EPOCH_HI, 0x40_00_00_00);
+checkString(
+  'TAISTAMP_CONTENT_TYPE',
+  TAISTAMP_CONTENT_TYPE,
+  'application/tai64n',
+);
+checkNumber('TAISTAMP_CONTENT_LENGTH', TAISTAMP_CONTENT_LENGTH, 25);
 checkNumber('TAI_LEAP_SECONDS', TAI_LEAP_SECONDS, 37);
 checkNumber('TAI_LEAP_SECONDS_MAX', TAI_LEAP_SECONDS_MAX, 0xFF_FF_FF_FF);
+checkString(
+  'TAISTAMP_HEADER_KEY_SELECTOR',
+  TAISTAMP_HEADER_KEY_SELECTOR,
+  'TAI-Key-Selector',
+);
+checkString(
+  'TAISTAMP_HEADER_LEAP_SECONDS',
+  TAISTAMP_HEADER_LEAP_SECONDS,
+  'TAI-Leap-Seconds',
+);
+checkString('TAISTAMP_HEADER_NONCE', TAISTAMP_HEADER_NONCE, 'TAI-Nonce');
+checkString(
+  'TAISTAMP_HEADER_SIGNATURE',
+  TAISTAMP_HEADER_SIGNATURE,
+  'TAI-Signature',
+);
+
+// Functions
+checkFunction('newTaistampHandler', newTaistampHandler);
+checkFunction('newEd25519Signer', newEd25519Signer);
+checkFunction('parseRecordToVerifier', parseRecordToVerifier);
+checkFunction('parseSecretsToKeys', parseSecretsToKeys);
+checkFunction('parseSecretToKey', parseSecretToKey);
+checkFunction('readLabel', readLabel);
+checkFunction('readASCII', readASCII);
+checkFunction('composeSignaturePayload', composeSignaturePayload);
+checkFunction('asLeapSeconds', asLeapSeconds);
+checkFunction('asNonce', asNonce);
+checkFunction('newNonce', newNonce);
+checkFunction('asSignature', asSignature);
+checkFunction('extractLeapSeconds', extractLeapSeconds);
+checkFunction('extractNonce', extractNonce);
+checkFunction('extractSignature', extractSignature);
+checkFunction('tai64nLabelFromUTC (main)', tai64nLabelFromUTCMain);
+checkFunction('tai64nLabelToUTC (main)', tai64nLabelToUTCMain);
+
+// Constants — tai64n format (/utils subpath)
+checkInstance('TAI64N_LABEL_PATTERN', TAI64N_LABEL_PATTERN, RegExp);
+checkNumber('TAI64N_LABEL_LENGTH', TAI64N_LABEL_LENGTH, 25);
+checkString('TAI64N_CONTENT_TYPE', TAI64N_CONTENT_TYPE, 'application/tai64n');
+checkNumber('TAI64N_EPOCH_HI', TAI64N_EPOCH_HI, 0x40_00_00_00);
+checkInstance('SF_BINARY_PATTERN', SF_BINARY_PATTERN, RegExp);
+
+// Back-compat aliases (/utils subpath)
+checkString('TAI64N_PATH', TAI64N_PATH, '/.well-known/taistamp');
+checkNumber('TAI64N_CONTENT_LENGTH', TAI64N_CONTENT_LENGTH, 25);
 checkString(
   'TAI64N_HEADER_KEY_SELECTOR',
   TAI64N_HEADER_KEY_SELECTOR,
@@ -101,19 +184,21 @@ checkString(
   'TAI-Leap-Seconds',
 );
 checkString('TAI64N_HEADER_NONCE', TAI64N_HEADER_NONCE, 'TAI-Nonce');
-checkString('TAI64N_HEADER_SIGNATURE', TAI64N_HEADER_SIGNATURE, 'TAI-Signature');
+checkString(
+  'TAI64N_HEADER_SIGNATURE',
+  TAI64N_HEADER_SIGNATURE,
+  'TAI-Signature',
+);
+checkNumber('TAI64_EPOCH_HI', TAI64_EPOCH_HI, 0x40_00_00_00);
 
-// Functions
-checkFunction('newTaistampHandler', newTaistampHandler);
-checkFunction('newEd25519Signer', newEd25519Signer);
-checkFunction('composeSignaturePayload', composeSignaturePayload);
-checkFunction('asLeapSeconds', asLeapSeconds);
-checkFunction('asNonce', asNonce);
-checkFunction('extractLeapSeconds', extractLeapSeconds);
+// /utils functions
+checkFunction('encodeSFBinary', encodeSFBinary);
+checkFunction('decodeSFBinary', decodeSFBinary);
 checkFunction('fromUTC', fromUTC);
 checkFunction('now', now);
 checkFunction('tai64nLabel', tai64nLabel);
 checkFunction('tai64nLabelFromUTC', tai64nLabelFromUTC);
+checkFunction('tai64nLabelToUTC', tai64nLabelToUTC);
 
 if (failures > 0) {
   console.error(`\n${failures} failure(s)`);

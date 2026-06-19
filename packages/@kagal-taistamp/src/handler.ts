@@ -1,22 +1,22 @@
 import {
   assertValidSelector,
-  decodeBase64,
-  encodeBase64,
+  isInRange,
   type Signer,
 } from '@kagal/ed25519-secret';
 
 import {
-  TAI64N_CONTENT_LENGTH,
-  TAI64N_CONTENT_TYPE,
-  TAI64N_HEADER_KEY_SELECTOR,
-  TAI64N_HEADER_LEAP_SECONDS,
-  TAI64N_HEADER_NONCE,
-  TAI64N_HEADER_SIGNATURE,
+  TAISTAMP_CONTENT_LENGTH,
+  TAISTAMP_CONTENT_TYPE,
+  TAISTAMP_HEADER_KEY_SELECTOR,
+  TAISTAMP_HEADER_LEAP_SECONDS,
+  TAISTAMP_HEADER_NONCE,
+  TAISTAMP_HEADER_SIGNATURE,
 } from './const';
 import { buildCORSHeaders } from './cors';
 import { type LeapSeconds, TAI_LEAP_SECONDS } from './leap-seconds';
 import { extractNonce, type Nonce } from './nonce';
-import { tai64nLabel } from './utils';
+import { decodeSFBinary, encodeSFBinary } from './sf-binary';
+import { tai64nLabel } from './time';
 
 const ALLOW_HEADER = 'GET, HEAD, OPTIONS';
 
@@ -74,7 +74,7 @@ export const composeSignaturePayload = (
 ): ArrayBuffer => {
   const labelBytes = textEncoder.encode(label);
   const selectorBytes = textEncoder.encode(selector);
-  const nonceBytes = decodeBase64(nonce.slice(1, -1));
+  const nonceBytes = decodeSFBinary(nonce, 'composeSignaturePayload');
 
   const buffer = new ArrayBuffer(
     DOMAIN_SEPARATOR.length +
@@ -120,11 +120,11 @@ export interface TaistampHandlerConfig {
    * Verifiers look up the public key at
    * `<selector>._taistamp.<host>` in DNS.
    *
-   * Must match `[A-Za-z][A-Za-z0-9_-]{0,62}` (a single
-   * DNS label starting with a letter, using
-   * DKIM-compatible characters and a valid sf-token);
-   * rotate by changing the selector and publishing a
-   * new TXT record.
+   * Must match `[A-Za-z]([A-Za-z0-9_-]{0,61}[A-Za-z0-9])?` —
+   * a single DNS-safe label that starts with a letter,
+   * ends with a letter or digit, and is also a valid
+   * Structured Field token; rotate by changing the
+   * selector and publishing a new TXT record.
    */
   selector?: string
 
@@ -145,7 +145,8 @@ export interface TaistampHandlerConfig {
    * gains `Access-Control-Allow-Origin`; pre-flight
    * `OPTIONS` also carries `-Allow-Methods`,
    * `-Allow-Headers`, `-Expose-Headers`, and
-   * `-Max-Age: 600` per spec §5.2; success
+   * `-Max-Age` (default 600s, see {@link corsMaxAge})
+   * per spec §5.2; success
    * `GET` / `HEAD` carry `-Expose-Headers` so browser
    * JS can read the `TAI-*` response headers. A
    * non-`'*'` value adds `Vary: Origin` so caches can
@@ -156,6 +157,16 @@ export interface TaistampHandlerConfig {
    * `Allow: GET, HEAD, OPTIONS` per RFC 9110 §9.3.7.
    */
   cors?: false | string
+
+  /**
+   * `Access-Control-Max-Age` for pre-flight `OPTIONS`
+   * responses, in seconds. Defaults to 600 (10 minutes,
+   * the spec §5.2 floor); a value below 600 clamps up to
+   * it so the pre-flight stays spec-compliant. Ignored
+   * when `cors` is `false`. Must be a non-negative
+   * integer.
+   */
+  corsMaxAge?: number
 }
 
 /**
@@ -166,13 +177,14 @@ export interface TaistampHandlerConfig {
  * first request.
  *
  * @throws TypeError if `signer` and `selector` are not
- *   both set or both unset, or if `selector` does not
- *   match `[A-Za-z][A-Za-z0-9_-]{0,62}`.
+ *   both set or both unset, if `selector` does not match
+ *   `[A-Za-z]([A-Za-z0-9_-]{0,61}[A-Za-z0-9])?`, or if
+ *   `corsMaxAge` is not a non-negative integer.
  */
 const validateHandlerConfig = (
   config: TaistampHandlerConfig,
 ): TaistampHandlerConfig => {
-  const { cors, selector, signer } = config;
+  const { cors, corsMaxAge, selector, signer } = config;
 
   if ((signer === undefined) !== (selector === undefined)) {
     throw new TypeError(
@@ -182,6 +194,11 @@ const validateHandlerConfig = (
   if (cors !== undefined && cors !== false && typeof cors !== 'string') {
     throw new TypeError(
       'newTaistampHandler: cors must be false or a string origin',
+    );
+  }
+  if (corsMaxAge !== undefined && !isInRange(corsMaxAge, 0)) {
+    throw new TypeError(
+      'newTaistampHandler: corsMaxAge must be a non-negative integer',
     );
   }
   if (selector !== undefined) {
@@ -205,9 +222,9 @@ const validateHandlerConfig = (
  * @throws TypeError per {@link validateHandlerConfig}.
  */
 const fromHandlerConfig = (config: TaistampHandlerConfig) => {
-  const { cors, selector, signer } = validateHandlerConfig(config);
+  const { cors, corsMaxAge, selector, signer } = validateHandlerConfig(config);
 
-  const corsHeaders = buildCORSHeaders(cors);
+  const corsHeaders = buildCORSHeaders(cors, corsMaxAge);
 
   const addSignature = selector !== undefined && signer !== undefined ?
     async (
@@ -219,10 +236,10 @@ const fromHandlerConfig = (config: TaistampHandlerConfig) => {
         label, TAI_LEAP_SECONDS, selector, nonce,
       );
       const signature = await signer.sign(payload);
-      headers.set(TAI64N_HEADER_KEY_SELECTOR, selector);
+      headers.set(TAISTAMP_HEADER_KEY_SELECTOR, selector);
       headers.set(
-        TAI64N_HEADER_SIGNATURE,
-        `:${encodeBase64(new Uint8Array(signature))}:`,
+        TAISTAMP_HEADER_SIGNATURE,
+        encodeSFBinary(new Uint8Array(signature)),
       );
     } :
     undefined;
@@ -239,15 +256,18 @@ const fromHandlerConfig = (config: TaistampHandlerConfig) => {
  *   route handler.
  *
  * @throws TypeError if `signer` and `selector` are not
- *   both set or both unset, or if `selector` does not
- *   match `[A-Za-z][A-Za-z0-9_-]{0,62}`.
+ *   both set or both unset, if `selector` does not match
+ *   `[A-Za-z]([A-Za-z0-9_-]{0,61}[A-Za-z0-9])?`, or if
+ *   `corsMaxAge` is not a non-negative integer.
  *
  * @remarks
  * Behaviour:
  *
  * - `GET` / `HEAD` — body is a fresh 25-byte TAI64N
  *   label (`HEAD` omits the body). Response headers:
- *   Content-Type `application/tai64n`, Content-Length
+ *   Content-Type `application/tai64n`, Content-Disposition
+ *   `inline` (so a browser renders the label in place
+ *   rather than offering it as a download), Content-Length
  *   `25`, Cache-Control `no-store`, plus
  *   `TAI-Leap-Seconds` carrying the current count.
  * - `OPTIONS` — `200` with `Allow: GET, HEAD, OPTIONS`.
@@ -294,14 +314,14 @@ export const newTaistampHandler = (
     if (request.method === 'OPTIONS') {
       return new Response(undefined, {
         status: 200,
-        headers: { allow: ALLOW_HEADER, ...corsHeaders.preflight },
+        headers: { Allow: ALLOW_HEADER, ...corsHeaders.preflight },
       });
     }
 
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return new Response(undefined, {
         status: 405,
-        headers: { allow: ALLOW_HEADER, ...corsHeaders.error },
+        headers: { Allow: ALLOW_HEADER, ...corsHeaders.error },
       });
     }
 
@@ -309,15 +329,16 @@ export const newTaistampHandler = (
     const label = tai64nLabel();
 
     const headers = new Headers({
-      'cache-control': 'no-store',
-      'content-length': String(TAI64N_CONTENT_LENGTH),
-      'content-type': TAI64N_CONTENT_TYPE,
-      [TAI64N_HEADER_LEAP_SECONDS]: String(TAI_LEAP_SECONDS),
+      'Cache-Control': 'no-store',
+      'Content-Disposition': 'inline',
+      'Content-Length': String(TAISTAMP_CONTENT_LENGTH),
+      'Content-Type': TAISTAMP_CONTENT_TYPE,
+      [TAISTAMP_HEADER_LEAP_SECONDS]: String(TAI_LEAP_SECONDS),
       ...corsHeaders.response,
     });
 
     if (nonce && request.method === 'GET') {
-      headers.set(TAI64N_HEADER_NONCE, nonce);
+      headers.set(TAISTAMP_HEADER_NONCE, nonce);
       if (addSignature) {
         await addSignature(headers, label, nonce);
       }

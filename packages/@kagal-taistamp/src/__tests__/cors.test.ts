@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   newTaistampHandler,
-  TAI64N_HEADER_NONCE,
+  TAISTAMP_HEADER_NONCE,
   TAISTAMP_PATH,
 } from '..';
 
@@ -23,11 +23,47 @@ describe('CORS', () => {
     expect(response.headers.get('access-control-allow-methods'))
       .toBe('GET, HEAD');
     expect(response.headers.get('access-control-allow-headers'))
-      .toBe(TAI64N_HEADER_NONCE);
+      .toBe(TAISTAMP_HEADER_NONCE);
     expect(response.headers.get('access-control-expose-headers'))
       .toBe(exposeHeaders);
     expect(response.headers.get('access-control-max-age')).toBe('600');
     expect(response.headers.get('vary')).toBeNull();
+  });
+
+  it('uses a corsMaxAge above the 600 floor verbatim', async () => {
+    const handler = newTaistampHandler({ corsMaxAge: 7200 });
+    const response = await handler(
+      new Request(baseURL, { method: 'OPTIONS' }),
+    );
+
+    expect(response.headers.get('access-control-max-age')).toBe('7200');
+  });
+
+  it('clamps a corsMaxAge just below the floor up to 600', async () => {
+    const handler = newTaistampHandler({ corsMaxAge: 599 });
+    const response = await handler(
+      new Request(baseURL, { method: 'OPTIONS' }),
+    );
+
+    expect(response.headers.get('access-control-max-age')).toBe('600');
+  });
+
+  it('clamps a zero corsMaxAge up to the 600 floor', async () => {
+    const handler = newTaistampHandler({ corsMaxAge: 0 });
+    const response = await handler(
+      new Request(baseURL, { method: 'OPTIONS' }),
+    );
+
+    expect(response.headers.get('access-control-max-age')).toBe('600');
+  });
+
+  it('ignores corsMaxAge when cors=false', async () => {
+    const handler = newTaistampHandler({ cors: false, corsMaxAge: 7200 });
+    const response = await handler(
+      new Request(baseURL, { method: 'OPTIONS' }),
+    );
+
+    expect(response.headers.get('access-control-max-age')).toBeNull();
   });
 
   it('honours a specific origin and adds Vary: Origin', async () => {
@@ -150,8 +186,8 @@ describe('CORS', () => {
     const handler = newTaistampHandler();
     const response = await handler(new Request(baseURL, {
       headers: [
-        [TAI64N_HEADER_NONCE, ':b3BhcXVlLW5vbmNlLXZhbHVlLXg=:'],
-        [TAI64N_HEADER_NONCE, ':ZnJlc2gtY2xpZW50LW5vbmNl:'],
+        [TAISTAMP_HEADER_NONCE, ':b3BhcXVlLW5vbmNlLXZhbHVlLXg=:'],
+        [TAISTAMP_HEADER_NONCE, ':ZnJlc2gtY2xpZW50LW5vbmNl:'],
       ],
     }));
 

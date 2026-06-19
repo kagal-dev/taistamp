@@ -1,8 +1,10 @@
+import { atLeast } from '@kagal/ed25519-secret';
+
 import {
-  TAI64N_HEADER_KEY_SELECTOR,
-  TAI64N_HEADER_LEAP_SECONDS,
-  TAI64N_HEADER_NONCE,
-  TAI64N_HEADER_SIGNATURE,
+  TAISTAMP_HEADER_KEY_SELECTOR,
+  TAISTAMP_HEADER_LEAP_SECONDS,
+  TAISTAMP_HEADER_NONCE,
+  TAISTAMP_HEADER_SIGNATURE,
 } from './const';
 
 // `Access-Control-Allow-Methods` (Fetch) is the list
@@ -11,17 +13,19 @@ import {
 // `Allow` header (RFC 9110 §9.3.7 method discovery,
 // `GET, HEAD, OPTIONS`) the handler itself emits.
 const CORS_ALLOW_METHODS = 'GET, HEAD';
-const CORS_ALLOW_HEADERS = TAI64N_HEADER_NONCE;
+const CORS_ALLOW_HEADERS = TAISTAMP_HEADER_NONCE;
 const CORS_EXPOSE_HEADERS = [
-  TAI64N_HEADER_LEAP_SECONDS,
-  TAI64N_HEADER_NONCE,
-  TAI64N_HEADER_KEY_SELECTOR,
-  TAI64N_HEADER_SIGNATURE,
+  TAISTAMP_HEADER_LEAP_SECONDS,
+  TAISTAMP_HEADER_NONCE,
+  TAISTAMP_HEADER_KEY_SELECTOR,
+  TAISTAMP_HEADER_SIGNATURE,
 ].join(', ');
 // Spec §5.2 SHOULDs at least 600s; 10 minutes is the
 // floor the spec example uses and keeps high-traffic
-// cross-origin clients off a pre-flight per fetch.
-const CORS_MAX_AGE = '600';
+// cross-origin clients off a pre-flight per fetch. It is
+// both the default and the minimum: a caller-supplied
+// corsMaxAge below this clamps up to it.
+const CORS_MAX_AGE_MIN = 600;
 
 /**
  * The three CORS header maps the handler splices into
@@ -48,33 +52,37 @@ export type CORSHeaderSets = {
  * to `'*'`; `cors === '*'` skips `Vary: Origin` (a
  * wildcard does not vary by origin); a scoped origin
  * adds `Vary: Origin` so caches can keep per-origin
- * variants distinct.
+ * variants distinct. `corsMaxAge` sets the pre-flight
+ * `Access-Control-Max-Age` in seconds, clamped up to a
+ * 600s floor; omitted, it defaults to 600.
  */
 export const buildCORSHeaders = (
   cors: false | string | undefined,
+  corsMaxAge?: number,
 ): CORSHeaderSets => {
   if (cors === false) {
     return { error: {}, preflight: {}, response: {} };
   }
   const origin = cors || '*';
+  const maxAge = atLeast(CORS_MAX_AGE_MIN, corsMaxAge);
   const vary: Record<string, string> =
-    origin === '*' ? {} : { vary: 'Origin' };
+    origin === '*' ? {} : { Vary: 'Origin' };
   return {
     error: {
-      'access-control-allow-origin': origin,
+      'Access-Control-Allow-Origin': origin,
       ...vary,
     },
     preflight: {
-      'access-control-allow-origin': origin,
-      'access-control-allow-methods': CORS_ALLOW_METHODS,
-      'access-control-allow-headers': CORS_ALLOW_HEADERS,
-      'access-control-expose-headers': CORS_EXPOSE_HEADERS,
-      'access-control-max-age': CORS_MAX_AGE,
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Methods': CORS_ALLOW_METHODS,
+      'Access-Control-Allow-Headers': CORS_ALLOW_HEADERS,
+      'Access-Control-Expose-Headers': CORS_EXPOSE_HEADERS,
+      'Access-Control-Max-Age': String(maxAge),
       ...vary,
     },
     response: {
-      'access-control-allow-origin': origin,
-      'access-control-expose-headers': CORS_EXPOSE_HEADERS,
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Expose-Headers': CORS_EXPOSE_HEADERS,
       ...vary,
     },
   };

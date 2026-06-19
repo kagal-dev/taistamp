@@ -7,13 +7,122 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-19
+
+Verify-side readers, sf-binary framing, and a breaking
+`@kagal/taistamp/utils` reorganisation of the time helpers
+and constants.
+
+### Added
+
+- Re-exports from `@kagal/ed25519-secret` covering both
+  ends of the consumer journey: `parseSecretToKey` /
+  `parseSecretsToKeys` / `KeyConfig` (seed secret →
+  signer for the handler config) and
+  `parseRecordToVerifier` / `KeyRecord` / `Verifier`
+  (DNS TXT record → signature check).
+- API doc model for the new subpath —
+  `dist/utils.api.json` joins `dist/index.api.json` in
+  the published package.
+- sf-binary framing helpers on the `@kagal/taistamp/utils`
+  subpath — `SF_BINARY_PATTERN`, `encodeSFBinary(bytes)`,
+  and `decodeSFBinary(value, context?)` implement the
+  RFC 9651 §3.3.5 item syntax that `TAI-Nonce` and
+  `TAI-Signature` travel in — handling previously
+  internal to nonce validation and the handler.
+- `extractNonce(headers)` on the main export — reads the
+  `TAI-Nonce` echo from response headers and brands it via
+  `asNonce`; a missing or malformed field collapses to
+  `undefined`, matching `extractLeapSeconds`. The handler
+  reads the request nonce through the same helper.
+- `newNonce(byteLength?, context?)` on the main export —
+  mints a client `TAI-Nonce`: random bytes framed as an
+  sf-binary item, returned as a branded `Nonce`.
+  `byteLength` defaults to 16 and must sit within spec
+  §5.4's decoded-length bound of 7..129 octets.
+- `asSignature(value)` and `extractSignature(headers)`
+  on the main export — verify-side readers for
+  `TAI-Signature`: strict sf-binary decode to the raw
+  64-octet Ed25519 signature, with every failure
+  collapsed into `undefined`. The README verify example
+  now reads the signature through `extractSignature`.
+- `tai64nLabelToUTC(label, leapSeconds?)` on the main
+  export and the `@kagal/taistamp/utils` subpath — the
+  inverse of `tai64nLabelFromUTC`, recovering the UTC
+  millisecond value behind a TAI64N label so a verified
+  response yields a usable time. Malformed labels collapse
+  to `undefined`; `leapSeconds` overrides the offset and
+  defaults to the current `TAI_LEAP_SECONDS`.
+- `TAI64N_LABEL_PATTERN` on the `@kagal/taistamp/utils`
+  subpath — the `RegExp` for the TAI64N label wire form
+  (`@` + 24 hex digits), the label-side counterpart to
+  `SF_BINARY_PATTERN`; `tai64nLabelToUTC` gates on it.
+- `TAISTAMP_CONTENT_TYPE`, `TAISTAMP_CONTENT_LENGTH`, and
+  the four `TAISTAMP_HEADER_*` names on the main entry —
+  the taistamp protocol constants, joining `TAISTAMP_PATH`.
+  The header and content values are unchanged.
+- `TAI64N_LABEL_LENGTH` and `TAI64N_EPOCH_HI` on the
+  `@kagal/taistamp/utils` subpath — the TAI64N label's
+  byte length and the TAI64 epoch high word, named in the
+  `TAI64N_` format space.
+- The handler's `GET` / `HEAD` success response now sets
+  `Content-Disposition: inline`, so a browser opening
+  `/.well-known/taistamp` renders the TAI64N label in place
+  rather than offering it as a download.
+- `corsMaxAge` handler option — sets the pre-flight
+  `Access-Control-Max-Age` in seconds (default `600`). A
+  value below the spec §5.2 floor of 600 clamps up to it;
+  a non-integer or negative value throws at construction.
+
 ### Changed
 
+- Breaking: the TAI64N time helpers (`now`, `fromUTC`,
+  `tai64nLabel`) moved from the main export to the new
+  `@kagal/taistamp/utils` subpath — update imports to
+  `from '@kagal/taistamp/utils'`. `tai64nLabelFromUTC`
+  stays on the main export too — its plain
+  number-to-label signature serves verifier-side
+  freshness checks — and joins the others on the
+  subpath.
+- Breaking: the constant exports split by namespace — the
+  main entry carries the `TAISTAMP_*` protocol names, the
+  `@kagal/taistamp/utils` subpath the `TAI64N_*` format
+  names. The released `TAI64N_PATH`, `TAI64N_CONTENT_TYPE`,
+  `TAI64N_CONTENT_LENGTH`, and `TAI64N_HEADER_*` names move
+  to the subpath; their protocol equivalents are the
+  `TAISTAMP_*` names on the main entry.
 - `asLeapSeconds` now accepts `number | undefined`,
   returning `undefined` for an absent value alongside the
   existing non-integer, negative, and out-of-range cases.
   A caller holding a possibly-absent count can brand it
   without a preceding undefined guard.
+- `@kagal/ed25519-secret` workspace dependency re-resolves
+  to `^0.3.2` at publish time.
+
+### Deprecated
+
+- `TAI64N_CONTENT_LENGTH` and the four `TAI64N_HEADER_*`
+  names — the `TAI64N_` prefix named protocol concepts (a
+  `Content-Length` and header field names) that describe the
+  taistamp exchange, not the label format. Renamed to
+  `TAISTAMP_CONTENT_LENGTH` and the `TAISTAMP_HEADER_*` names
+  on the main entry; the old spellings stay as aliases on the
+  `@kagal/taistamp/utils` subpath (see Breaking — they no
+  longer resolve from the main entry, so callers keeping the
+  old name import it from `/utils`).
+- `TAI64_EPOCH_HI` — renamed `TAI64N_EPOCH_HI` to sit in
+  the `TAI64N_` format space. Both stay on `/utils`, so the
+  alias keeps existing imports working.
+
+### Fixed
+
+- Selector-pattern prose in the handler's `selector` field
+  doc and construction `@throws` clauses — shown as
+  `[A-Za-z][A-Za-z0-9_-]{0,62}`, which admits a trailing
+  `_`/`-` that `SELECTOR_PATTERN` rejects. Now shown as
+  `[A-Za-z]([A-Za-z0-9_-]{0,61}[A-Za-z0-9])?`, ending in a
+  letter or digit; the runtime validation was always
+  correct.
 
 ## [0.1.2] - 2026-06-07
 

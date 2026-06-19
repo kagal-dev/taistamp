@@ -2,7 +2,7 @@
 
 import { isInRange } from '@kagal/ed25519-secret';
 
-import { TAI64N_HEADER_LEAP_SECONDS } from './const';
+import { TAISTAMP_HEADER_LEAP_SECONDS } from './const';
 
 /**
  * Upper bound for `leapSeconds` in the taistamp signed
@@ -73,7 +73,7 @@ const DECIMAL_INTEGER = /^(?:0|[1-9]\d*)$/;
 export const extractLeapSeconds = (
   headers: Headers,
 ): LeapSeconds | undefined => {
-  const raw = headers.get(TAI64N_HEADER_LEAP_SECONDS);
+  const raw = headers.get(TAISTAMP_HEADER_LEAP_SECONDS);
   if (!raw || !DECIMAL_INTEGER.test(raw)) return undefined;
   return asLeapSeconds(Number(raw));
 };
