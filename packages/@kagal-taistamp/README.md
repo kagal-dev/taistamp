@@ -302,7 +302,7 @@ server signed; the verifier supplies only the public
 key and an sf-binary decoder. `leapSeconds` must be a
 branded `LeapSeconds` — obtain one from
 `extractLeapSeconds(headers)` (the verifier path) or
-`asLeapSeconds(number)` (when you already have the
+`asLeapSeconds(number | undefined)` (when you already have the
 value). Both return `undefined` for out-of-range
 input, collapsing every "treat as unsigned" case in
 [spec §5.3][spec-leap] into one verdict. `nonce` must be a branded
@@ -360,9 +360,9 @@ For verifier-side validation of a signed response
 - `composeSignaturePayload(label, leapSeconds,
   selector, nonce)` — reconstructs the exact byte
   sequence the server signed.
-- `asLeapSeconds(number)` — brand a numeric
-  leap-second count; returns `undefined` for
-  out-of-range input.
+- `asLeapSeconds(number | undefined)` — brand a numeric
+  leap-second count; returns `undefined` for an absent
+  or out-of-range input.
 - `extractLeapSeconds(headers)` — parse
   `TAI-Leap-Seconds` from response headers; returns
   `undefined` if missing, non-numeric, non-integer,

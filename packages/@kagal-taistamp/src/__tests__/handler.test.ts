@@ -494,6 +494,10 @@ describe('asLeapSeconds', () => {
   it('returns undefined for NaN', () => {
     expect(asLeapSeconds(Number.NaN)).toBeUndefined();
   });
+
+  it('returns undefined for undefined', () => {
+    expect(asLeapSeconds(undefined)).toBeUndefined();
+  });
 });
 
 const leapSecondsHeaders = (value: string): Headers =>

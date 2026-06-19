@@ -7,6 +7,14 @@ documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- `asLeapSeconds` now accepts `number | undefined`,
+  returning `undefined` for an absent value alongside the
+  existing non-integer, negative, and out-of-range cases.
+  A caller holding a possibly-absent count can brand it
+  without a preceding undefined guard.
+
 ## [0.1.2] - 2026-06-07
 
 API doc model publication and a devDependency refresh.

@@ -28,11 +28,11 @@ export type LeapSeconds = number & { readonly [LeapSecondsBrand]: never };
 
 /**
  * Coerce a `number` to a {@link LeapSeconds}. Returns
- * `undefined` when `value` is non-integer, negative,
- * or exceeds {@link TAI_LEAP_SECONDS_MAX}.
+ * `undefined` when `value` is absent, non-integer,
+ * negative, or exceeds {@link TAI_LEAP_SECONDS_MAX}.
  */
 export const asLeapSeconds = (
-  value: number,
+  value: number | undefined,
 ): LeapSeconds | undefined => {
   if (!isInRange(value, 0, TAI_LEAP_SECONDS_MAX)) return undefined;
   return value as LeapSeconds;
