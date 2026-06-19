@@ -10,6 +10,7 @@ import {
   encodeBase64,
   encodeKey,
   getRandom,
+  isInRange,
   splitFirst,
   splitLast,
 } from '../utils';
@@ -429,5 +430,38 @@ describe('atLeast', () => {
     expect(atLeast(600, Number.NaN)).toBe(600);
     expect(atLeast(600, Number.POSITIVE_INFINITY)).toBe(600);
     expect(atLeast(600, Number.NEGATIVE_INFINITY)).toBe(600);
+  });
+});
+
+describe('isInRange', () => {
+  it('accepts an integer within the inclusive range', () => {
+    expect(isInRange(5, 0, 10)).toBe(true);
+  });
+
+  it('accepts the inclusive boundaries', () => {
+    expect(isInRange(0, 0, 10)).toBe(true);
+    expect(isInRange(10, 0, 10)).toBe(true);
+  });
+
+  it('rejects an integer outside the range', () => {
+    expect(isInRange(-1, 0, 10)).toBe(false);
+    expect(isInRange(11, 0, 10)).toBe(false);
+  });
+
+  it('defaults max to Number.MAX_SAFE_INTEGER', () => {
+    expect(isInRange(7200, 600)).toBe(true);
+    expect(isInRange(Number.MAX_SAFE_INTEGER, 0)).toBe(true);
+    expect(isInRange(Number.MAX_SAFE_INTEGER + 1, 0)).toBe(false);
+    expect(isInRange(599, 600)).toBe(false);
+  });
+
+  it('rejects a non-integer value', () => {
+    expect(isInRange(5.5, 0, 10)).toBe(false);
+  });
+
+  it('rejects non-finite values', () => {
+    expect(isInRange(Number.NaN, 0, 10)).toBe(false);
+    expect(isInRange(Number.POSITIVE_INFINITY, 0)).toBe(false);
+    expect(isInRange(Number.NEGATIVE_INFINITY, 0)).toBe(false);
   });
 });

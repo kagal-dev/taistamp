@@ -590,6 +590,12 @@ assertValidSelector(value, 'config');
   result. A missing, non-finite, or below-`min` value
   collapses to `min`; anything larger is rounded to the
   nearest integer.
+- `isInRange(value, min, max?)` — whether `value` is an
+  integer within the inclusive range `[min, max]`. `max`
+  defaults to `Number.MAX_SAFE_INTEGER`, so a
+  two-argument call tests whether `value` is an integer
+  ≥ `min`. Fractional, `NaN`, infinite, and out-of-range
+  values are `false`.
 
 ### List helpers
 

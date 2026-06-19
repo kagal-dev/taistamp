@@ -18,6 +18,7 @@ import {
   encodeBase64,
   encodeKey,
   getRandom,
+  isInRange,
   isValidSelector,
   makeJWKS,
   makeKeyRecords,
@@ -94,6 +95,7 @@ checkFunction('decodeBase64', decodeBase64);
 checkFunction('getRandom', getRandom);
 checkFunction('asBytes', asBytes);
 checkFunction('atLeast', atLeast);
+checkFunction('isInRange', isInRange);
 checkFunction('splitFirst', splitFirst);
 checkFunction('splitLast', splitLast);
 checkInstance('SELECTOR_PATTERN', SELECTOR_PATTERN, RegExp);

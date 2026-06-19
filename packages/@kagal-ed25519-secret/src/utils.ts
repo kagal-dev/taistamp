@@ -129,6 +129,20 @@ export const encodeKey = async (
 };
 
 /**
+ * Whether `value` is an integer within the inclusive
+ * range `[min, max]`. `max` defaults to
+ * `Number.MAX_SAFE_INTEGER`, so the two-argument form
+ * tests for an integer ≥ `min`. A fractional, `NaN`,
+ * infinite, or out-of-range `value` is `false`.
+ */
+export const isInRange = (
+  value: number,
+  min: number,
+  max: number = Number.MAX_SAFE_INTEGER,
+): boolean =>
+  Number.isInteger(value) && value >= min && value <= max;
+
+/**
  * Fill a fresh `Uint8Array` of the requested length
  * with cryptographically secure random bytes via
  * `crypto.getRandomValues`, subject to its length cap
@@ -149,7 +163,7 @@ export const getRandom = (
   length: number,
   context?: string,
 ): Bytes => {
-  if (!Number.isInteger(length) || length < 0) {
+  if (!isInRange(length, 0)) {
     const prefix = context ? `${context}: ` : '';
     throw new TypeError(
       `${prefix}expected non-negative integer length, got ${length}`,
