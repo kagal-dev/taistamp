@@ -159,6 +159,18 @@ export const getRandom = (
 };
 
 /**
+ * The larger of `min` and `value`, rounding a fractional
+ * `value` to the nearest integer first, and falling back
+ * to `min` when `value` is absent or not a finite number.
+ * With an integer `min` the result is always an integer
+ * ≥ `min`.
+ */
+export const atLeast = (min: number, value?: number): number =>
+  typeof value === 'number' && Number.isFinite(value) ?
+    Math.max(min, Math.round(value)) :
+    min;
+
+/**
  * Normalise a bytes-or-base64 input to a fresh
  * `Uint8Array`. Bytes are defensive-copied; strings
  * are decoded via {@link decodeBase64}.

@@ -582,6 +582,15 @@ assertValidSelector(value, 'config');
   non-integer or negative `length`; pass `context` to
   prefix the error message.
 
+### Numeric helpers
+
+- `atLeast(min, value?)` — a minimum floor for an
+  optional numeric value: always returns a whole number
+  no smaller than `min`, never a fractional or `NaN`
+  result. A missing, non-finite, or below-`min` value
+  collapses to `min`; anything larger is rounded to the
+  nearest integer.
+
 ### List helpers
 
 - `splitFirst(items)` / `splitLast(items)` — split

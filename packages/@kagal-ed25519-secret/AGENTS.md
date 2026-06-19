@@ -24,7 +24,7 @@ the package-local layout and conventions.
     ├── signer.ts           # Ed25519 signer interface and factory
     ├── verifier.ts         # Ed25519 verifier interface and factories
     ├── selector.ts         # DKIM selector pattern and validators
-    ├── utils.ts            # byte helpers and list splitters
+    ├── utils.ts            # byte, numeric, and list helpers
     └── __tests__/
 ```
 

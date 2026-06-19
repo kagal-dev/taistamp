@@ -13,6 +13,7 @@ import {
   asBytes,
   asEd25519Seed,
   assertValidSelector,
+  atLeast,
   decodeBase64,
   encodeBase64,
   encodeKey,
@@ -92,6 +93,7 @@ checkFunction('encodeKey', encodeKey);
 checkFunction('decodeBase64', decodeBase64);
 checkFunction('getRandom', getRandom);
 checkFunction('asBytes', asBytes);
+checkFunction('atLeast', atLeast);
 checkFunction('splitFirst', splitFirst);
 checkFunction('splitLast', splitLast);
 checkInstance('SELECTOR_PATTERN', SELECTOR_PATTERN, RegExp);

@@ -15,6 +15,12 @@ documented in this file.
   `parseSecretToKey`, completing the
   `newSecret` → `parseSecretToKey` → `makeKeyRecords`
   provisioning journey in one package.
+- `atLeast(min, value?)` — the larger of `min` and
+  `value`, rounding a fractional `value` to the
+  nearest integer first and falling back to `min`
+  when `value` is absent or non-finite. With an
+  integer `min` the result is always an integer
+  ≥ `min`.
 
 ## [0.3.1] - 2026-06-07
 
