@@ -29,7 +29,10 @@ Mint-side `selector:base64` secret generation, plus the
 - `isInRange(value, min, max?)` — whether `value` is an
   integer within the inclusive range `[min, max]`. `max`
   defaults to `Number.MAX_SAFE_INTEGER`, so the
-  two-argument form tests for an integer ≥ `min`.
+  two-argument form tests for an integer ≥ `min`. An
+  `undefined`, fractional, `NaN`, infinite, or
+  out-of-range `value` is `false`, letting callers pass a
+  possibly-absent optional straight through.
   `getRandom`'s non-negative-integer guard now delegates
   to it.
 

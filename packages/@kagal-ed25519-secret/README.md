@@ -594,8 +594,8 @@ assertValidSelector(value, 'config');
   integer within the inclusive range `[min, max]`. `max`
   defaults to `Number.MAX_SAFE_INTEGER`, so a
   two-argument call tests whether `value` is an integer
-  ≥ `min`. Fractional, `NaN`, infinite, and out-of-range
-  values are `false`.
+  ≥ `min`. An `undefined`, fractional, `NaN`, infinite,
+  or out-of-range value is `false`.
 
 ### List helpers
 
