@@ -16,7 +16,7 @@ the package-local layout and conventions.
 .
 └── src/
     ├── index.ts            # public API surface
-    ├── secret.ts           # selector:base64 secret parsing
+    ├── secret.ts           # selector:base64 secret minting and parsing
     ├── algo.ts             # supported-algorithm metadata
     ├── key.ts              # Ed25519 key construction and public JWK shape
     ├── jwks.ts             # Ed25519 JWK Set assembly
@@ -24,7 +24,7 @@ the package-local layout and conventions.
     ├── signer.ts           # Ed25519 signer interface and factory
     ├── verifier.ts         # Ed25519 verifier interface and factories
     ├── selector.ts         # DKIM selector pattern and validators
-    ├── utils.ts            # byte helpers and list splitters
+    ├── utils.ts            # byte, numeric, and list helpers
     └── __tests__/
 ```
 
@@ -42,7 +42,8 @@ one of two shapes:
 - `context: string = '<factory name>'` — used by
   composing factories that thread the context through
   to their delegates (`makeKeyRecords`, `newKeys`,
-  `parseRecordToKey`, `parseRecordToVerifier`,
-  `parseSecretToKey`, `parseSecretsToKeys`, and the
-  deprecated `newKeyPair`); absence falls back to the
+  `newSecret`, `parseRecordToKey`,
+  `parseRecordToVerifier`, `parseSecretToKey`,
+  `parseSecretsToKeys`, and the deprecated
+  `newKeyPair`); absence falls back to the
   factory name so the error always carries attribution.

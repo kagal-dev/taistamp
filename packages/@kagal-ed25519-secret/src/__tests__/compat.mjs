@@ -13,15 +13,18 @@ import {
   asBytes,
   asEd25519Seed,
   assertValidSelector,
+  atLeast,
   decodeBase64,
   encodeBase64,
   encodeKey,
   getRandom,
+  isInRange,
   isValidSelector,
   makeJWKS,
   makeKeyRecords,
   newKeyPair,
   newKeys,
+  newSecret,
   newSigner,
   parseSecretsToKeys,
   parseSecretToKey,
@@ -80,6 +83,7 @@ checkFunction('newKeys', newKeys);
 checkFunction('makeJWKS', makeJWKS);
 checkFunction('makeKeyRecords', makeKeyRecords);
 checkFunction('asEd25519Seed', asEd25519Seed);
+checkFunction('newSecret', newSecret);
 checkFunction('parseSecretToKey', parseSecretToKey);
 checkFunction('parseSecretsToKeys', parseSecretsToKeys);
 checkFunction('newSigner', newSigner);
@@ -90,6 +94,8 @@ checkFunction('encodeKey', encodeKey);
 checkFunction('decodeBase64', decodeBase64);
 checkFunction('getRandom', getRandom);
 checkFunction('asBytes', asBytes);
+checkFunction('atLeast', atLeast);
+checkFunction('isInRange', isInRange);
 checkFunction('splitFirst', splitFirst);
 checkFunction('splitLast', splitLast);
 checkInstance('SELECTOR_PATTERN', SELECTOR_PATTERN, RegExp);

@@ -129,6 +129,20 @@ export const encodeKey = async (
 };
 
 /**
+ * Whether `value` is an integer within the inclusive
+ * range `[min, max]`. `max` defaults to
+ * `Number.MAX_SAFE_INTEGER`, so the two-argument form
+ * tests for an integer ≥ `min`. A fractional, `NaN`,
+ * infinite, or out-of-range `value` is `false`.
+ */
+export const isInRange = (
+  value: number,
+  min: number,
+  max: number = Number.MAX_SAFE_INTEGER,
+): boolean =>
+  Number.isInteger(value) && value >= min && value <= max;
+
+/**
  * Fill a fresh `Uint8Array` of the requested length
  * with cryptographically secure random bytes via
  * `crypto.getRandomValues`, subject to its length cap
@@ -149,7 +163,7 @@ export const getRandom = (
   length: number,
   context?: string,
 ): Bytes => {
-  if (!Number.isInteger(length) || length < 0) {
+  if (!isInRange(length, 0)) {
     const prefix = context ? `${context}: ` : '';
     throw new TypeError(
       `${prefix}expected non-negative integer length, got ${length}`,
@@ -157,6 +171,18 @@ export const getRandom = (
   }
   return crypto.getRandomValues(new Uint8Array(length));
 };
+
+/**
+ * The larger of `min` and `value`, rounding a fractional
+ * `value` to the nearest integer first, and falling back
+ * to `min` when `value` is absent or not a finite number.
+ * With an integer `min` the result is always an integer
+ * ≥ `min`.
+ */
+export const atLeast = (min: number, value?: number): number =>
+  typeof value === 'number' && Number.isFinite(value) ?
+    Math.max(min, Math.round(value)) :
+    min;
 
 /**
  * Normalise a bytes-or-base64 input to a fresh

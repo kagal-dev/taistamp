@@ -5,6 +5,34 @@ documented in this file.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-19
+
+Mint-side `selector:base64` secret generation, plus the
+`atLeast` and `isInRange` numeric helpers.
+
+### Added
+
+- `newSecret(selector, context?)` — mint a fresh
+  `selector:base64` secret: validates the selector
+  against `SELECTOR_PATTERN`, then encodes a freshly
+  generated 32-byte Ed25519 seed from
+  `crypto.getRandomValues`. The mint counterpart to
+  `parseSecretToKey`, completing the
+  `newSecret` → `parseSecretToKey` → `makeKeyRecords`
+  provisioning journey in one package.
+- `atLeast(min, value?)` — the larger of `min` and
+  `value`, rounding a fractional `value` to the
+  nearest integer first and falling back to `min`
+  when `value` is absent or non-finite. With an
+  integer `min` the result is always an integer
+  ≥ `min`.
+- `isInRange(value, min, max?)` — whether `value` is an
+  integer within the inclusive range `[min, max]`. `max`
+  defaults to `Number.MAX_SAFE_INTEGER`, so the
+  two-argument form tests for an integer ≥ `min`.
+  `getRandom`'s non-negative-integer guard now delegates
+  to it.
+
 ## [0.3.1] - 2026-06-07
 
 API doc model publication and a devDependency refresh.

@@ -1,10 +1,45 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseSecretsToKeys, parseSecretToKey } from '../secret';
-import { encodeBase64 } from '../utils';
+import { newSecret, parseSecretsToKeys, parseSecretToKey } from '../secret';
+import { decodeBase64, encodeBase64 } from '../utils';
 
 const testSeed = new Uint8Array(32).fill(7);
 const testB64 = encodeBase64(testSeed);
+
+describe('newSecret', () => {
+  it('prefixes the secret with the selector and a colon', () => {
+    expect(newSecret('s1').startsWith('s1:')).toBe(true);
+  });
+
+  it('encodes a 32-byte seed in the base64 portion', () => {
+    const b64 = newSecret('s1').slice('s1:'.length);
+    expect(decodeBase64(b64)).toHaveLength(32);
+  });
+
+  it('mints a fresh seed on each call', () => {
+    expect(newSecret('s1')).not.toBe(newSecret('s1'));
+  });
+
+  it('round-trips through parseSecretToKey', async () => {
+    const { selector, privateKey } = await parseSecretToKey(newSecret('s1'));
+    expect(selector).toBe('s1');
+    expect(privateKey).toHaveLength(32);
+  });
+
+  it('rejects a selector that fails SELECTOR_PATTERN', () => {
+    expect(() => newSecret('-bad')).toThrow(TypeError);
+  });
+
+  it('uses the default context as the error prefix', () => {
+    expect(() => newSecret('-bad'))
+      .toThrow(/^newSecret: selector must match/);
+  });
+
+  it('uses the supplied context as the error prefix', () => {
+    expect(() => newSecret('-bad', 'myMint'))
+      .toThrow(/^myMint: selector must match/);
+  });
+});
 
 describe('parseSecretToKey', () => {
   it('returns the selector unchanged', async () => {

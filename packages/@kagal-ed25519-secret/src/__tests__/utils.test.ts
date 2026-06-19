@@ -4,11 +4,13 @@ import { describe, expect, it } from 'vitest';
 
 import {
   asBytes,
+  atLeast,
   decodeASCII,
   decodeBase64,
   encodeBase64,
   encodeKey,
   getRandom,
+  isInRange,
   splitFirst,
   splitLast,
 } from '../utils';
@@ -394,5 +396,72 @@ describe('splitLast', () => {
 
   it('returns { last, rest: [] } for a one-element array', () => {
     expect(splitLast(['only'])).toEqual({ last: 'only', rest: [] });
+  });
+});
+
+describe('atLeast', () => {
+  it('returns a finite value at or above min verbatim', () => {
+    expect(atLeast(600, 7200)).toBe(7200);
+    expect(atLeast(600, 600)).toBe(600);
+  });
+
+  it('clamps a finite value below min up to min', () => {
+    expect(atLeast(600, 599)).toBe(600);
+    expect(atLeast(600, 0)).toBe(600);
+    expect(atLeast(600, -1)).toBe(600);
+  });
+
+  it('rounds a fractional value to the nearest integer', () => {
+    expect(atLeast(600, 750.3)).toBe(750);
+    expect(atLeast(600, 750.7)).toBe(751);
+  });
+
+  it('returns the integer min for a fractional value below min', () => {
+    expect(atLeast(600, 599.7)).toBe(600);
+    expect(atLeast(600, 12.3)).toBe(600);
+  });
+
+  it('falls back to min when value is absent', () => {
+    expect(atLeast(600)).toBe(600);
+    expect(atLeast(600, undefined)).toBe(600);
+  });
+
+  it('falls back to min for non-finite values', () => {
+    expect(atLeast(600, Number.NaN)).toBe(600);
+    expect(atLeast(600, Number.POSITIVE_INFINITY)).toBe(600);
+    expect(atLeast(600, Number.NEGATIVE_INFINITY)).toBe(600);
+  });
+});
+
+describe('isInRange', () => {
+  it('accepts an integer within the inclusive range', () => {
+    expect(isInRange(5, 0, 10)).toBe(true);
+  });
+
+  it('accepts the inclusive boundaries', () => {
+    expect(isInRange(0, 0, 10)).toBe(true);
+    expect(isInRange(10, 0, 10)).toBe(true);
+  });
+
+  it('rejects an integer outside the range', () => {
+    expect(isInRange(-1, 0, 10)).toBe(false);
+    expect(isInRange(11, 0, 10)).toBe(false);
+  });
+
+  it('defaults max to Number.MAX_SAFE_INTEGER', () => {
+    expect(isInRange(7200, 600)).toBe(true);
+    expect(isInRange(Number.MAX_SAFE_INTEGER, 0)).toBe(true);
+    expect(isInRange(Number.MAX_SAFE_INTEGER + 1, 0)).toBe(false);
+    expect(isInRange(599, 600)).toBe(false);
+  });
+
+  it('rejects a non-integer value', () => {
+    expect(isInRange(5.5, 0, 10)).toBe(false);
+  });
+
+  it('rejects non-finite values', () => {
+    expect(isInRange(Number.NaN, 0, 10)).toBe(false);
+    expect(isInRange(Number.POSITIVE_INFINITY, 0)).toBe(false);
+    expect(isInRange(Number.NEGATIVE_INFINITY, 0)).toBe(false);
   });
 });

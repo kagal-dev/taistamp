@@ -473,6 +473,14 @@ assertValidSelector(value, 'config');
     `publicJWK.kid`.
   - `signer: Signer` — pre-built, backed by `signKey`.
   - `verifier: Verifier` — pre-built, backed by `publicKey`.
+- `newSecret(selector, context?)` — mint a fresh
+  `selector:base64` secret. Validates `selector`
+  against `SELECTOR_PATTERN`, then encodes a freshly
+  generated 32-byte Ed25519 seed
+  (`crypto.getRandomValues`) as standard base64. No
+  selector default — the caller supplies it. `context`
+  prefixes any thrown error and defaults to
+  `'newSecret'`.
 - `parseSecretToKey(secretString, context?)` — parse
   a `selector:base64` secret into a `KeyConfig`. The
   base64 portion is a 32-byte Ed25519 seed (standard
@@ -573,6 +581,21 @@ assertValidSelector(value, 'config');
   `crypto.getRandomValues`. Throws `TypeError` on
   non-integer or negative `length`; pass `context` to
   prefix the error message.
+
+### Numeric helpers
+
+- `atLeast(min, value?)` — a minimum floor for an
+  optional numeric value: always returns a whole number
+  no smaller than `min`, never a fractional or `NaN`
+  result. A missing, non-finite, or below-`min` value
+  collapses to `min`; anything larger is rounded to the
+  nearest integer.
+- `isInRange(value, min, max?)` — whether `value` is an
+  integer within the inclusive range `[min, max]`. `max`
+  defaults to `Number.MAX_SAFE_INTEGER`, so a
+  two-argument call tests whether `value` is an integer
+  ≥ `min`. Fractional, `NaN`, infinite, and out-of-range
+  values are `false`.
 
 ### List helpers
 

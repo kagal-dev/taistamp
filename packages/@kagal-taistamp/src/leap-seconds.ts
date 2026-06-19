@@ -1,5 +1,7 @@
 // cspell:words IERS
 
+import { isInRange } from '@kagal/ed25519-secret';
+
 import { TAI64N_HEADER_LEAP_SECONDS } from './const';
 
 /**
@@ -32,11 +34,7 @@ export type LeapSeconds = number & { readonly [LeapSecondsBrand]: never };
 export const asLeapSeconds = (
   value: number,
 ): LeapSeconds | undefined => {
-  if (
-    !Number.isInteger(value) ||
-    value < 0 ||
-    value > TAI_LEAP_SECONDS_MAX
-  ) return undefined;
+  if (!isInRange(value, 0, TAI_LEAP_SECONDS_MAX)) return undefined;
   return value as LeapSeconds;
 };
 
