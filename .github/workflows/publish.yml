@@ -25,7 +25,15 @@ jobs:
           node-version: '24'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Build every workspace package up front so the packed
+      # package resolves its workspace dependencies to real
+      # bundled declarations. The install-time `prepare` leaves
+      # unbuilt packages as jiti stubs whose `.d.mts` re-exports
+      # from `./src/*.ts`; api-extractor then follows the stub
+      # into TypeScript source and aborts the prepack build.
+      - name: Build workspace
+        run: pnpm build
       - name: Publish ${{ github.ref_name }}
-        run: pnpm --filter "${TAG%@*}" publish:maybe --provenance --no-git-checks
+        run: pnpm --filter "${TAG%@*}" --fail-if-no-match publish:maybe --provenance --no-git-checks
         env:
           TAG: ${{ github.ref_name }}
