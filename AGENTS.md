@@ -219,9 +219,13 @@ options (ESNext, bundler resolution, strict mode).
 - `@kagal/build-tsdoc` supplies obuild hooks that
   extract TSDoc doc models to `dist/*.api.json`,
   one per bundle entry.
-- `prepare` script: `cross-test -s dist/index.mjs ||
-  obuild --stub` (conditional stubbing).
-- `dev:prepare`: `obuild --stub` (unconditional).
+- `prepare` script: `cross-test` checks for the built
+  entry points (`-s dist/<entry>.mjs`, one per bundle
+  entry), falling back to `run-s dev:prepare`
+  (conditional stubbing).
+- `dev:prepare`: `obuild --stub` (unconditional) — the
+  single definition of the stub command that `prepare`
+  falls back to.
 
 ## Publishing
 
