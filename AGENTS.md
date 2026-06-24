@@ -220,8 +220,10 @@ options (ESNext, bundler resolution, strict mode).
   extract TSDoc doc models to `dist/*.api.json`,
   one per bundle entry.
 - `prepare` script: `cross-test -s dist/index.mjs ||
-  obuild --stub` (conditional stubbing).
-- `dev:prepare`: `obuild --stub` (unconditional).
+  pnpm dev:prepare` (conditional stubbing).
+- `dev:prepare`: `obuild --stub` (unconditional) — the
+  single definition of the stub command that `prepare`
+  falls back to.
 
 ## Publishing
 
