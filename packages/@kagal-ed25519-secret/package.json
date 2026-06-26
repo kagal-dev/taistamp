@@ -70,7 +70,7 @@
     "@poupe/eslint-config": "^0.10.1",
     "@types/node": "^20.19.41",
     "@vitest/coverage-istanbul": "^4.1.9",
-    "eslint": "^10.5.0",
+    "eslint": "^10.6.0",
     "npm-run-all2": "^9.0.2",
     "obuild": "^0.4.37",
     "publint": "^0.3.21",
