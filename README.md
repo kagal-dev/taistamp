@@ -1,9 +1,16 @@
 # taistamp — signed TAI64N timestamps over HTTP
 
-Two TypeScript packages: an HTTP handler that issues
-Ed25519-signed TAI64N timestamps, and the WebCrypto
-signing toolkit it builds on, with JWKS-ready and
-DNS-TXT-ready public key publication.
+Authenticated wall-clock time over HTTP, without
+running an NTP stack or trusting an unauthenticated
+TLS handshake clock. A TypeScript toolkit
+implementing [`draft-mery-nagy-taistamp`][draft]:
+issue and verify Ed25519-signed timestamps, publish
+keys via JWKS endpoints or DNS TXT records with
+DKIM-style selectors, mint seeds and probe endpoints
+from a companion CLI.
+
+Runs anywhere with `crypto.subtle` — modern browsers,
+Node ≥ 20, Cloudflare Workers, Deno, and Bun.
 
 [![Licence: MIT](https://img.shields.io/badge/Licence-MIT-blue.svg)](./LICENCE.txt)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](package.json)
@@ -27,6 +34,11 @@ DNS-TXT-ready public key publication.
 
 Platform-neutral HTTP handler for `/.well-known/taistamp` —
 Ed25519-signed timestamps.
+
+### [`@kagal/taistamp-cli`](packages/@kagal-taistamp-cli/)
+
+Companion CLI (`taistamp`) — Ed25519 seed minting
+and `/.well-known/taistamp` endpoint probing.
 
 ### [`@kagal/ed25519-secret`](packages/@kagal-ed25519-secret/)
 
