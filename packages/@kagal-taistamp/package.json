@@ -70,7 +70,7 @@
     "@kagal/ed25519-secret": "workspace:^"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.13.1",
+    "@cloudflare/vitest-pool-workers": "^0.17.0",
     "@cloudflare/workers-types": "^4.20260514.1",
     "@kagal/build-tsdoc": "^0.2.1",
     "@kagal/cross-test": "^0.1.3",
